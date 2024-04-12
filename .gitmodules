@@ -8,6 +8,7 @@
 [submodule "DustRayTracer/thirdparty/imgui"]
 	path = DustRayTracer/thirdparty/imgui
 	url = https://github.com/LightShade12/imgui.git
+	branch = docking
 [submodule "DustRayTracer/thirdparty/glfw"]
 	path = DustRayTracer/thirdparty/glfw
 	url = https://github.com/LightShade12/glfw.git

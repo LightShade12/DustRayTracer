@@ -9,7 +9,7 @@
 *.vsxproj.user
 *.sln
 image.png
-!thirdparty/premake/bin
+#!thirdparty/premake/bin
 
 # User-specific files
 *.rsuser
@@ -34,7 +34,7 @@ mono_crash.*
 
 # Build results
 [Bb]in-obj/
-[Bb]in/
+[Bb]in-int/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -382,3 +382,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/bin/DustRayTracer-Debug
