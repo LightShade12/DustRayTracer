@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core">
+      <UniqueIdentifier>{C55F2ECF-B12C-89DA-DA45-7782C671BE68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Application">
+      <UniqueIdentifier>{086B941D-F4F9-1DE7-9D18-32E289862E8D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Application\private">
+      <UniqueIdentifier>{1222DE37-FEDC-CDE3-A794-462E932E1874}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Common">
+      <UniqueIdentifier>{5D5D6732-C9E8-D4F6-D2F9-57EB3E0431F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Editor">
+      <UniqueIdentifier>{5B8D4836-C718-B6FA-D029-39EF3C3412FB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Main">
+      <UniqueIdentifier>{596608E5-C526-841B-8E61-CD98FAE0C8F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Renderer">
+      <UniqueIdentifier>{0B317641-7747-74D7-C0BE-FFF82C14455F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Renderer\private">
+      <UniqueIdentifier>{153B9B49-81FD-CED3-CAAD-5D6036AFA7B1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Renderer\private\Camera">
+      <UniqueIdentifier>{EDE50460-D936-F0A1-029B-DE63EE4A830B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Renderer\private\CudaMath">
+      <UniqueIdentifier>{EBC90763-D705-0BCD-4018-23C42C73B3E7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\Renderer\private\Kernel">
+      <UniqueIdentifier>{856FF972-71C0-E4B4-9A24-D37686D4771E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty">
+      <UniqueIdentifier>{50A5DA7C-3C5D-1CCA-A564-F525913BB7BA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\stb_image">
+      <UniqueIdentifier>{EA39E0BF-D6C8-6989-7FE7-7D846B557A2F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\core\Application\Application.hpp">
+      <Filter>src\core\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Application\private\Layer.hpp">
+      <Filter>src\core\Application\private</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Common\Managed.hpp">
+      <Filter>src\core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Common\Timer.hpp">
+      <Filter>src\core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Editor\EditorLayer.hpp">
+      <Filter>src\core\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Renderer\Renderer.hpp">
+      <Filter>src\core\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Renderer\private\Camera\Camera.hpp">
+      <Filter>src\core\Renderer\private\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Renderer\private\CudaMath\helper_math.hpp">
+      <Filter>src\core\Renderer\private\CudaMath</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Renderer\private\Kernel\RenderKernel.hpp">
+      <Filter>src\core\Renderer\private\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\stb_image\stb_image.h">
+      <Filter>thirdparty\stb_image</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\stb_image\stb_image_write.h">
+      <Filter>thirdparty\stb_image</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\core\Application\private\Application.cpp">
+      <Filter>src\core\Application\private</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\Main\main.cpp">
+      <Filter>src\core\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\stb_image\stb_image.cpp">
+      <Filter>thirdparty\stb_image</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\stb_image\stb_image_write.cpp">
+      <Filter>thirdparty\stb_image</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

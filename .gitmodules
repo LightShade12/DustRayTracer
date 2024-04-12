@@ -1,0 +1,13 @@
+[submodule "thirdparty/premake5-cuda"]
+	path = thirdparty/premake5-cuda
+	url = https://github.com/theComputeKid/premake5-cuda.git
+
+[submodule "DustRayTracer/thirdparty/glm"]
+	path = DustRayTracer/thirdparty/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "DustRayTracer/thirdparty/imgui"]
+	path = DustRayTracer/thirdparty/imgui
+	url = https://github.com/LightShade12/imgui.git
+[submodule "DustRayTracer/thirdparty/glfw"]
+	path = DustRayTracer/thirdparty/glfw
+	url = https://github.com/LightShade12/glfw.git

@@ -3,6 +3,14 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+
+*.vsxproj
+*.vsxproj.filters
+*.vsxproj.user
+*.sln
+image.png
+!thirdparty/premake/bin
+
 # User-specific files
 *.rsuser
 *.suo
@@ -16,7 +24,17 @@
 # Mono auto generated files
 mono_crash.*
 
+#CUDA
+*.i
+*.ii
+*.gpu
+*.ptx
+*.cubin
+*.fatbin
+
 # Build results
+[Bb]in-obj/
+[Bb]in/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -27,7 +45,7 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
+#[Bb]in/
 [Oo]bj/
 [Oo]ut/
 [Ll]og/
@@ -70,6 +88,9 @@ ScaffoldingReadMe.txt
 StyleCopReport.xml
 
 # Files built by Visual Studio
+*.1.tlog
+*.tlog
+*.lastbuildstate
 *_i.c
 *_p.c
 *_h.h
