@@ -1,5 +1,5 @@
 #pragma once
-#include "private/camera/Camera.hpp"
+#include "private/Camera/Camera.hpp"
 
 #include <glad/glad.h>
 #include <cuda_gl_interop.h>//for member cuda objects
