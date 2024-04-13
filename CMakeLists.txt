@@ -30,6 +30,7 @@ if (is_multi_config)
     "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}-${PlatformArchitecture}")
 endif ()
 
+
 # List of source files
 set(SOURCE_FILES 
 ./DustRayTracer/src/core/Application/private/Application.cpp
@@ -65,17 +66,19 @@ ${PROJECT_SOURCE_DIR}/DustRayTracer/thirdparty/glm
 
 find_package(CUDAToolkit)
 
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) 
+
 target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-                       --generate-line-info
-                       --use_fast_math
-                       --relocatable-device-code=true
-                       -arch=compute_75 
+--generate-line-info
+--use_fast_math
+--relocatable-device-code=true
+-arch=compute_75 
                        -code=sm_75
                        --expt-relaxed-constexpr 
                        --extended-lambda
                        >)
-
-
+                       
+                       
 
 # Link libraries
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/DustRayTracer/thirdparty/glfw/src/Debug)
