@@ -72,18 +72,19 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <CudaCompile>
-    	<TargetMachinePlatform>64</TargetMachinePlatform>
-    	<Keep>false</Keep>
-    	<GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-    	<FastMath>false</FastMath>
-    	<PtxAsOptionV>false</PtxAsOptionV>
-    	<AdditionalOptions>-arch=compute_75 -code=sm_75 -t0 --expt-relaxed-constexpr</AdditionalOptions>
-    	<MaxRegCount>0</MaxRegCount>
-    	<CompileOut>..\bin-obj\cuda\Debug-x86_64\\%(Filename)%(Extension).obj</CompileOut>
-      <CodeGeneration></CodeGeneration>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Keep>false</Keep>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <FastMath>false</FastMath>
+      <PtxAsOptionV>false</PtxAsOptionV>
+      <AdditionalOptions>-arch=compute_75 -code=sm_75 -t0 --expt-relaxed-constexpr</AdditionalOptions>
+      <MaxRegCount>0</MaxRegCount>
+      <CompileOut>..\bin-obj\cuda\Debug-x86_64\\%(Filename)%(Extension).obj</CompileOut>
+      <CodeGeneration>
+      </CodeGeneration>
     </CudaCompile>
     <CudaLink>
-    	<AdditionalOptions>-g</AdditionalOptions>
+      <AdditionalOptions>-g</AdditionalOptions>
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -108,16 +109,17 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CudaCompile>
-    	<TargetMachinePlatform>64</TargetMachinePlatform>
-    	<Keep>false</Keep>
-    	<GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-    	<FastMath>true</FastMath>
-    	<PtxAsOptionV>false</PtxAsOptionV>
-    	<AdditionalOptions>-arch=compute_75 -code=sm_75 -t0 --expt-relaxed-constexpr</AdditionalOptions>
-    	<MaxRegCount>0</MaxRegCount>
-    	<GenerateLineInfo>true</GenerateLineInfo>
-    	<CompileOut>..\bin-obj\cuda\Release-x86_64\\%(Filename)%(Extension).obj</CompileOut>
-      <CodeGeneration></CodeGeneration>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Keep>false</Keep>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <FastMath>true</FastMath>
+      <PtxAsOptionV>false</PtxAsOptionV>
+      <AdditionalOptions>-arch=compute_75 -code=sm_75 -t0 --expt-relaxed-constexpr</AdditionalOptions>
+      <MaxRegCount>0</MaxRegCount>
+      <GenerateLineInfo>true</GenerateLineInfo>
+      <CompileOut>..\bin-obj\cuda\Release-x86_64\\%(Filename)%(Extension).obj</CompileOut>
+      <CodeGeneration>
+      </CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -135,16 +137,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp" />
+    <ClCompile Include="src\core\Common\Timer.cpp" />
     <ClCompile Include="src\core\Main\main.cpp" />
     <ClCompile Include="thirdparty\stb_image\stb_image.cpp" />
     <ClCompile Include="thirdparty\stb_image\stb_image_write.cpp" />
   </ItemGroup>
   <ItemGroup>
-  	<CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu"/>
-  	<CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Renderer.cu"/>
-  	<CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu"/>
-  	<CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu"/>
-  	<CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu"/>
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Renderer.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="thirdparty\glfw\GLFW.vcxproj">

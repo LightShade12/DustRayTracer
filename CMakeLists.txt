@@ -35,6 +35,7 @@ endif ()
 set(SOURCE_FILES 
 ./DustRayTracer/src/core/Application/private/Application.cpp
 ./DustRayTracer/src/core/Main/main.cpp
+./DustRayTracer/src/core/Common/Timer.cpp
 ./DustRayTracer/thirdparty/stb_image/stb_image_write.cpp
 ./DustRayTracer/src/core/Editor/EditorLayer.cu
 ./DustRayTracer/src/core/Renderer/private/Renderer.cu
@@ -44,6 +45,8 @@ set(SOURCE_FILES
 
 # Define the executable
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_x64")
 
 add_dependencies(${PROJECT_NAME} glfw)
 

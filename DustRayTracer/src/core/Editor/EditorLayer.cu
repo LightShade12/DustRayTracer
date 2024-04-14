@@ -25,6 +25,7 @@ EditorLayer::EditorLayer()
 {
 	m_Scene = new Scene();
 	Sphere s1;
+	//m_Scene->m_Spheres.push_back(s1); //<-Problem line
 
 }
 

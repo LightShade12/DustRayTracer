@@ -92,5 +92,13 @@
     <ClCompile Include="thirdparty\stb_image\stb_image_write.cpp">
       <Filter>thirdparty\stb_image</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\Common\Timer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Renderer.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
+    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
   </ItemGroup>
 </Project>
