@@ -82,6 +82,7 @@
       <CompileOut>..\bin-obj\cuda\Debug-x86_64\\%(Filename)%(Extension).obj</CompileOut>
       <CodeGeneration>
       </CodeGeneration>
+      <GPUDebugInfo>false</GPUDebugInfo>
     </CudaCompile>
     <CudaLink>
       <AdditionalOptions>-g</AdditionalOptions>

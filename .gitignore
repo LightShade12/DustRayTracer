@@ -384,3 +384,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /bin/DustRayTracer-Debug
 /DustRayTracer/thirdparty/glad/bin/Glad-Debug
+/build
