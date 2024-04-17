@@ -99,12 +99,12 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 
 	for (int i = 0; i < sceneVectorSize; i++)
 	{
-		const Sphere sphere = sceneVector[i];
-		float3 origin = rayOrigin - sphere.Position;
+		const Sphere* sphere = &sceneVector[i];
+		float3 origin = rayOrigin - sphere->Position;
 
 		float a = dot(rayDirection, rayDirection);
 		float b = 2.0f * dot(origin, rayDirection);
-		float c = dot(origin, origin) - sphere.Radius * sphere.Radius;
+		float c = dot(origin, origin) - sphere->Radius * sphere->Radius;
 
 		// Quadratic forumula discriminant:
 		// b^2 - 4ac
@@ -121,7 +121,7 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 		if (closestT < hitDistance)
 		{
 			hitDistance = closestT;
-			closestSphere = &sphere;
+			closestSphere = sphere;
 		}
 	}
 
@@ -152,6 +152,8 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 	color.x = 255 * sphereColor.x;
 	color.y = 255 * sphereColor.y;
 	color.z = 255 * sphereColor.z;
+
+	//color = { unsigned char(255 * normal.x),unsigned char(255 * normal.y), unsigned char(255 * normal.z), 255};
 
 	surf2Dwrite(color, _surfobj, i * 4, j);
 };
