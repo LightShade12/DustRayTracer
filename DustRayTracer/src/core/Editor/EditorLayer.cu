@@ -26,10 +26,16 @@ EditorLayer::EditorLayer()
 	m_Scene = new Scene();
 	Sphere s1;
 	s1.Position = {1,0,0};
+	s1.Albedo = {0,1,0};
+	
 	Sphere s2;
 	s2.Position = {0,1,0};
+	s2.Albedo = {1,0,1};
+	
 	Sphere s3;
 	s3.Position = {-1,0,0};
+	s3.Albedo = {0,1,1};
+
 	m_Scene->m_Spheres.push_back(s1); //<-Problem line
 	m_Scene->m_Spheres.push_back(s2); //<-Problem line
 	m_Scene->m_Spheres.push_back(s3); //<-Problem line
