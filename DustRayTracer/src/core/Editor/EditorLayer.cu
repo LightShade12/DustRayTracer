@@ -22,32 +22,29 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return false;
 }
 
-
 __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
-	Sphere s1;
-	s1.Position = { 1.5,0,-2.5 };
-	s1.Albedo = { 0,1,0 };
 
-	Sphere s2;
-	s2.Position = { 0,0,0 };
-	s2.Albedo = { 1,0,1 };
+	Sphere small_sphere;
+	small_sphere.Position = { 0,0,0 };
 
-	Sphere s3;
-	s3.Position = { -1.5,0,-2.5 };
-	s3.Albedo = { 0,1,1 };
-	
-	Sphere s4;
-	s4.Albedo = { 0,0,1 };
-	s4.Position = {0,-101,0};
-	s4.Radius=100;
+	Sphere big_sphere;
+	big_sphere.Position = { 0,-101,0 };
+	big_sphere.Radius = 100;
+	big_sphere.MaterialIndex = 1;
 
-	//m_Scene->m_Spheres.push_back(s1); //<-Problem line
-	m_Scene->m_Spheres.push_back(s2); //<-Problem line
-	//m_Scene->m_Spheres.push_back(s3); //<-Problem line
-	m_Scene->m_Spheres.push_back(s4); //<-Problem line
+	Material red;
+	red.Albedo = { 1,0,0 };
+	Material blue;
+	blue.Albedo = { 0,0,1 };
+
+	m_Scene->m_Material.push_back(red);
+	m_Scene->m_Material.push_back(blue);
+
+	m_Scene->m_Spheres.push_back(small_sphere); //<-Problem line
+	m_Scene->m_Spheres.push_back(big_sphere); //<-Problem line
 
 	m_ObjectsCount = m_Scene->m_Spheres.size();
 
@@ -77,8 +74,8 @@ void EditorLayer::OnUIRender()
 
 	ImGui::Begin("Dev Metrics");
 	ImGui::Text("GUI frame time(EditorLayer): %.3fms", m_LastFrameTime);
-	ImGui::Text("Application frame time: %.3fms", Application::Get().GetFrameTime()*1000);
-	ImGui::Text("CPU code execution time: %.3fms", (m_LastFrameTime-m_LastRenderTime));
+	ImGui::Text("Application frame time: %.3fms", Application::Get().GetFrameTime() * 1000);
+	ImGui::Text("CPU code execution time: %.3fms", (m_LastFrameTime - m_LastRenderTime));
 	ImGui::Text("GPU Kernel time: %.3fms", m_LastRenderTime);
 	ImGui::Text("Objects in scene: %d", m_ObjectsCount);
 
@@ -97,7 +94,7 @@ void EditorLayer::OnUIRender()
 	ImGui::End();
 
 	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
-	m_Renderer.Render(m_dcamera,*m_Scene, &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
+	m_Renderer.Render(m_dcamera, *m_Scene, &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
 
 	m_LastFrameTime = timer.ElapsedMillis();
 }
@@ -197,7 +194,7 @@ void processmouse(GLFWwindow* window, Camera* cam, int width, int height)
 		cam->m_Forward_dir = rotated;
 		cam->m_Right_dir = cross(cam->m_Forward_dir, cam->m_Up_dir);
 		rotated = cam->m_Position;
-		
+
 		//printf("x: %.3f, y:%.3f, z:%.3f\n", rotated.x, rotated.y, rotated.z);
 
 		//lookdir = glm::rotate(lookdir, -rotY, cam->m_Up_dir);//yaw

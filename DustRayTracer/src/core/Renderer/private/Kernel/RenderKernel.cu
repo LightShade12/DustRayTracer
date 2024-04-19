@@ -68,7 +68,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const Sphere* scene_vector, size_
 };
 
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* cam, const Sphere* scene_vector, size_t scenevecsize) {
+	const Camera* cam, const Sphere* scene_vector, size_t scenevecsize, const Material* matvector) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
 	//uv.x *= ((float)max_x / (float)max_y);
@@ -86,6 +86,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	for (int i = 0; i < bounces; i++)
 	{
 		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
+
 		//sky
 		if (payload.hit_distance < 0)
 		{
@@ -100,31 +101,32 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		float3 lightDir = normalize(make_float3(-1, -1, -1));
 		float lightIntensity = max(dot(payload.world_normal, -lightDir), 0.0f); // == cos(angle)
-		
 
-		float3 spherecolor = scene_vector[payload.object_idx].Albedo;
+		const Sphere closestsphere = scene_vector[payload.object_idx];
+		float3 spherecolor = matvector[closestsphere.MaterialIndex].Albedo;
 		spherecolor *= lightIntensity;
 		color += spherecolor * multiplier;
-		
+
 		multiplier *= 0.7f;
 
 		ray.origin = payload.world_position + (payload.world_normal * 0.0001f);
 		ray.direction = reflect(ray.direction, payload.world_normal);
-		
+
 		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
-	color = fminf(color, {1,1,1});
+	color = fminf(color, { 1,1,1 });
 	return color;
 };
 //Render Kernel
-__global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam, const Sphere* sceneVector, size_t sceneVectorSize)
+__global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
+	const Sphere* sceneVector, size_t sceneVectorSize, const Material* materialvector)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
 	if ((i >= max_x) || (j >= max_y)) return;
 
-	float3 fcolor = RayGen(i, j, max_x, max_y, cam, sceneVector, sceneVectorSize);
+	float3 fcolor = RayGen(i, j, max_x, max_y, cam, sceneVector, sceneVectorSize, materialvector);
 	uchar4 color = { unsigned char(255 * fcolor.x),unsigned char(255 * fcolor.y),unsigned char(255 * fcolor.z), 255 };
 
 	surf2Dwrite(color, _surfobj, i * 4, j);
@@ -134,6 +136,7 @@ void InvokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
 	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene)
 {
+	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
 	const Sphere* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Spheres.data());
-	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Spheres.size());
+	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Spheres.size(), DeviceMaterialVector);
 }
