@@ -10,4 +10,4 @@ class Camera;
 
 void InvokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
-	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene);
+	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx);

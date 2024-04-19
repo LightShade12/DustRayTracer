@@ -12,6 +12,27 @@
 #define __CUDACC__ // used to get surf2d indirect functions;not how it should be done
 #include <surface_indirect_functions.h>
 
+__device__ uint pcg_hash(uint input)
+{
+	uint state = input * 747796405u + 2891336453u;
+	uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+	return (word >> 22u) ^ word;
+}
+
+__device__ float randomFloat(uint32_t& seed)
+{
+	seed = pcg_hash(seed);
+	return (float)seed / (float)UINT32_MAX;
+}
+
+__device__ float3 randomUnitSphereVec3(uint32_t& seed)
+{
+	return normalize(make_float3(
+		randomFloat(seed) * 2.f - 1.f,
+		randomFloat(seed) * 2.f - 1.f,
+		randomFloat(seed) * 2.f - 1.f));
+}
+
 __device__ HitPayload ClosestHit(const Ray& ray, uint32_t obj_idx, float hit_distance, const Sphere* scene_vec) {
 	const Sphere* sphere = &(scene_vec[obj_idx]);
 
@@ -68,7 +89,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const Sphere* scene_vector, size_
 };
 
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* cam, const Sphere* scene_vector, size_t scenevecsize, const Material* matvector) {
+	const Camera* cam, const Sphere* scene_vector, size_t scenevecsize, const Material* matvector, uint32_t frameidx) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
 	//uv.x *= ((float)max_x / (float)max_y);
@@ -81,12 +102,15 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	ray.direction = cam->GetRayDir(uv, 30, max_x, max_y);
 	float3 color = { 0,0,0 };
 
+	uint32_t seed = x + y * max_x;
+	seed *= frameidx;
+
 	float multiplier = 1.f;
 	int bounces = 2;
 	for (int i = 0; i < bounces; i++)
 	{
 		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
-
+		seed += i;
 		//sky
 		if (payload.hit_distance < 0)
 		{
@@ -94,7 +118,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float3 col1 = { 0.5,0.7,1.0 };
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
-			fcol = { 0,0,0 };
+			//fcol = { 0,0,0 };
 			color += fcol * multiplier;
 			break;
 		}
@@ -104,13 +128,13 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		const Sphere closestsphere = scene_vector[payload.object_idx];
 		float3 spherecolor = matvector[closestsphere.MaterialIndex].Albedo;
-		spherecolor *= lightIntensity;
-		color += spherecolor * multiplier;
+		//spherecolor *= lightIntensity;
+		//color += spherecolor * multiplier;
 
-		multiplier *= 0.7f;
+		multiplier *= 0.5f;
 
 		ray.origin = payload.world_position + (payload.world_normal * 0.0001f);
-		ray.direction = reflect(ray.direction, payload.world_normal);
+		ray.direction = reflect(ray.direction, payload.world_normal+randomUnitSphereVec3(seed));
 
 		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
@@ -120,13 +144,14 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 };
 //Render Kernel
 __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
-	const Sphere* sceneVector, size_t sceneVectorSize, const Material* materialvector)
+	const Sphere* sceneVector, size_t sceneVectorSize, const Material* materialvector, uint32_t frameidx)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
 	if ((i >= max_x) || (j >= max_y)) return;
 
-	float3 fcolor = RayGen(i, j, max_x, max_y, cam, sceneVector, sceneVectorSize, materialvector);
+	float3 fcolor = RayGen(i, j, max_x, max_y, cam, sceneVector,
+		sceneVectorSize, materialvector, frameidx);
 	uchar4 color = { unsigned char(255 * fcolor.x),unsigned char(255 * fcolor.y),unsigned char(255 * fcolor.z), 255 };
 
 	surf2Dwrite(color, _surfobj, i * 4, j);
@@ -134,9 +159,9 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 
 void InvokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
-	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene)
+	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx)
 {
 	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
 	const Sphere* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Spheres.data());
-	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Spheres.size(), DeviceMaterialVector);
+	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Spheres.size(), DeviceMaterialVector, frameidx);
 }

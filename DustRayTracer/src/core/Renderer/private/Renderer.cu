@@ -90,7 +90,7 @@ void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 	//----
 	cudaEventRecord(start);
 
-	InvokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight, blocks, threads,cam,scene);
+	InvokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight, blocks, threads,cam,scene,m_FrameIndex);
 	checkCudaErrors(cudaGetLastError());
 	
 	cudaEventRecord(stop);
@@ -104,6 +104,7 @@ void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 	cudaDestroySurfaceObject(viewCudaSurfaceObject);
 	cudaGraphicsUnmapResources(1, &m_viewCudaResource);
 	cudaStreamSynchronize(0);
+	m_FrameIndex++;
 }
 
 GLuint& Renderer::GetRenderTargetImage_name()
