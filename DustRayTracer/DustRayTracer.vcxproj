@@ -59,7 +59,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>src;thirdparty\stb_image;thirdparty\glfw\include;thirdparty\glad\include;thirdparty\glm;thirdparty\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
@@ -83,6 +83,9 @@
       <CodeGeneration>
       </CodeGeneration>
       <GPUDebugInfo>false</GPUDebugInfo>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
+      <Defines>__CUDACC__;</Defines>
     </CudaCompile>
     <CudaLink>
       <AdditionalOptions>-g</AdditionalOptions>
@@ -121,18 +124,26 @@
       <CompileOut>..\bin-obj\cuda\Release-x86_64\\%(Filename)%(Extension).obj</CompileOut>
       <CodeGeneration>
       </CodeGeneration>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
+      <Defines>__CUDACC__;</Defines>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\core\Application\Application.hpp" />
     <ClInclude Include="src\core\Application\private\Layer.hpp" />
-    <ClInclude Include="src\core\Common\Managed.hpp" />
+    <ClInclude Include="src\core\Common\Managed.cuh" />
     <ClInclude Include="src\core\Common\Timer.hpp" />
     <ClInclude Include="src\core\Editor\EditorLayer.hpp" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\RayTriangleIntersector.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Triangle.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Shapes\Scene.cuh" />
     <ClInclude Include="src\core\Renderer\Renderer.hpp" />
-    <ClInclude Include="src\core\Renderer\private\Camera\Camera.hpp" />
-    <ClInclude Include="src\core\Renderer\private\CudaMath\helper_math.hpp" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\RenderKernel.hpp" />
+    <ClInclude Include="src\core\Renderer\private\Camera\Camera.cuh" />
+    <ClInclude Include="src\core\Renderer\private\CudaMath\helper_math.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\RenderKernel.cuh" />
     <ClInclude Include="thirdparty\stb_image\stb_image.h" />
     <ClInclude Include="thirdparty\stb_image\stb_image_write.h" />
   </ItemGroup>

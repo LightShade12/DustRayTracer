@@ -9,7 +9,6 @@ struct Scene;
 class EditorLayer :	public Layer
 {
 public:
-	EditorLayer();
 	__host__ virtual void OnAttach() override;
 	__host__ virtual void OnUIRender() override;
 	__host__ virtual void OnUpdate(float ts) override;

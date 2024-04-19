@@ -1,18 +1,10 @@
-#include "Camera.hpp"
-
-__device__ void Camera::Translate(float3 movedir)
-{
-	m_Position += movedir.z * m_Forward_dir;
-	m_Position += movedir.y * m_Up_dir;
-	m_Position += movedir.x * m_Right_dir;
-}
+#include "Camera.cuh"
 
 __device__ float deg2rad(float degree)
 {
 	float const PI = 3.14159265359;
 	return (degree * (PI / 180));
 }
-
 
 /*
 camera(float vfov, glm::vec3 lookfrom, glm::vec3 lookdir, glm::vec3 vup, float aperture, float focus_dist) {
@@ -52,7 +44,7 @@ public:
 */
 
 
-__device__ float3 Camera::GetRayDir(float2 _uv, float vfovdeg, float width, float height)
+__device__ float3 Camera::GetRayDir(float2 _uv, float vfovdeg, float width, float height) const
 {
 	float theta = deg2rad(vfovdeg);
 	auto h = tan(theta / 2);

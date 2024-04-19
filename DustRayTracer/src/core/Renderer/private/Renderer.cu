@@ -1,6 +1,7 @@
 #include "core/Renderer/Renderer.hpp"
+#include "core/Renderer/private/Camera/Camera.cuh"
 
-#include "Kernel/RenderKernel.hpp"
+#include "Kernel/RenderKernel.cuh"
 
 #include <iostream>
 

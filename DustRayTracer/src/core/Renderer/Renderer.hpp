@@ -1,5 +1,5 @@
 #pragma once
-#include "private/Camera/Camera.hpp"
+//#include "private/Camera/Camera.cuh"
 
 #include <glad/glad.h>
 #include <cuda_gl_interop.h>//for member cuda objects
@@ -7,6 +7,7 @@
 #include <cstdint>
 
 struct Scene;
+class Camera;
 
 class Renderer
 {

@@ -2,9 +2,10 @@
 
 #include "core/Application/Application.hpp"
 #include "core/Common/Timer.hpp"
-#include "core/Renderer/private/Shapes/Scene.cuh"
+#include "core/Renderer/private/Shapes/Scene.cuh"//has thrust so editor needs to be compiled by nvcc
+#include "core/Renderer/private/Camera/Camera.cuh"
 
-#include <glad/glad.h>//for GLFW defines
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
@@ -21,33 +22,26 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return false;
 }
 
-EditorLayer::EditorLayer() 
-{
-	m_Scene = new Scene();
-	Sphere s1;
-	s1.Position = {1,0,0};
-	s1.Albedo = {0,1,0};
-	
-	Sphere s2;
-	s2.Position = {0,1,0};
-	s2.Albedo = {1,0,1};
-	
-	Sphere s3;
-	s3.Position = {-1,0,0};
-	s3.Albedo = {0,1,1};
-
-	m_Scene->m_Spheres.push_back(s1); //<-Problem line
-	m_Scene->m_Spheres.push_back(s2); //<-Problem line
-	m_Scene->m_Spheres.push_back(s3); //<-Problem line
-
-}
 
 __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
-	/*
-	* thrust push back code
-	*/
+	m_Scene = new Scene();
+	Sphere s1;
+	s1.Position = { 1,0,0 };
+	s1.Albedo = { 0,1,0 };
+
+	Sphere s2;
+	s2.Position = { 0,1,0 };
+	s2.Albedo = { 1,0,1 };
+
+	Sphere s3;
+	s3.Position = { -1,0,0 };
+	s3.Albedo = { 0,1,1 };
+
+	m_Scene->m_Spheres.push_back(s1); //<-Problem line
+	m_Scene->m_Spheres.push_back(s2); //<-Problem line
+	m_Scene->m_Spheres.push_back(s3); //<-Problem line
 	stbi_flip_vertically_on_write(true);
 }
 
