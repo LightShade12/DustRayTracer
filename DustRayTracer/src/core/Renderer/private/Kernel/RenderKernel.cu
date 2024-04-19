@@ -67,7 +67,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const Sphere* scene_vector, size_
 	return ClosestHit(ray, closestObjectIdx, hitDistance, scene_vector);
 };
 
-__device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y, 
+__device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, const Sphere* scene_vector, size_t scenevecsize) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
@@ -79,28 +79,42 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	Ray ray;
 	ray.origin = cam->m_Position;
 	ray.direction = cam->GetRayDir(uv, 30, max_x, max_y);
-	HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
-	float3 color = {};
+	float3 color = { 0,0,0 };
 
-	if (payload.hit_distance < 0)
+	float multiplier = 1.f;
+	int bounces = 2;
+	for (int i = 0; i < bounces; i++)
 	{
-		float a = 0.5 * (1 + (normalize(ray.direction)).y);
-		float3 col1 = { 0.5,0.7,1.0 };
-		float3 col2 = { 1,1,1 };
-		float3 fcol = (float(1 - a) * col2) + (a * col1);
-		color.x = fcol.x;
-		color.y = fcol.y;
-		color.z = fcol.z;
-	}
-	else
-	{
+		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
+		//sky
+		if (payload.hit_distance < 0)
+		{
+			float a = 0.5 * (1 + (normalize(ray.direction)).y);
+			float3 col1 = { 0.5,0.7,1.0 };
+			float3 col2 = { 1,1,1 };
+			float3 fcol = (float(1 - a) * col2) + (a * col1);
+			fcol = { 0,0,0 };
+			color += fcol * multiplier;
+			break;
+		}
+
 		float3 lightDir = normalize(make_float3(-1, -1, -1));
 		float lightIntensity = max(dot(payload.world_normal, -lightDir), 0.0f); // == cos(angle)
-		color = scene_vector[payload.object_idx].Albedo;
-		color *= lightIntensity;
+		
+
+		float3 spherecolor = scene_vector[payload.object_idx].Albedo;
+		spherecolor *= lightIntensity;
+		color += spherecolor * multiplier;
+		
+		multiplier *= 0.7f;
+
+		ray.origin = payload.world_position + (payload.world_normal * 0.0001f);
+		ray.direction = reflect(ray.direction, payload.world_normal);
+		
 		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
+	color = fminf(color, {1,1,1});
 	return color;
 };
 //Render Kernel

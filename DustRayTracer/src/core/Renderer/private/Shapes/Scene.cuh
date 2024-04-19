@@ -9,7 +9,7 @@ struct Sphere
 	Sphere()=default;
 	float3 Position = { 0,0,0 };
 	float3 Albedo = { 1,1,1 };
-	float Radius = 0.5f;
+	float Radius = 1.f;
 };
 
 struct Scene

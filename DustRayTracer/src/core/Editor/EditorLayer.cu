@@ -28,20 +28,26 @@ __host__ void EditorLayer::OnAttach()
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
 	Sphere s1;
-	s1.Position = { 1,0,0 };
+	s1.Position = { 1.5,0,-2.5 };
 	s1.Albedo = { 0,1,0 };
 
 	Sphere s2;
-	s2.Position = { 0,1,0 };
+	s2.Position = { 0,0,0 };
 	s2.Albedo = { 1,0,1 };
 
 	Sphere s3;
-	s3.Position = { -1,0,0 };
+	s3.Position = { -1.5,0,-2.5 };
 	s3.Albedo = { 0,1,1 };
+	
+	Sphere s4;
+	s4.Albedo = { 0,0,1 };
+	s4.Position = {0,-101,0};
+	s4.Radius=100;
 
-	m_Scene->m_Spheres.push_back(s1); //<-Problem line
+	//m_Scene->m_Spheres.push_back(s1); //<-Problem line
 	m_Scene->m_Spheres.push_back(s2); //<-Problem line
-	m_Scene->m_Spheres.push_back(s3); //<-Problem line
+	//m_Scene->m_Spheres.push_back(s3); //<-Problem line
+	m_Scene->m_Spheres.push_back(s4); //<-Problem line
 
 	m_ObjectsCount = m_Scene->m_Spheres.size();
 
