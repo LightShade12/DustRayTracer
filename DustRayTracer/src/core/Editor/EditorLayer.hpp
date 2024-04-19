@@ -14,6 +14,7 @@ public:
 	__host__ virtual void OnUpdate(float ts) override;
 	__host__ virtual void OnDetach() override;
 private:
+	uint32_t m_ObjectsCount = 0;
 	float m_LastFrameTime= 0;
 	float m_LastApplicationFrameTime = 0;
 	float m_LastRenderTime = 0;

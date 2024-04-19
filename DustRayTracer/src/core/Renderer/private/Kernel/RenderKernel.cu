@@ -91,7 +91,6 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		color.x = fcol.x;
 		color.y = fcol.y;
 		color.z = fcol.z;
-		//color = { 1,0,0 };
 	}
 	else
 	{
@@ -99,7 +98,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float lightIntensity = max(dot(payload.world_normal, -lightDir), 0.0f); // == cos(angle)
 		color = scene_vector[payload.object_idx].Albedo;
 		color *= lightIntensity;
-		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };
+		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
 	return color;

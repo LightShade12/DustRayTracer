@@ -42,6 +42,9 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Spheres.push_back(s1); //<-Problem line
 	m_Scene->m_Spheres.push_back(s2); //<-Problem line
 	m_Scene->m_Spheres.push_back(s3); //<-Problem line
+
+	m_ObjectsCount = m_Scene->m_Spheres.size();
+
 	stbi_flip_vertically_on_write(true);
 }
 
@@ -71,6 +74,7 @@ void EditorLayer::OnUIRender()
 	ImGui::Text("Application frame time: %.3fms", Application::Get().GetFrameTime()*1000);
 	ImGui::Text("CPU code execution time: %.3fms", (m_LastFrameTime-m_LastRenderTime));
 	ImGui::Text("GPU Kernel time: %.3fms", m_LastRenderTime);
+	ImGui::Text("Objects in scene: %d", m_ObjectsCount);
 
 	ImGui::End();
 
@@ -78,7 +82,7 @@ void EditorLayer::OnUIRender()
 	ImGui::Begin("Viewport");
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
 	if (m_Renderer.GetRenderTargetImage_name() != NULL)
-		ImGui::Image((void*)m_Renderer.GetRenderTargetImage_name(),
+		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
 			ImVec2(m_Renderer.m_BufferWidth, m_Renderer.m_BufferHeight), { 0,1 }, { 1,0 });
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -86,7 +90,7 @@ void EditorLayer::OnUIRender()
 	ImGui::Begin("Padding window");
 	ImGui::End();
 
-	m_Renderer.ResizeBuffer(vpdims.x, vpdims.y);
+	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
 	m_Renderer.Render(m_dcamera,*m_Scene, &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
 
 	m_LastFrameTime = timer.ElapsedMillis();
