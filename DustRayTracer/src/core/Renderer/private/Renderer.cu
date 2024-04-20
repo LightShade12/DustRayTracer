@@ -2,8 +2,13 @@
 #include "core/Renderer/private/Camera/Camera.cuh"
 
 #include "Kernel/RenderKernel.cuh"
-
+#include <thrust/device_vector.h>
 #include <iostream>
+
+struct FrameBufferWrapper
+{
+	thrust::device_vector<float3>ColorDataBuffer;
+};
 
 //prints error code
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
@@ -20,6 +25,8 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
 
 Renderer::Renderer()
 {
+	m_AccumulationBuffer = new FrameBufferWrapper();
+
 	blocks = dim3(m_BufferWidth / tx + 1, m_BufferHeight / ty + 1);
 	threads = dim3(tx, ty);
 	cudaEventCreate(&start);
@@ -27,15 +34,18 @@ Renderer::Renderer()
 }
 
 void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
-
 	if (width == m_BufferWidth && height == m_BufferHeight)return;
 	m_BufferWidth = width;
 	m_BufferHeight = height;
+
+	//m_AccumulationBuffer->ColorDataBuffer.clear();
 
 	if (m_RenderTarget_name)
 	{
 		blocks = dim3(m_BufferWidth / tx + 1, m_BufferHeight / ty + 1);
 		threads = dim3(tx, ty);
+
+		m_AccumulationBuffer->ColorDataBuffer.resize(m_BufferHeight * m_BufferWidth);
 
 		// unregister
 		cudaGraphicsUnregisterResource(m_viewCudaResource);
@@ -54,6 +64,7 @@ void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
 	{
 		blocks = dim3(m_BufferWidth / tx + 1, m_BufferHeight / ty + 1);
 		threads = dim3(tx, ty);
+		m_AccumulationBuffer->ColorDataBuffer.resize(m_BufferHeight * m_BufferWidth);
 		//GL texture configure
 		glGenTextures(1, &m_RenderTarget_name);
 		glBindTexture(GL_TEXTURE_2D, m_RenderTarget_name);
@@ -68,13 +79,13 @@ void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		cudaGraphicsGLRegisterImage(&m_viewCudaResource, m_RenderTarget_name, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
-
 	}
+
+	resetAccumulationBuffer();
 }
 
 void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 {
-
 	cudaGraphicsMapResources(1, &m_viewCudaResource);
 
 	cudaArray_t viewCudaArray;
@@ -86,16 +97,19 @@ void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 	}
 	cudaSurfaceObject_t viewCudaSurfaceObject;
 	cudaCreateSurfaceObject(&viewCudaSurfaceObject, &viewCudaArrayResourceDesc);
-	
+
 	//----
 	cudaEventRecord(start);
 
-	InvokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight, blocks, threads,cam,scene,m_FrameIndex);
+	//printf("acc buffer size: %d", m_AccumulationBuffer->ColorDataBuffer.size());
+	InvokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight,
+		blocks, threads, cam, scene, m_FrameIndex,
+		thrust::raw_pointer_cast(m_AccumulationBuffer->ColorDataBuffer.data()));
 	checkCudaErrors(cudaGetLastError());
-	
+
 	cudaEventRecord(stop);
 	checkCudaErrors(cudaEventSynchronize(stop));
-	
+
 	cudaEventElapsedTime(delta, start, stop);
 	//checkCudaErrors(cudaDeviceSynchronize());
 	//----
@@ -114,7 +128,14 @@ GLuint& Renderer::GetRenderTargetImage_name()
 
 Renderer::~Renderer()
 {
+	delete m_AccumulationBuffer;
 	cudaEventDestroy(start);
 	cudaEventDestroy(stop);
 	glDeleteTextures(1, &m_RenderTarget_name);
+}
+
+void Renderer::resetAccumulationBuffer()
+{
+	thrust::fill(m_AccumulationBuffer->ColorDataBuffer.begin(), m_AccumulationBuffer->ColorDataBuffer.end(), float3());
+	m_FrameIndex = 1;
 }

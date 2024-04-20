@@ -202,7 +202,7 @@ void processmouse(GLFWwindow* window, Camera* cam, int width, int height)
 
 		// Sets mouse cursor to the middle of the screen so that it doesn't end up roaming around
 		glfwSetCursorPos(window, (width / 2), (height / 2));
-		moving = true;
+		if (rotX != 0 || rotY != 0)moving = true;
 	}
 
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE)
@@ -219,8 +219,10 @@ void EditorLayer::OnUpdate(float ts)
 	int width = 0, height = 0;
 	m_LastApplicationFrameTime = ts;
 	glfwGetWindowSize(Application::Get().GetWindowHandle(), &width, &height);
+
+	processInput(Application::Get().GetWindowHandle(), (m_dcamera), ts);//resets bool moving so comes first
 	processmouse(Application::Get().GetWindowHandle(), (m_dcamera), width, height);
-	processInput(Application::Get().GetWindowHandle(), (m_dcamera), ts);
+	if (moving) m_Renderer.resetAccumulationBuffer();
 }
 
 void EditorLayer::OnDetach()

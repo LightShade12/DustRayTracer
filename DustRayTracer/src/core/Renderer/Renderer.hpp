@@ -8,6 +8,7 @@
 
 struct Scene;
 class Camera;
+struct FrameBufferWrapper;
 
 class Renderer
 {
@@ -19,11 +20,15 @@ public:
 	~Renderer();
 
 	uint32_t m_BufferWidth = 0, m_BufferHeight = 0;
+	void resetAccumulationBuffer();
+
 private:
 	GLuint m_RenderTarget_name = NULL;//null init val important for triggering init
 
 	cudaGraphicsResource_t m_viewCudaResource;
 	cudaEvent_t start, stop;
+
+	FrameBufferWrapper* m_AccumulationBuffer;
 
 	uint32_t m_FrameIndex = 1;
 

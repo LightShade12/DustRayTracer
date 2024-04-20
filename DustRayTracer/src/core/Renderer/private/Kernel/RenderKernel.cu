@@ -19,18 +19,29 @@ __device__ uint pcg_hash(uint input)
 	return (word >> 22u) ^ word;
 }
 
+//0 to 1
 __device__ float randomFloat(uint32_t& seed)
 {
 	seed = pcg_hash(seed);
 	return (float)seed / (float)UINT32_MAX;
 }
 
-__device__ float3 randomUnitSphereVec3(uint32_t& seed)
+//-1 to 1
+__device__ float3 randomUnitVec3(uint32_t& seed)
 {
 	return normalize(make_float3(
 		randomFloat(seed) * 2.f - 1.f,
 		randomFloat(seed) * 2.f - 1.f,
 		randomFloat(seed) * 2.f - 1.f));
+}
+
+__device__ float3 randomUnitSphereVec3(uint32_t& seed) {
+	while (true) {
+		float3 p = randomUnitVec3(seed);
+		float len = length(p);
+		if ((len * len) < 1)
+			return p;
+	}
 }
 
 __device__ HitPayload ClosestHit(const Ray& ray, uint32_t obj_idx, float hit_distance, const Sphere* scene_vec) {
@@ -106,7 +117,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float multiplier = 1.f;
-	int bounces = 2;
+	int bounces = 10;
 	for (int i = 0; i < bounces; i++)
 	{
 		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
@@ -118,7 +129,6 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float3 col1 = { 0.5,0.7,1.0 };
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
-			//fcol = { 0,0,0 };
 			color += fcol * multiplier;
 			break;
 		}
@@ -134,34 +144,43 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		multiplier *= 0.5f;
 
 		ray.origin = payload.world_position + (payload.world_normal * 0.0001f);
-		ray.direction = reflect(ray.direction, payload.world_normal+randomUnitSphereVec3(seed));
+		//ray.direction = reflect(ray.direction, payload.world_normal + (normalize(randomUnitSphereVec3(seed)) * 1.00));
+		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)) * 1.00);
 
 		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
-	color = fminf(color, { 1,1,1 });
+	color = { sqrtf(color.x),sqrtf(color.y) ,sqrtf(color.z) };//uses 1/gamma=2 not 2.2
+	//color = fminf(color, { 1,1,1 });
 	return color;
 };
 //Render Kernel
 __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
-	const Sphere* sceneVector, size_t sceneVectorSize, const Material* materialvector, uint32_t frameidx)
+	const Sphere* sceneVector, size_t sceneVectorSize,
+	const Material* materialvector, uint32_t frameidx, float3* accumulation_buffer)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
+
 	if ((i >= max_x) || (j >= max_y)) return;
 
 	float3 fcolor = RayGen(i, j, max_x, max_y, cam, sceneVector,
 		sceneVectorSize, materialvector, frameidx);
-	uchar4 color = { unsigned char(255 * fcolor.x),unsigned char(255 * fcolor.y),unsigned char(255 * fcolor.z), 255 };
+
+	accumulation_buffer[i + j * max_x] += fcolor;
+	float3 accol = accumulation_buffer[i + j * max_x] / frameidx;
+	uchar4 color = { unsigned char(255 * accol.x),unsigned char(255 * accol.y),unsigned char(255 * accol.z), 255 };
+	//uchar4 color = { unsigned char(255 * fcolor.x),unsigned char(255 * fcolor.y),unsigned char(255 * fcolor.z), 255 };
 
 	surf2Dwrite(color, _surfobj, i * 4, j);
 };
 
 void InvokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
-	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx)
+	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx, float3* accumulation_buffer)
 {
 	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
 	const Sphere* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Spheres.data());
-	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Spheres.size(), DeviceMaterialVector, frameidx);
+	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector,
+		scene.m_Spheres.size(), DeviceMaterialVector, frameidx, accumulation_buffer);
 }
