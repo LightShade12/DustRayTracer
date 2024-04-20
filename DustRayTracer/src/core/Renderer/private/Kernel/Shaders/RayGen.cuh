@@ -11,6 +11,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, const Triangle* scene_vector, size_t scenevecsize, const Material* matvector, uint32_t frameidx) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
+	float3 sunpos = { 100,100,100 };
+	float3 suncol = { 1.0, 1.0, 0.584 };
 	//uv.x *= ((float)max_x / (float)max_y);
 	//uv.x = uv.x * 2.f - ((float)max_x / (float)max_y);
 	//uv.y = uv.y * 2.f - 1.f;
@@ -25,7 +27,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 5;
+	int bounces = 10;
 
 	for (int i = 0; i < bounces; i++)
 	{
@@ -35,28 +37,34 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		if (payload.hit_distance < 0)
 		{
 			float a = 0.5 * (1 + (normalize(ray.direction)).y);
-			float3 col1 = { 0.5,0.7,1.0 };
+			float3 col1 = { 0.2,0.5,1.0 };
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
 			light += fcol * contribution;
 			break;
 		}
 
-		float3 lightDir = normalize(make_float3(-1, -1, -1));
-		float lightIntensity = max(dot(payload.world_normal, -lightDir), 0.0f); // == cos(angle)
+		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
 		const Triangle closestTriangle = scene_vector[payload.object_idx];
 		const Material material = matvector[closestTriangle.MaterialIdx];
 		//light = material.Albedo;
 		contribution *= material.Albedo;
 
-		ray.origin = payload.world_position + (payload.world_normal * 0.0001f);
+		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
+		HitPayload shadowpayload = TraceRay(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2), scene_vector, scenevecsize);
+		if (shadowpayload.hit_distance < 0)
+		{
+			light += (material.Albedo * suncol) * 0.5;
+		}
+
+		ray.origin = newRayOrigin;
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
 		//light = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
-	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
-	//color = fminf(color, { 1,1,1 });
+	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	light = fminf(light, { 1,1,1 });
 	return light;
 };

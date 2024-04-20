@@ -119,12 +119,12 @@ __host__ void EditorLayer::OnAttach()
 	tri11.vertex2 = vertices[7];
 
 	Material red;
-	red.Albedo = { 1,0,0 };
+	red.Albedo = { .7,0,0 };
 	Material blue;
-	blue.Albedo = make_float3(.9, .9, .9);
+	blue.Albedo = make_float3(.7, .7, .7);
 
-	m_Scene->m_Material.push_back(blue);
 	m_Scene->m_Material.push_back(red);
+	m_Scene->m_Material.push_back(blue);
 
 	m_Scene->m_Triangles.push_back(tri1x); //<-Problem line
 	m_Scene->m_Triangles.push_back(tri2x); //<-Problem line
