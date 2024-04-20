@@ -135,9 +135,14 @@
     <ClInclude Include="src\core\Common\Managed.cuh" />
     <ClInclude Include="src\core\Common\Timer.hpp" />
     <ClInclude Include="src\core\Editor\EditorLayer.hpp" />
+    <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\RayTriangleIntersector.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\ClosestHit.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Miss.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\RayGen.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Triangle.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Scene.cuh" />
     <ClInclude Include="src\core\Renderer\Renderer.hpp" />

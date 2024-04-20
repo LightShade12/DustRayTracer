@@ -1,3 +1,4 @@
+#pragma once
 #include <vector_types.h>
 
 struct Triangle {
