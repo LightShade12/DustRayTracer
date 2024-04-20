@@ -15,7 +15,7 @@
 bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 {
 	if (
-		stbi_write_png((std::string(std::string(filename) + ".png")).c_str(), _width, _height, 3, data, 3 * sizeof(GLubyte) * _width)
+		stbi_write_png((std::string(std::string(filename) + ".png")).c_str(), _width, _height, 4, data, 4 * sizeof(GLubyte) * _width)
 		)
 		return true;
 	else
@@ -36,9 +36,9 @@ __host__ void EditorLayer::OnAttach()
 	big_sphere.MaterialIndex = 1;
 
 	Material red;
-	red.Albedo = { 1,0,0 };
+	red.Albedo = { .5,.5,.5 };
 	Material blue;
-	blue.Albedo = { 0,0,1 };
+	blue.Albedo = make_float3(.5);
 
 	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
@@ -73,8 +73,8 @@ void EditorLayer::OnUIRender()
 	ImGui::End();
 
 	ImGui::Begin("Dev Metrics");
-	ImGui::Text("GUI frame time(EditorLayer): %.3fms", m_LastFrameTime);
 	ImGui::Text("Application frame time: %.3fms", Application::Get().GetFrameTime() * 1000);
+	ImGui::Text("GUI frame time(EditorLayer): %.3fms", m_LastFrameTime);
 	ImGui::Text("CPU code execution time: %.3fms", (m_LastFrameTime - m_LastRenderTime));
 	ImGui::Text("GPU Kernel time: %.3fms", m_LastRenderTime);
 	ImGui::Text("Objects in scene: %d", m_ObjectsCount);

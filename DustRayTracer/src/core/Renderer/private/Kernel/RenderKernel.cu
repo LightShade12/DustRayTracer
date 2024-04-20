@@ -111,13 +111,14 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	Ray ray;
 	ray.origin = cam->m_Position;
 	ray.direction = cam->GetRayDir(uv, 30, max_x, max_y);
-	float3 color = { 0,0,0 };
+	float3 light = { 0,0,0 };
 
 	uint32_t seed = x + y * max_x;
 	seed *= frameidx;
 
-	float multiplier = 1.f;
+	float3 contribution = { 1,1,1 };
 	int bounces = 10;
+
 	for (int i = 0; i < bounces; i++)
 	{
 		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
@@ -129,7 +130,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float3 col1 = { 0.5,0.7,1.0 };
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
-			color += fcol * multiplier;
+			light += fcol * contribution;
 			break;
 		}
 
@@ -137,22 +138,19 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float lightIntensity = max(dot(payload.world_normal, -lightDir), 0.0f); // == cos(angle)
 
 		const Sphere closestsphere = scene_vector[payload.object_idx];
-		float3 spherecolor = matvector[closestsphere.MaterialIndex].Albedo;
-		//spherecolor *= lightIntensity;
-		//color += spherecolor * multiplier;
+		const Material material = matvector[closestsphere.MaterialIndex];
 
-		multiplier *= 0.5f;
+		contribution *= material.Albedo;
 
 		ray.origin = payload.world_position + (payload.world_normal * 0.0001f);
-		//ray.direction = reflect(ray.direction, payload.world_normal + (normalize(randomUnitSphereVec3(seed)) * 1.00));
-		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)) * 1.00);
+		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
 		//color = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
-	color = { sqrtf(color.x),sqrtf(color.y) ,sqrtf(color.z) };//uses 1/gamma=2 not 2.2
+	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	//color = fminf(color, { 1,1,1 });
-	return color;
+	return light;
 };
 //Render Kernel
 __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
