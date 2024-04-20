@@ -19,15 +19,15 @@
 #include <surface_indirect_functions.h>
 
 //traverse accel struct
-__device__ HitPayload TraceRay(const Ray& ray, const Sphere* scene_vector, size_t scene_vector_size) {
+__device__ HitPayload TraceRay(const Ray& ray, const Triangle* scene_vector, size_t scene_vector_size) {
 	int closestObjectIdx = -1;
 	float hitDistance = FLT_MAX;
 	HitPayload workingPayload;
 
 	for (int i = 0; i < scene_vector_size; i++)
 	{
-		const Sphere* sphere = &scene_vector[i];
-		workingPayload = Intersection(ray, sphere);
+		const Triangle* triangle = &scene_vector[i];
+		workingPayload = Intersection(ray, triangle);
 
 		if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
 		{
@@ -46,7 +46,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const Sphere* scene_vector, size_
 
 //Render Kernel
 __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
-	const Sphere* sceneVector, size_t sceneVectorSize,
+	const Triangle* sceneVector, size_t sceneVectorSize,
 	const Material* materialvector, uint32_t frameidx, float3* accumulation_buffer)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -70,7 +70,7 @@ void InvokeRenderKernel(
 	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx, float3* accumulation_buffer)
 {
 	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
-	const Sphere* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Spheres.data());
+	const Triangle* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Triangles.data());
 	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, DeviceSceneVector,
-		scene.m_Spheres.size(), DeviceMaterialVector, frameidx, accumulation_buffer);
+		scene.m_Triangles.size(), DeviceMaterialVector, frameidx, accumulation_buffer);
 }

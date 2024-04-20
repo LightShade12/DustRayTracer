@@ -1,5 +1,6 @@
 #pragma once
 //#include "core/Common/Managed.hpp"
+#include "core/Renderer/private/Kernel/Triangle.cuh"
 
 #include <vector_types.h>
 #include <thrust/device_vector.h>
@@ -20,6 +21,6 @@ struct Material
 
 struct Scene
 {
-	thrust::device_vector<Sphere> m_Spheres;
+	thrust::device_vector<Triangle> m_Triangles;
 	thrust::device_vector<Material> m_Material;
 };

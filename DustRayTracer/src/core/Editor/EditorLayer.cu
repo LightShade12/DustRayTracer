@@ -22,31 +22,126 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return false;
 }
 
+__device__ __host__ float3 custom_cross(float3 x, float3 y)
+{
+	float3 result;
+	result.x = x.y * y.z - x.z * y.y;
+	result.y = x.z * y.x - x.x * y.z;
+	result.z = x.x * y.y - x.y * y.x;
+	return result;
+}
+
 __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
 
-	Sphere small_sphere;
-	small_sphere.Position = { 0,0,0 };
+	float3 vertices[] = {
+	make_float3(-0.5f, 0.f, -0.5f),  // 0
+	make_float3(0.5f, 0.f, -0.5f),   // 1
+	make_float3(0.5f, 1.f, -0.5f),    // 2
+	make_float3(-0.5f, 1.f, -0.5f),   // 3
+	make_float3(-0.5f, 0.f, 0.5f),   // 4
+	make_float3(0.5f, 0.f, 0.5f),    // 5
+	make_float3(0.5f, 1.f, 0.5f),     // 6
+	make_float3(-0.5f, 1.f, 0.5f)     // 7
+	};
 
-	Sphere big_sphere;
-	big_sphere.Position = { 0,-101,0 };
-	big_sphere.Radius = 100;
-	big_sphere.MaterialIndex = 1;
+	Triangle tri1x;
+	tri1x.vertex0 = make_float3(2.5f, -0.2f, -2.5f);
+	tri1x.vertex1 = make_float3(2.5f, -0.2f, 2.5f);
+	tri1x.vertex2 = make_float3(-2.5f, -0.2f, -2.5f);
+	tri1x.MaterialIdx = 1;
+	Triangle tri2x;
+	tri2x.vertex0 = make_float3(-2.5f, -0.2f, -2.5f);
+	tri2x.vertex1 = make_float3(2.5f, -0.2f, 2.5f);
+	tri2x.vertex2 = make_float3(-2.5f, -0.2f, 2.5f);
+	tri2x.MaterialIdx = 1;
+
+	Triangle tri0;
+	tri0.vertex0 = vertices[0];
+	tri0.vertex1 = vertices[1];
+	tri0.vertex2 = vertices[2];
+
+	Triangle tri1;
+	tri1.vertex0 = vertices[0];
+	tri1.vertex1 = vertices[2];
+	tri1.vertex2 = vertices[3];
+
+	Triangle tri2;
+	tri2.vertex0 = vertices[1];
+	tri2.vertex1 = vertices[5];
+	tri2.vertex2 = vertices[6];
+
+	Triangle tri3;
+	tri3.vertex0 = vertices[1];
+	tri3.vertex1 = vertices[6];
+	tri3.vertex2 = vertices[2];
+
+	Triangle tri4;
+	tri4.vertex0 = vertices[5];
+	tri4.vertex1 = vertices[4];
+	tri4.vertex2 = vertices[7];
+
+	Triangle tri5;
+	tri5.vertex0 = vertices[5];
+	tri5.vertex1 = vertices[7];
+	tri5.vertex2 = vertices[6];
+
+	Triangle tri6;
+	tri6.vertex0 = vertices[4];
+	tri6.vertex1 = vertices[0];
+	tri6.vertex2 = vertices[3];
+
+	Triangle tri7;
+	tri7.vertex0 = vertices[4];
+	tri7.vertex1 = vertices[3];
+	tri7.vertex2 = vertices[7];
+
+	Triangle tri8;
+	tri8.vertex0 = vertices[4];
+	tri8.vertex1 = vertices[5];
+	tri8.vertex2 = vertices[1];
+
+	Triangle tri9;
+	tri9.vertex0 = vertices[4];
+	tri9.vertex1 = vertices[1];
+	tri9.vertex2 = vertices[0];
+
+	Triangle tri10;
+	tri10.vertex0 = vertices[3];
+	tri10.vertex1 = vertices[2];
+	tri10.vertex2 = vertices[6];
+
+	Triangle tri11;
+	tri11.vertex0 = vertices[3];
+	tri11.vertex1 = vertices[6];
+	tri11.vertex2 = vertices[7];
 
 	Material red;
-	red.Albedo = { .5,.5,.5 };
+	red.Albedo = { 1,0,0 };
 	Material blue;
-	blue.Albedo = make_float3(.5);
+	blue.Albedo = make_float3(.9, .9, .9);
 
-	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
+	m_Scene->m_Material.push_back(red);
 
-	m_Scene->m_Spheres.push_back(small_sphere); //<-Problem line
-	m_Scene->m_Spheres.push_back(big_sphere); //<-Problem line
+	m_Scene->m_Triangles.push_back(tri1x); //<-Problem line
+	m_Scene->m_Triangles.push_back(tri2x); //<-Problem line
+	m_Scene->m_Triangles.push_back(tri0);
+	m_Scene->m_Triangles.push_back(tri1);
+	m_Scene->m_Triangles.push_back(tri2);
+	m_Scene->m_Triangles.push_back(tri3);
+	m_Scene->m_Triangles.push_back(tri4);
+	m_Scene->m_Triangles.push_back(tri5);
+	m_Scene->m_Triangles.push_back(tri6);
+	m_Scene->m_Triangles.push_back(tri7);
+	m_Scene->m_Triangles.push_back(tri8);
+	m_Scene->m_Triangles.push_back(tri9);
+	m_Scene->m_Triangles.push_back(tri10);
+	m_Scene->m_Triangles.push_back(tri11);
 
-	m_ObjectsCount = m_Scene->m_Spheres.size();
+	m_ObjectsCount = m_Scene->m_Triangles.size();
 
 	stbi_flip_vertically_on_write(true);
 }

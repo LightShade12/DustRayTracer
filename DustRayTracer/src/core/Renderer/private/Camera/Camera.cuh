@@ -11,7 +11,7 @@ public:
 
 	__device__ float3 GetRayDir(float2 _uv, float vfovdeg, float width, float height) const;
 
-	float3 m_Position = {0,0,5};
+	float3 m_Position = {0,2,5};
 	float3 m_Forward_dir = { 0,0,-1 };
 	float3 m_Up_dir = { 0,1,0 };
 	float3 m_Right_dir = { 0,1,0 };
