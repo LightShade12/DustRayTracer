@@ -89,6 +89,7 @@
     <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">

@@ -47,76 +47,91 @@ __host__ void EditorLayer::OnAttach()
 	make_float3(-0.5f, 1.f, 0.5f)     // 7
 	};
 
-	Triangle tri1x;
-	tri1x.vertex0 = make_float3(2.5f, -0.2f, -2.5f);
-	tri1x.vertex1 = make_float3(2.5f, -0.2f, 2.5f);
-	tri1x.vertex2 = make_float3(-2.5f, -0.2f, -2.5f);
-	tri1x.MaterialIdx = 1;
-	Triangle tri2x;
-	tri2x.vertex0 = make_float3(-2.5f, -0.2f, -2.5f);
-	tri2x.vertex1 = make_float3(2.5f, -0.2f, 2.5f);
-	tri2x.vertex2 = make_float3(-2.5f, -0.2f, 2.5f);
-	tri2x.MaterialIdx = 1;
+	Triangle tri1plane;
+	tri1plane.vertex0.position = make_float3(2.5f, -0.2f, -2.5f);
+	tri1plane.vertex1.position = make_float3(2.5f, -0.2f, 2.5f);
+	tri1plane.vertex2.position = make_float3(-2.5f, -0.2f, -2.5f);
+	tri1plane.normal = { 0,1,0 };
+	tri1plane.MaterialIdx = 1;
+	Triangle tri2plane;
+	tri2plane.vertex0.position = make_float3(-2.5f, -0.2f, -2.5f);
+	tri2plane.vertex1.position = make_float3(2.5f, -0.2f, 2.5f);
+	tri2plane.vertex2.position = make_float3(-2.5f, -0.2f, 2.5f);
+	tri2plane.MaterialIdx = 1;
+	tri2plane.normal = { 0,1,0 };
 
-	Triangle tri0;
-	tri0.vertex0 = vertices[0];
-	tri0.vertex1 = vertices[1];
-	tri0.vertex2 = vertices[2];
+	//Triangle tri1x;
+	//tri1x.vertex0.position = make_float3(0.5f, 1.5f, -0.5f);
+	//tri1x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
+	//tri1x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
+	//tri1x.normal = { 0,1,0 };
 
-	Triangle tri1;
-	tri1.vertex0 = vertices[0];
-	tri1.vertex1 = vertices[2];
-	tri1.vertex2 = vertices[3];
+	//Triangle tri2x;
+	//tri2x.vertex0.position = make_float3(-0.5f, 1.5f, -0.5f);
+	//tri2x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
+	//tri2x.vertex2.position = make_float3(-0.5f, 1.5f, 0.5f);
+	//tri2x.normal = { 0,1,0 };
 
-	Triangle tri2;
-	tri2.vertex0 = vertices[1];
-	tri2.vertex1 = vertices[5];
-	tri2.vertex2 = vertices[6];
+	//Triangle tri3x;
+	//tri3x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
+	//tri3x.vertex1.position = make_float3(0.5f, 0.5f, -0.5f);
+	//tri3x.vertex2.position = make_float3(0.5f, 1.5f, -0.5f);
+	//tri3x.normal = { 0,0,-1 };
 
-	Triangle tri3;
-	tri3.vertex0 = vertices[1];
-	tri3.vertex1 = vertices[6];
-	tri3.vertex2 = vertices[2];
+	//Triangle tri4x;
+	//tri4x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
+	//tri4x.vertex1.position = make_float3(0.5f, 1.5f, -0.5f);
+	//tri4x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
+	//tri4x.normal = { 0,0,-1 };
 
-	Triangle tri4;
-	tri4.vertex0 = vertices[5];
-	tri4.vertex1 = vertices[4];
-	tri4.vertex2 = vertices[7];
+	//Triangle tri5x;
+	//tri5x.vertex0.position = make_float3(-0.5f, 0.5f, 0.5f);
+	//tri5x.vertex1.position = make_float3(0.5f, 0.5f, 0.5f);
+	//tri5x.vertex2.position = make_float3(0.5f, 1.5f, 0.5f);
+	//tri5x.normal = { 0,0,1 };
 
-	Triangle tri5;
-	tri5.vertex0 = vertices[5];
-	tri5.vertex1 = vertices[7];
-	tri5.vertex2 = vertices[6];
+	//Triangle tri6x;
+	//tri6x.vertex0.position = make_float3(-0.5f, 0.5f, 0.5f);
+	//tri6x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
+	//tri6x.vertex2.position = make_float3(-0.5f, 1.5f, 0.5f);
+	//tri6x.normal = { 0,0,1 };
 
-	Triangle tri6;
-	tri6.vertex0 = vertices[4];
-	tri6.vertex1 = vertices[0];
-	tri6.vertex2 = vertices[3];
+	//Triangle tri7x;
+	//tri7x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
+	//tri7x.vertex1.position = make_float3(-0.5f, 0.5f, 0.5f);
+	//tri7x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
+	//tri7x.normal = { -1,0,0 };
 
-	Triangle tri7;
-	tri7.vertex0 = vertices[4];
-	tri7.vertex1 = vertices[3];
-	tri7.vertex2 = vertices[7];
+	//Triangle tri8x;
+	//tri8x.vertex0.position = make_float3(-0.5f, 0.5f, 0.5f);
+	//tri8x.vertex1.position = make_float3(-0.5f, 1.5f, 0.5f);
+	//tri8x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
+	//tri8x.normal = { -1,0,0 };
 
-	Triangle tri8;
-	tri8.vertex0 = vertices[4];
-	tri8.vertex1 = vertices[5];
-	tri8.vertex2 = vertices[1];
+	//Triangle tri9x;
+	//tri9x.vertex0.position = make_float3(0.5f, 0.5f, -0.5f);
+	//tri9x.vertex1.position = make_float3(0.5f, 0.5f, 0.5f);
+	//tri9x.vertex2.position = make_float3(0.5f, 1.5f, -0.5f);
+	//tri9x.normal = { 1,0,0 };
 
-	Triangle tri9;
-	tri9.vertex0 = vertices[4];
-	tri9.vertex1 = vertices[1];
-	tri9.vertex2 = vertices[0];
+	//Triangle tri10x;
+	//tri10x.vertex0.position = make_float3(0.5f, 0.5f, 0.5f);
+	//tri10x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
+	//tri10x.vertex2.position = make_float3(0.5f, 1.5f, -0.5f);
+	//tri10x.normal = { 1,0,0 };
 
-	Triangle tri10;
-	tri10.vertex0 = vertices[3];
-	tri10.vertex1 = vertices[2];
-	tri10.vertex2 = vertices[6];
+	//Triangle tri11x;
+	//tri11x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
+	//tri11x.vertex1.position = make_float3(0.5f, 0.5f, -0.5f);
+	//tri11x.vertex2.position = make_float3(0.5f, 0.5f, 0.5f);
+	//tri11x.normal = { 0,-1,0 };
 
-	Triangle tri11;
-	tri11.vertex0 = vertices[3];
-	tri11.vertex1 = vertices[6];
-	tri11.vertex2 = vertices[7];
+	//Triangle tri12x;
+	//tri12x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
+	//tri12x.vertex1.position = make_float3(0.5f, 0.5f, 0.5f);
+	//tri12x.vertex2.position = make_float3(-0.5f, 0.5f, 0.5f);
+	//tri12x.normal = { 0,-1,0 };
+
 
 	Material red;
 	red.Albedo = { .7,0,0 };
@@ -126,20 +141,20 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
 
-	m_Scene->m_Triangles.push_back(tri1x); //<-Problem line
-	m_Scene->m_Triangles.push_back(tri2x); //<-Problem line
-	m_Scene->m_Triangles.push_back(tri0);
-	m_Scene->m_Triangles.push_back(tri1);
-	m_Scene->m_Triangles.push_back(tri2);
-	m_Scene->m_Triangles.push_back(tri3);
-	m_Scene->m_Triangles.push_back(tri4);
-	m_Scene->m_Triangles.push_back(tri5);
-	m_Scene->m_Triangles.push_back(tri6);
-	m_Scene->m_Triangles.push_back(tri7);
-	m_Scene->m_Triangles.push_back(tri8);
-	m_Scene->m_Triangles.push_back(tri9);
-	m_Scene->m_Triangles.push_back(tri10);
-	m_Scene->m_Triangles.push_back(tri11);
+	m_Scene->m_Triangles.push_back(tri1plane);
+	m_Scene->m_Triangles.push_back(tri2plane); 
+	/*m_Scene->m_Triangles.push_back(tri1x);
+	m_Scene->m_Triangles.push_back(tri2x);
+	m_Scene->m_Triangles.push_back(tri3x);
+	m_Scene->m_Triangles.push_back(tri4x);
+	m_Scene->m_Triangles.push_back(tri5x);
+	m_Scene->m_Triangles.push_back(tri6x);
+	m_Scene->m_Triangles.push_back(tri7x);
+	m_Scene->m_Triangles.push_back(tri8x);
+	m_Scene->m_Triangles.push_back(tri9x);
+	m_Scene->m_Triangles.push_back(tri10x);
+	m_Scene->m_Triangles.push_back(tri11x);
+	m_Scene->m_Triangles.push_back(tri12x);*/
 
 	m_ObjectsCount = m_Scene->m_Triangles.size();
 

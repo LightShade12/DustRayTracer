@@ -12,8 +12,8 @@ __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 	float3 edge1, edge2, h, s, q;
 	float a, f, u, v, t;
 
-	edge1 = triangle->vertex1 - triangle->vertex0;
-	edge2 = triangle->vertex2 - triangle->vertex0;
+	edge1 = triangle->vertex1.position - triangle->vertex0.position;
+	edge2 = triangle->vertex2.position - triangle->vertex0.position;
 
 	h = cross(ray.direction, edge2);
 	a = dot(edge1, h);
@@ -21,7 +21,7 @@ __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 		return payload; // This ray is parallel to this triangle.
 
 	f = 1.0 / a;
-	s = ray.origin - triangle->vertex0;
+	s = ray.origin - triangle->vertex0.position;
 	u = f * dot(s, h);
 	if (u < 0.0 || u > 1.0)
 		return payload;

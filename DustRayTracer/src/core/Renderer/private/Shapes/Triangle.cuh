@@ -1,7 +1,13 @@
 #pragma once
 #include <vector_types.h>
 
+struct Vertex
+{
+	float3 position;
+};
+
 struct Triangle {
-	float3 vertex0, vertex1, vertex2;
+	Vertex vertex0, vertex1, vertex2;
+	float3 normal;
 	uint32_t MaterialIdx = 0;
 };
