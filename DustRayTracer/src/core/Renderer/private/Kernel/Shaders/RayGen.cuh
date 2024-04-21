@@ -1,11 +1,13 @@
+#pragma once
+#include "core/Renderer/private/Kernel/TraceRay.cuh"
+
 #include <core/Renderer/private/CudaMath/helper_math.cuh>
+#include <core/Renderer/private/CudaMath/Random.cuh>
+
 #include <core/Renderer/private/Kernel/Ray.cuh>
 #include <core/Renderer/private/Kernel/HitPayload.cuh>
 #include <core/Renderer/private/Shapes/Scene.cuh>
 
-__device__ HitPayload TraceRay(const Ray& ray, const Triangle* scene_vector, size_t scene_vector_size);
-
-__device__ float3 randomUnitSphereVec3(uint32_t& seed);
 
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, const Triangle* scene_vector, size_t scenevecsize, const Material* matvector, uint32_t frameidx) {

@@ -138,12 +138,13 @@
     <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\RayTriangleIntersector.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\ClosestHit.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Miss.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\RayGen.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Triangle.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Shapes\Triangle.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Scene.cuh" />
     <ClInclude Include="src\core\Renderer\Renderer.hpp" />
     <ClInclude Include="src\core\Renderer\private\Camera\Camera.cuh" />
@@ -165,6 +166,7 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="thirdparty\glfw\GLFW.vcxproj">

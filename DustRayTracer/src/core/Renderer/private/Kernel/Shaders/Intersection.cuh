@@ -1,3 +1,9 @@
+#pragma once
+#include "core/Renderer/private/Shapes/Triangle.cuh"
+#include "core/Renderer/private/Kernel/HitPayload.cuh"
+#include "core/Renderer/private/Kernel/Ray.cuh"
+#include "core/Renderer/private/CudaMath/helper_math.cuh"
+
 __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 {
 	HitPayload payload;
@@ -7,7 +13,6 @@ __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 	float a, f, u, v, t;
 
 	edge1 = triangle->vertex1 - triangle->vertex0;
-
 	edge2 = triangle->vertex2 - triangle->vertex0;
 
 	h = cross(ray.direction, edge2);
@@ -16,9 +21,7 @@ __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 		return payload; // This ray is parallel to this triangle.
 
 	f = 1.0 / a;
-	s.x = ray.origin.x - triangle->vertex0.x;
-	s.y = ray.origin.y - triangle->vertex0.y;
-	s.z = ray.origin.z - triangle->vertex0.z;
+	s = ray.origin - triangle->vertex0;
 	u = f * dot(s, h);
 	if (u < 0.0 || u > 1.0)
 		return payload;

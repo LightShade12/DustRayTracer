@@ -1,23 +1,9 @@
 #pragma once
-//#include "core/Common/Managed.hpp"
-#include "core/Renderer/private/Kernel/Triangle.cuh"
 
-#include <vector_types.h>
+#include "core/Renderer/private/Shapes/Triangle.cuh"
+#include "core/Renderer/private/Shapes/Material.cuh"
+
 #include <thrust/device_vector.h>
-
-struct Sphere
-{
-	Sphere()=default;
-	float3 Position = { 0,0,0 };
-	float Radius = 1.f;
-	uint32_t MaterialIndex = 0;
-};
-
-struct Material 
-{
-	float3 Albedo = { 1,1,1 };
-	float Roughness = 0.8f;
-};
 
 struct Scene
 {
