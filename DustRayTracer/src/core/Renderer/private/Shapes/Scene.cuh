@@ -2,6 +2,8 @@
 
 #include "core/Renderer/private/Shapes/Triangle.cuh"
 #include "core/Renderer/private/Shapes/Material.cuh"
+#include "core/Renderer/private/Shapes/Mesh.cuh"
+
 
 #include <thrust/device_vector.h>
 

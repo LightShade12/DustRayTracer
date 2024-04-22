@@ -90,6 +90,7 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
+    <ClInclude Include="src\core\Common\CudaCommon.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">
@@ -113,5 +114,6 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
   </ItemGroup>
 </Project>

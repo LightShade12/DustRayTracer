@@ -4,6 +4,7 @@
 #include "core/Common/Timer.hpp"
 #include "core/Renderer/private/Shapes/Scene.cuh"//has thrust so editor needs to be compiled by nvcc
 #include "core/Renderer/private/Camera/Camera.cuh"
+#include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -22,43 +23,20 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return false;
 }
 
-__device__ __host__ float3 custom_cross(float3 x, float3 y)
-{
-	float3 result;
-	result.x = x.y * y.z - x.z * y.y;
-	result.y = x.z * y.x - x.x * y.z;
-	result.z = x.x * y.y - x.y * y.x;
-	return result;
-}
-
 __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
 
-	float3 vertices[] = {
-	make_float3(-0.5f, 0.f, -0.5f),  // 0
-	make_float3(0.5f, 0.f, -0.5f),   // 1
-	make_float3(0.5f, 1.f, -0.5f),    // 2
-	make_float3(-0.5f, 1.f, -0.5f),   // 3
-	make_float3(-0.5f, 0.f, 0.5f),   // 4
-	make_float3(0.5f, 0.f, 0.5f),    // 5
-	make_float3(0.5f, 1.f, 0.5f),     // 6
-	make_float3(-0.5f, 1.f, 0.5f)     // 7
-	};
+	Triangle tri1plane(
+		make_float3(2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, -2.5f),
+		make_float3(0, 1, 0), 1);
 
-	Triangle tri1plane;
-	tri1plane.vertex0.position = make_float3(2.5f, -0.2f, -2.5f);
-	tri1plane.vertex1.position = make_float3(2.5f, -0.2f, 2.5f);
-	tri1plane.vertex2.position = make_float3(-2.5f, -0.2f, -2.5f);
-	tri1plane.normal = { 0,1,0 };
-	tri1plane.MaterialIdx = 1;
-	Triangle tri2plane;
-	tri2plane.vertex0.position = make_float3(-2.5f, -0.2f, -2.5f);
-	tri2plane.vertex1.position = make_float3(2.5f, -0.2f, 2.5f);
-	tri2plane.vertex2.position = make_float3(-2.5f, -0.2f, 2.5f);
-	tri2plane.MaterialIdx = 1;
-	tri2plane.normal = { 0,1,0 };
+	Triangle tri2plane(
+		make_float3(-2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, 2.5f),
+		make_float3(0, 1, 0), 1);
+
+	
 
 	//Triangle tri1x;
 	//tri1x.vertex0.position = make_float3(0.5f, 1.5f, -0.5f);
@@ -132,7 +110,6 @@ __host__ void EditorLayer::OnAttach()
 	//tri12x.vertex2.position = make_float3(-0.5f, 0.5f, 0.5f);
 	//tri12x.normal = { 0,-1,0 };
 
-
 	Material red;
 	red.Albedo = { .7,0,0 };
 	Material blue;
@@ -142,7 +119,7 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Material.push_back(blue);
 
 	m_Scene->m_Triangles.push_back(tri1plane);
-	m_Scene->m_Triangles.push_back(tri2plane); 
+	m_Scene->m_Triangles.push_back(tri2plane);
 	/*m_Scene->m_Triangles.push_back(tri1x);
 	m_Scene->m_Triangles.push_back(tri2x);
 	m_Scene->m_Triangles.push_back(tri3x);

@@ -8,7 +8,6 @@
 #include <core/Renderer/private/Kernel/HitPayload.cuh>
 #include <core/Renderer/private/Shapes/Scene.cuh>
 
-
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, const Triangle* scene_vector, size_t scenevecsize, const Material* matvector, uint32_t frameidx) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
@@ -54,6 +53,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		contribution *= material.Albedo;
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
+		//TODO: shadowray uselessly computes and returns closesthit payload
 		HitPayload shadowpayload = TraceRay(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2), scene_vector, scenevecsize);
 		if (shadowpayload.hit_distance < 0)
 		{

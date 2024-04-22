@@ -1,6 +1,7 @@
 #include "core/Renderer/Renderer.hpp"
 #include "core/Renderer/private/Camera/Camera.cuh"
 
+#include "core/Common/CudaCommon.cuh"
 #include "Kernel/RenderKernel.cuh"
 #include <thrust/device_vector.h>
 #include <iostream>
@@ -10,8 +11,6 @@ struct FrameBufferWrapper
 	thrust::device_vector<float3>ColorDataBuffer;
 };
 
-//prints error code
-#define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
 void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line)
 {
 	if (result) {

@@ -132,6 +132,7 @@
   <ItemGroup>
     <ClInclude Include="src\core\Application\Application.hpp" />
     <ClInclude Include="src\core\Application\private\Layer.hpp" />
+    <ClInclude Include="src\core\Common\CudaCommon.cuh" />
     <ClInclude Include="src\core\Common\Managed.cuh" />
     <ClInclude Include="src\core\Common\Timer.hpp" />
     <ClInclude Include="src\core\Editor\EditorLayer.hpp" />
@@ -168,6 +169,7 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="thirdparty\glfw\GLFW.vcxproj">
