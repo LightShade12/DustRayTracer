@@ -91,6 +91,7 @@
     <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
     <ClInclude Include="src\core\Common\CudaCommon.cuh" />
+    <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">
@@ -106,6 +107,7 @@
       <Filter>thirdparty\stb_image</Filter>
     </ClCompile>
     <ClCompile Include="src\core\Common\Timer.cpp" />
+    <ClCompile Include="src\core\Editor\Theme\EditorTheme.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />

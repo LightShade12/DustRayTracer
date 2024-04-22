@@ -21,6 +21,7 @@ public:
 
 	uint32_t m_BufferWidth = 0, m_BufferHeight = 0;
 	void resetAccumulationBuffer();
+	uint32_t getSampleCount() const { return m_FrameIndex; }
 
 private:
 	GLuint m_RenderTarget_name = NULL;//null init val important for triggering init
