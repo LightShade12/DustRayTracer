@@ -19,6 +19,7 @@ public:
 	GLuint& GetRenderTargetImage_name();
 	~Renderer();
 
+	//TODO: add getters for width height
 	uint32_t m_BufferWidth = 0, m_BufferHeight = 0;
 	void resetAccumulationBuffer();
 	uint32_t getSampleCount() const { return m_FrameIndex; }

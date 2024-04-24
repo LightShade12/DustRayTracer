@@ -41,6 +41,7 @@ void InvokeRenderKernel(
 {
 	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
 	const Triangle* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Triangles.data());
+	const Mesh* DeviceMeshBuffer = thrust::raw_pointer_cast(scene.m_Meshes.data());
 
 	kernel << < _blocks, _threads >> >
 		(surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Triangles.size(),

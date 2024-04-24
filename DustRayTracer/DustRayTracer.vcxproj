@@ -172,6 +172,7 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Shapes\Scene.cu" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="thirdparty\glfw\GLFW.vcxproj">

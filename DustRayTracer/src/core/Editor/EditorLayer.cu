@@ -29,13 +29,20 @@ __host__ void EditorLayer::OnAttach()
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
 
-	Triangle tri1plane(
-		make_float3(2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, -2.5f),
-		make_float3(0, 1, 0), 1);
+	std::vector<float3>planefloorpositions =
+	{ make_float3(2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, -2.5f),
+	make_float3(-2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, 2.5f) };
+	std::vector<float3>planefloornormals =
+	{
+		make_float3(0, 1, 0),
+		make_float3(0, 1, 0)
+	};
 
-	Triangle tri2plane(
-		make_float3(-2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, 2.5f),
-		make_float3(0, 1, 0), 1);
+	Triangle tri1plane(planefloorpositions[0], planefloorpositions[1], planefloorpositions[2],
+		planefloornormals[0], 1);
+
+	Triangle tri2plane(planefloorpositions[3], planefloorpositions[4], planefloorpositions[5],
+		planefloornormals[1], 1);
 
 	//Triangle tri1x;
 	//tri1x.vertex0.position = make_float3(0.5f, 1.5f, -0.5f);
@@ -117,6 +124,8 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
 
+	Mesh mesh1(planefloorpositions, planefloornormals, 1);
+	m_Scene->m_Meshes.push_back(mesh1);
 	m_Scene->m_Triangles.push_back(tri1plane);
 	m_Scene->m_Triangles.push_back(tri2plane);
 	/*m_Scene->m_Triangles.push_back(tri1x);
@@ -137,7 +146,8 @@ __host__ void EditorLayer::OnAttach()
 
 	stbi_flip_vertically_on_write(true);
 
-	ImGuithemes::UE4();
+	ImGuithemes::dark();
+	//ImGuithemes::UE4();
 }
 
 void EditorLayer::OnUIRender()
@@ -263,15 +273,14 @@ void EditorLayer::OnUIRender()
 		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
 			ImVec2(m_Renderer.m_BufferWidth, m_Renderer.m_BufferHeight), { 0,1 }, { 1,0 });
 
-	ImGui::BeginChild("statusbar", ImVec2(ImGui::GetContentRegionAvail().x, 12.0f));
+	ImGui::BeginChild("statusbar", ImVec2(ImGui::GetContentRegionAvail().x, 14), 0);
 
 	//ImGui::SetCursorScreenPos({ ImGui::GetCursorScreenPos().x + 5, ImGui::GetCursorScreenPos().y + 4 });
 
 	ImGui::Text("dims: %d x %d px", m_Renderer.m_BufferWidth, m_Renderer.m_BufferHeight);
-
 	ImGui::EndChild();
 	ImGui::End();
-	ImGui::PopStyleVar();
+	ImGui::PopStyleVar(1);
 
 	ImGui::Begin("Padding window");
 	ImGui::End();
