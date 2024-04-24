@@ -1,5 +1,8 @@
 #include "Camera.cuh"
 
+#include <glm/glm.hpp>
+#include <glm/mat3x3.hpp>
+
 __device__ float deg2rad(float degree)
 {
 	float const PI = 3.14159265359;
@@ -45,7 +48,41 @@ public:
 
 __host__ void Camera::OnUpdate(float3 velocity, float delta)
 {
-	m_Position += m_movement_speed * velocity * delta;
+	glm::mat3 cameramodelmatrix =
+	{
+		m_Right_dir.x,m_Right_dir.y,m_Right_dir.z,
+		m_Up_dir.x,m_Up_dir.y,m_Up_dir.z,
+		m_Forward_dir.x,m_Forward_dir.y,m_Forward_dir.z
+	};
+
+	glm::vec3 vel = { velocity.x,velocity.y, velocity.z };
+	glm::vec3 transformedVel = cameramodelmatrix * vel;
+	float3 finalvel = { transformedVel.x, transformedVel.y,transformedVel.z };
+
+	m_Position += m_movement_speed * finalvel * delta;
+}
+
+__host__ void Camera::Rotate(float2 mouse_delta_degrees)
+{
+	float rotX = mouse_delta_degrees.x;
+	float rotY = mouse_delta_degrees.y;
+
+	float sin_x = sin(-rotY);
+	float cos_x = cos(-rotY);
+	float3 rotated = (m_Forward_dir * cos_x) +
+		(cross(m_Up_dir, m_Forward_dir) * sin_x) +
+		(m_Up_dir * dot(m_Up_dir, m_Forward_dir)) * (1 - cos_x);
+	// Calculates upcoming vertical change in the Orientation
+	m_Forward_dir = rotated;
+
+	float sin_y = sin(-rotX);
+	float cos_y = cos(-rotX);
+	rotated = (m_Forward_dir * cos_y) +
+		(cross(m_Right_dir, m_Forward_dir) * sin_y) +
+		(m_Right_dir * dot(m_Right_dir, m_Forward_dir)) * (1 - cos_y);
+	// Calculates upcoming vertical change in the Orientation
+	m_Forward_dir = rotated;
+	m_Right_dir = cross(m_Forward_dir, m_Up_dir);
 }
 
 __device__ float3 Camera::GetRayDir(float2 _uv, float vfovdeg, float width, float height) const

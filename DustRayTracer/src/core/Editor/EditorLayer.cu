@@ -10,8 +10,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include <glm/glm.hpp>
-#include <glm/mat3x3.hpp>
 
 #include <stb_image_write.h>
 
@@ -237,59 +235,19 @@ void EditorLayer::OnUIRender()
 
 //input handling
 bool firstclick = true;
-bool moving = false;
-void processInput(GLFWwindow* window, Camera* cam, float delta)
+
+//general purpose input handler
+bool processInput(GLFWwindow* window, Camera* cam, float delta)
 {
-	moving = false;
-	float3 velocity = { 0,0,0 };
-
-	//movement lateral
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		moving = true;
-		velocity -= (cam)->m_Forward_dir;
-	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		moving = true;
-		velocity += (cam)->m_Forward_dir;
-	}
-
-	//strafe
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		moving = true;
-		velocity -= normalize((cam)->m_Right_dir);
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		moving = true;
-		velocity += normalize((cam)->m_Right_dir);
-	}
-
-	//UP/DOWN
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-	{
-		moving = true;
-		velocity -= normalize((cam)->m_Up_dir);
-	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-	{
-		moving = true;
-		velocity += normalize((cam)->m_Up_dir);
-	}
-
-	cam->OnUpdate(velocity, delta);
-}
-
-void processmouse(GLFWwindow* window, Camera* cam, int width, int height)
-{
+	bool has_moved = false;
 	float sensitivity = 1;
+	//has_moved = false;
+	float3 velocity = { 0,0,0 };
+	int width = 0, height = 0;
+	glfwGetWindowSize(window, &width, &height);
 
-	// Handles mouse inputs
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
-		// Hides mouse cursor
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		// Prevents camera from jumping on the first click
@@ -299,10 +257,44 @@ void processmouse(GLFWwindow* window, Camera* cam, int width, int height)
 			firstclick = false;
 		}
 
-		// Stores the coordinates of the cursor
+		//movement lateral
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		{
+			has_moved = true;
+			velocity.z -= 1;
+		}
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		{
+			has_moved = true;
+			velocity.z += 1;
+		}
+
+		//strafe
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		{
+			has_moved = true;
+			velocity.x -= 1;
+		}
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		{
+			has_moved = true;
+			velocity.x += 1;
+		}
+
+		//UP/DOWN
+		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		{
+			has_moved = true;
+			velocity.y -= 1;
+		}
+		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		{
+			has_moved = true;
+			velocity.y += 1;
+		}
+
 		double mouseX;
 		double mouseY;
-		// Fetches the coordinates of the cursor
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 
 		// Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
@@ -310,55 +302,31 @@ void processmouse(GLFWwindow* window, Camera* cam, int width, int height)
 		float rotX = sensitivity * (float)(mouseY - (height / 2)) / height;
 		float rotY = sensitivity * (float)(mouseX - (width / 2)) / width;
 
-		//printf("rotx: %.3f, toty: %.3f\n",rotX,rotY);
+		float2 mousedeltadegrees = { rotX, rotY };
 
-		float sin_x = sin(-rotY);
-		float cos_x = cos(-rotY);
-		float3 rotated = (cam->m_Forward_dir * cos_x) +
-			(cross(cam->m_Up_dir, cam->m_Forward_dir) * sin_x) +
-			(cam->m_Up_dir * dot(cam->m_Up_dir, cam->m_Forward_dir)) * (1 - cos_x);
-		// Calculates upcoming vertical change in the Orientation
-		//printf("x: %.3f, y:%.3f, z:%.3f\n", rotated.x, rotated.y, rotated.z);
-		cam->m_Forward_dir = rotated;
-
-		float sin_y = sin(-rotX);
-		float cos_y = cos(-rotX);
-		rotated = (cam->m_Forward_dir * cos_y) +
-			(cross(cam->m_Right_dir, cam->m_Forward_dir) * sin_y) +
-			(cam->m_Right_dir * dot(cam->m_Right_dir, cam->m_Forward_dir)) * (1 - cos_y);
-		// Calculates upcoming vertical change in the Orientation
-		cam->m_Forward_dir = rotated;
-		cam->m_Right_dir = cross(cam->m_Forward_dir, cam->m_Up_dir);
-		rotated = cam->m_Position;
-
-		//printf("x: %.3f, y:%.3f, z:%.3f\n", rotated.x, rotated.y, rotated.z);
-
-		//lookdir = glm::rotate(lookdir, -rotY, cam->m_Up_dir);//yaw
-		//lookdir = glm::rotate(lookdir, -rotX, cam->m_Right_dir);//pitch
+		cam->OnUpdate(velocity, delta);
+		cam->Rotate(mousedeltadegrees);
 
 		// Sets mouse cursor to the middle of the screen so that it doesn't end up roaming around
 		glfwSetCursorPos(window, (width / 2), (height / 2));
-		if (rotX != 0 || rotY != 0)moving = true;
+		if (rotX != 0 || rotY != 0)has_moved = true;
 	}
-
-	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE)
+	//free mouse
+	else
 	{
-		// Unhides cursor since camera is not looking around anymore
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		// Makes sure the next time the camera looks around it doesn't jump
 		firstclick = true;
 	}
+
+	return has_moved;
 }
 
 void EditorLayer::OnUpdate(float ts)
 {
-	int width = 0, height = 0;
 	m_LastApplicationFrameTime = ts;
-	glfwGetWindowSize(Application::Get().GetWindowHandle(), &width, &height);
-
-	processInput(Application::Get().GetWindowHandle(), (m_dcamera), ts);//resets bool moving so comes first
-	processmouse(Application::Get().GetWindowHandle(), (m_dcamera), width, height);
-	if (moving) m_Renderer.resetAccumulationBuffer();
+	if (processInput(Application::Get().GetWindowHandle(), (m_dcamera), ts))
+		m_Renderer.resetAccumulationBuffer();
 }
 
 void EditorLayer::OnDetach()

@@ -10,11 +10,11 @@ public:
 	__host__ Camera() { m_Right_dir = cross(m_Forward_dir, m_Up_dir); };
 
 	__host__ void OnUpdate(float3 velocity, float delta);
+	__host__ void Rotate(float2 mouse_delta_degrees);
 
 	__device__ float3 GetRayDir(float2 _uv, float vfovdeg, float width, float height) const;
 
 	void setMovementSpeed(float speed) { m_movement_speed = speed; };
-	
 
 	float m_movement_speed = 5;
 	float3 m_Position = { 0,2,5 };

@@ -92,6 +92,7 @@
     <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
     <ClInclude Include="src\core\Common\CudaCommon.cuh" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
+    <ClInclude Include="src\core\Application\private\Input.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">
