@@ -17,7 +17,6 @@
 
 //Render Kernel
 __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
-	const Triangle* sceneVector, size_t sceneVectorSize,
 	const Material* materialvector, uint32_t frameidx, float3* accumulation_buffer,
 	const Mesh* MeshBufferPtr, size_t MeshBufferSize)
 {
@@ -26,8 +25,8 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 
 	if ((i >= max_x) || (j >= max_y)) return;
 
-	float3 fcolor = RayGen(i, j, max_x, max_y, cam, sceneVector,
-		sceneVectorSize, materialvector, frameidx, MeshBufferPtr, MeshBufferSize);
+	float3 fcolor = RayGen(i, j, max_x, max_y, cam, 
+		materialvector, frameidx, MeshBufferPtr, MeshBufferSize);
 
 	accumulation_buffer[i + j * max_x] += fcolor;
 	float3 accol = accumulation_buffer[i + j * max_x] / frameidx;
@@ -41,10 +40,9 @@ void InvokeRenderKernel(
 	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx, float3* accumulation_buffer)
 {
 	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
-	const Triangle* DeviceSceneVector = thrust::raw_pointer_cast(scene.m_Triangles.data());
 	const Mesh* DeviceMeshBuffer = thrust::raw_pointer_cast(scene.m_Meshes.data());
 
 	kernel << < _blocks, _threads >> >
-		(surfaceobj, width, height, cam, DeviceSceneVector, scene.m_Triangles.size(),
+		(surfaceobj, width, height, cam,
 			DeviceMaterialVector, frameidx, accumulation_buffer, DeviceMeshBuffer, scene.m_Meshes.size());
 }
