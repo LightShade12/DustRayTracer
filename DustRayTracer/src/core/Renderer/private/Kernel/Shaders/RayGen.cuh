@@ -29,7 +29,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 1;
+	int bounces = 5;
 
 	for (int i = 0; i < bounces; i++)
 	{
@@ -49,16 +49,15 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
 		const Mesh closestMesh = MeshBufferPtr[payload.object_idx];
-		Material material = matvector[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error
+		Material material = matvector[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error; maybe not cuz miss shading handles before exec here
 
 		//light = material.Albedo;
 		contribution *= material.Albedo;
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
-		//TODO: shadowray uselessly computes and returns closesthit payload
-		HitPayload shadowpayload = TraceRay(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
-			MeshBufferPtr, MeshBufferSize);
-		if (shadowpayload.hit_distance < 0)
+		
+		if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
+			MeshBufferPtr, MeshBufferSize))
 		{
 			light += (material.Albedo * suncol) * 0.5;
 		}
@@ -66,10 +65,10 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.origin = newRayOrigin;
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
-		light = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
+		//light = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
 	}
 
-	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	light = fminf(light, { 1,1,1 });
 	return light;
 };

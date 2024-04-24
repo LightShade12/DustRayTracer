@@ -2,7 +2,7 @@
 #include "core/Common/Managed.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
-//TODO: Bring Camera controls to here
+//TODO: Camera InputProcess() which calls rotate and translate and cas mouseInput specific code
 
 class Camera : public Managed
 {

@@ -40,3 +40,36 @@ __device__ HitPayload TraceRay(const Ray& ray, const Mesh* MeshBufferPtr, size_t
 
 	return ClosestHit(ray, closestObjectIdx, hitDistance,MeshBufferPtr, hitTriangleIdx);
 }
+
+//does not support transparent surfaces; cuz bool and no anyhit-shader/mat processing
+__device__ bool RayTest(const Ray& ray, const Mesh* MeshBufferPtr, size_t MeshBufferSize)
+{
+	int closestObjectIdx = -1;
+	int hitTriangleIdx = -1;
+	float hitDistance = FLT_MAX;
+	HitPayload workingPayload;
+
+	for (size_t meshIdx = 0; meshIdx < MeshBufferSize; meshIdx++)
+	{
+		const Mesh* currentmesh = &(MeshBufferPtr[meshIdx]);
+
+		for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+		{
+			const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
+			workingPayload = Intersection(ray, triangle);
+
+			if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+			{
+				hitDistance = workingPayload.hit_distance;
+				closestObjectIdx = meshIdx;
+				hitTriangleIdx = triangleIdx;
+			}
+		}
+	}
+
+	if (closestObjectIdx < 0)
+	{
+		return false;
+	}
+	return true;
+}

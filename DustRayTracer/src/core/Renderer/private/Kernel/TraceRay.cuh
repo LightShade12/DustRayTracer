@@ -5,3 +5,6 @@
 
 __device__ HitPayload TraceRay(const Ray& ray,
 	const Mesh* MeshBufferPtr, size_t MeshBufferSize);
+
+__device__ bool RayTest(const Ray& ray,
+	const Mesh* MeshBufferPtr, size_t MeshBufferSize);
