@@ -9,20 +9,46 @@
 #include <vector_types.h>
 
 //traverse accel struct
-__device__ HitPayload TraceRay(const Ray& ray, const Triangle* scene_vector, size_t scene_vector_size) {
+__device__ HitPayload TraceRay(const Ray& ray, const Triangle* scene_vector, size_t scene_vector_size,
+	const Mesh* MeshBufferPtr, size_t MeshBufferSize, const bool meshmode) {
+	
 	int closestObjectIdx = -1;
+	int hitTriangleIdx = -1;
 	float hitDistance = FLT_MAX;
 	HitPayload workingPayload;
+	
 
-	for (int i = 0; i < scene_vector_size; i++)
-	{
-		const Triangle* triangle = &scene_vector[i];
-		workingPayload = Intersection(ray, triangle);
-
-		if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+	if (meshmode) {
+		for (size_t meshIdx = 0; meshIdx < MeshBufferSize; meshIdx++)
 		{
-			hitDistance = workingPayload.hit_distance;
-			closestObjectIdx = i;
+			const Mesh* currentmesh = &(MeshBufferPtr[meshIdx]);
+
+			for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+			{
+				const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
+				workingPayload = Intersection(ray, triangle);
+
+				if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+				{
+					hitDistance = workingPayload.hit_distance;
+					closestObjectIdx = meshIdx;
+					hitTriangleIdx = triangleIdx;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < scene_vector_size; i++)
+		{
+			const Triangle* triangle = &scene_vector[i];
+			workingPayload = Intersection(ray, triangle);
+
+			if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+			{
+				hitDistance = workingPayload.hit_distance;
+				closestObjectIdx = i;
+			}
 		}
 	}
 
@@ -31,5 +57,6 @@ __device__ HitPayload TraceRay(const Ray& ray, const Triangle* scene_vector, siz
 		return Miss(ray);
 	}
 
-	return ClosestHit(ray, closestObjectIdx, hitDistance, scene_vector);
+	return ClosestHit(ray, closestObjectIdx, hitDistance, scene_vector,
+		MeshBufferPtr, hitTriangleIdx, meshmode);
 };

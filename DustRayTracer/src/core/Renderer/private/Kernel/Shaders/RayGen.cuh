@@ -9,7 +9,8 @@
 #include <core/Renderer/private/Shapes/Scene.cuh>
 
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* cam, const Triangle* scene_vector, size_t scenevecsize, const Material* matvector, uint32_t frameidx) {
+	const Camera* cam, const Triangle* scene_vector, size_t scenevecsize, const Material* matvector, uint32_t frameidx,
+	const Mesh* MeshBufferPtr, size_t MeshBufferSize) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
 	float3 sunpos = { 100,100,100 };
@@ -18,6 +19,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	//uv.x = uv.x * 2.f - ((float)max_x / (float)max_y);
 	//uv.y = uv.y * 2.f - 1.f;
 	uv = uv * 2 - 1;
+
+	bool Usemesh = true;
 
 	Ray ray;
 	ray.origin = cam->m_Position;
@@ -32,7 +35,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 	for (int i = 0; i < bounces; i++)
 	{
-		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize);
+		HitPayload payload = TraceRay(ray, scene_vector, scenevecsize,
+			MeshBufferPtr, MeshBufferSize, Usemesh);
 		seed += i;
 		//sky
 		if (payload.hit_distance < 0)
@@ -47,14 +51,24 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
-		const Triangle closestTriangle = scene_vector[payload.object_idx];
-		const Material material = matvector[closestTriangle.MaterialIdx];
+		Material material;
+		if (Usemesh)
+		{
+			const Mesh closestMesh = MeshBufferPtr[payload.object_idx];
+			material = matvector[closestMesh.m_dev_triangles[0].MaterialIdx];
+		}
+		else
+		{
+			const Triangle closestTriangle = scene_vector[payload.object_idx];
+			material = matvector[closestTriangle.MaterialIdx];
+		}
 		//light = material.Albedo;
 		contribution *= material.Albedo;
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 		//TODO: shadowray uselessly computes and returns closesthit payload
-		HitPayload shadowpayload = TraceRay(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2), scene_vector, scenevecsize);
+		HitPayload shadowpayload = TraceRay(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2), scene_vector, scenevecsize,
+			MeshBufferPtr, MeshBufferSize, Usemesh);
 		if (shadowpayload.hit_distance < 0)
 		{
 			light += (material.Albedo * suncol) * 0.5;
