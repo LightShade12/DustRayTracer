@@ -207,7 +207,10 @@ void EditorLayer::OnUIRender()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(100, 100));
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
+	ImGui::GetMousePos();
+
 	if (m_Renderer.GetRenderTargetImage_name() != NULL)
 		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
 			ImVec2(m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight()), { 0,1 }, { 1,0 });
@@ -246,77 +249,87 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 	int width = 0, height = 0;
 	glfwGetWindowSize(window, &width, &height);
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+	//camera controls
 	{
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-		// Prevents camera from jumping on the first click
-		if (firstclick)
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 		{
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+			// Prevents camera from jumping on the first click
+			if (firstclick)
+			{
+				glfwSetCursorPos(window, (width / 2), (height / 2));
+				firstclick = false;
+			}
+
+			//movement lateral
+			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			{
+				has_moved = true;
+				velocity.z -= 1;
+			}
+			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			{
+				has_moved = true;
+				velocity.z += 1;
+			}
+
+			//strafe
+			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			{
+				has_moved = true;
+				velocity.x -= 1;
+			}
+			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			{
+				has_moved = true;
+				velocity.x += 1;
+			}
+
+			//UP/DOWN
+			if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+			{
+				has_moved = true;
+				velocity.y -= 1;
+			}
+			if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+			{
+				has_moved = true;
+				velocity.y += 1;
+			}
+
+			//TODO: Input::GetMouseDeltaDegrees?
+			double mouseX;
+			double mouseY;
+			glfwGetCursorPos(window, &mouseX, &mouseY);
+
+			// Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
+			// and then "transforms" them into degrees
+			float rotX = sensitivity * (float)(mouseY - (height / 2)) / height;
+			float rotY = sensitivity * (float)(mouseX - (width / 2)) / width;
+
+			float sin_x = sin(-rotY);
+			float cos_x = cos(-rotY);
+
+			float sin_y = sin(-rotX);
+			float cos_y = cos(-rotX);
+
+			float4 mousedeltadegrees = { sin_x, cos_x, sin_y, cos_y };
+
+			cam->OnUpdate(velocity, delta);
+			cam->Rotate(mousedeltadegrees);
+
+			// Sets mouse cursor to the middle of the screen so that it doesn't end up roaming around
 			glfwSetCursorPos(window, (width / 2), (height / 2));
-			firstclick = false;
+			if (rotX != 0 || rotY != 0)has_moved = true;
 		}
-
-		//movement lateral
-		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		//free mouse
+		else
 		{
-			has_moved = true;
-			velocity.z -= 1;
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			// Makes sure the next time the camera looks around it doesn't jump
+			firstclick = true;
 		}
-		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		{
-			has_moved = true;
-			velocity.z += 1;
-		}
-
-		//strafe
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		{
-			has_moved = true;
-			velocity.x -= 1;
-		}
-		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		{
-			has_moved = true;
-			velocity.x += 1;
-		}
-
-		//UP/DOWN
-		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		{
-			has_moved = true;
-			velocity.y -= 1;
-		}
-		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		{
-			has_moved = true;
-			velocity.y += 1;
-		}
-
-		double mouseX;
-		double mouseY;
-		glfwGetCursorPos(window, &mouseX, &mouseY);
-
-		// Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
-		// and then "transforms" them into degrees
-		float rotX = sensitivity * (float)(mouseY - (height / 2)) / height;
-		float rotY = sensitivity * (float)(mouseX - (width / 2)) / width;
-
-		float2 mousedeltadegrees = { rotX, rotY };
-
-		cam->OnUpdate(velocity, delta);
-		cam->Rotate(mousedeltadegrees);
-
-		// Sets mouse cursor to the middle of the screen so that it doesn't end up roaming around
-		glfwSetCursorPos(window, (width / 2), (height / 2));
-		if (rotX != 0 || rotY != 0)has_moved = true;
-	}
-	//free mouse
-	else
-	{
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		// Makes sure the next time the camera looks around it doesn't jump
-		firstclick = true;
 	}
 
 	return has_moved;

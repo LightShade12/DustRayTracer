@@ -62,21 +62,19 @@ __host__ void Camera::OnUpdate(float3 velocity, float delta)
 	m_Position += m_movement_speed * finalvel * delta;
 }
 
-__host__ void Camera::Rotate(float2 mouse_delta_degrees)
+__host__ void Camera::Rotate(float4 delta_degrees)
 {
-	float rotX = mouse_delta_degrees.x;
-	float rotY = mouse_delta_degrees.y;
+	float sin_x = delta_degrees.x;
+	float cos_x = delta_degrees.y;
+	float sin_y = delta_degrees.z;
+	float cos_y = delta_degrees.w;
 
-	float sin_x = sin(-rotY);
-	float cos_x = cos(-rotY);
 	float3 rotated = (m_Forward_dir * cos_x) +
 		(cross(m_Up_dir, m_Forward_dir) * sin_x) +
 		(m_Up_dir * dot(m_Up_dir, m_Forward_dir)) * (1 - cos_x);
 	// Calculates upcoming vertical change in the Orientation
 	m_Forward_dir = rotated;
 
-	float sin_y = sin(-rotX);
-	float cos_y = cos(-rotX);
 	rotated = (m_Forward_dir * cos_y) +
 		(cross(m_Right_dir, m_Forward_dir) * sin_y) +
 		(m_Right_dir * dot(m_Right_dir, m_Forward_dir)) * (1 - cos_y);
