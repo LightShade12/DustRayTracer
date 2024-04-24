@@ -37,78 +37,28 @@ __host__ void EditorLayer::OnAttach()
 		make_float3(0, 1, 0),
 		make_float3(0, 1, 0)
 	};
-
-	//Triangle tri1x;
-	//tri1x.vertex0.position = make_float3(0.5f, 1.5f, -0.5f);
-	//tri1x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
-	//tri1x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
-	//tri1x.normal = { 0,1,0 };
-
-	//Triangle tri2x;
-	//tri2x.vertex0.position = make_float3(-0.5f, 1.5f, -0.5f);
-	//tri2x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
-	//tri2x.vertex2.position = make_float3(-0.5f, 1.5f, 0.5f);
-	//tri2x.normal = { 0,1,0 };
-
-	//Triangle tri3x;
-	//tri3x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
-	//tri3x.vertex1.position = make_float3(0.5f, 0.5f, -0.5f);
-	//tri3x.vertex2.position = make_float3(0.5f, 1.5f, -0.5f);
-	//tri3x.normal = { 0,0,-1 };
-
-	//Triangle tri4x;
-	//tri4x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
-	//tri4x.vertex1.position = make_float3(0.5f, 1.5f, -0.5f);
-	//tri4x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
-	//tri4x.normal = { 0,0,-1 };
-
-	//Triangle tri5x;
-	//tri5x.vertex0.position = make_float3(-0.5f, 0.5f, 0.5f);
-	//tri5x.vertex1.position = make_float3(0.5f, 0.5f, 0.5f);
-	//tri5x.vertex2.position = make_float3(0.5f, 1.5f, 0.5f);
-	//tri5x.normal = { 0,0,1 };
-
-	//Triangle tri6x;
-	//tri6x.vertex0.position = make_float3(-0.5f, 0.5f, 0.5f);
-	//tri6x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
-	//tri6x.vertex2.position = make_float3(-0.5f, 1.5f, 0.5f);
-	//tri6x.normal = { 0,0,1 };
-
-	//Triangle tri7x;
-	//tri7x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
-	//tri7x.vertex1.position = make_float3(-0.5f, 0.5f, 0.5f);
-	//tri7x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
-	//tri7x.normal = { -1,0,0 };
-
-	//Triangle tri8x;
-	//tri8x.vertex0.position = make_float3(-0.5f, 0.5f, 0.5f);
-	//tri8x.vertex1.position = make_float3(-0.5f, 1.5f, 0.5f);
-	//tri8x.vertex2.position = make_float3(-0.5f, 1.5f, -0.5f);
-	//tri8x.normal = { -1,0,0 };
-
-	//Triangle tri9x;
-	//tri9x.vertex0.position = make_float3(0.5f, 0.5f, -0.5f);
-	//tri9x.vertex1.position = make_float3(0.5f, 0.5f, 0.5f);
-	//tri9x.vertex2.position = make_float3(0.5f, 1.5f, -0.5f);
-	//tri9x.normal = { 1,0,0 };
-
-	//Triangle tri10x;
-	//tri10x.vertex0.position = make_float3(0.5f, 0.5f, 0.5f);
-	//tri10x.vertex1.position = make_float3(0.5f, 1.5f, 0.5f);
-	//tri10x.vertex2.position = make_float3(0.5f, 1.5f, -0.5f);
-	//tri10x.normal = { 1,0,0 };
-
-	//Triangle tri11x;
-	//tri11x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
-	//tri11x.vertex1.position = make_float3(0.5f, 0.5f, -0.5f);
-	//tri11x.vertex2.position = make_float3(0.5f, 0.5f, 0.5f);
-	//tri11x.normal = { 0,-1,0 };
-
-	//Triangle tri12x;
-	//tri12x.vertex0.position = make_float3(-0.5f, 0.5f, -0.5f);
-	//tri12x.vertex1.position = make_float3(0.5f, 0.5f, 0.5f);
-	//tri12x.vertex2.position = make_float3(-0.5f, 0.5f, 0.5f);
-	//tri12x.normal = { 0,-1,0 };
+	std::vector<float3> cubepositions =
+	{
+		make_float3(0.5f, 1.5f, -0.5f),make_float3(0.5f, 1.5f, 0.5f), make_float3(-0.5f, 1.5f, -0.5f),
+		make_float3(-0.5f, 1.5f, -0.5f), make_float3(0.5f, 1.5f, 0.5f), make_float3(-0.5f, 1.5f, 0.5f),
+		make_float3(-0.5f, 0.5f, -0.5f), make_float3(0.5f, 0.5f, -0.5f),  make_float3(0.5f, 1.5f, -0.5f),
+		make_float3(-0.5f, 0.5f, -0.5f), make_float3(0.5f, 1.5f, -0.5f), make_float3(-0.5f, 1.5f, -0.5f),
+		make_float3(-0.5f, 0.5f, 0.5f), make_float3(0.5f, 0.5f, 0.5f), make_float3(0.5f, 1.5f, 0.5f),
+		make_float3(-0.5f, 0.5f, 0.5f), make_float3(0.5f, 1.5f, 0.5f), make_float3(-0.5f, 1.5f, 0.5f),
+		make_float3(-0.5f, 0.5f, -0.5f),make_float3(-0.5f, 0.5f, 0.5f),	make_float3(-0.5f, 1.5f, -0.5f),
+		make_float3(-0.5f, 0.5f, 0.5f),make_float3(-0.5f, 1.5f, 0.5f),make_float3(-0.5f, 1.5f, -0.5f),
+		make_float3(0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, 0.5f),make_float3(0.5f, 1.5f, -0.5f),
+		make_float3(0.5f, 0.5f, 0.5f),make_float3(0.5f, 1.5f, 0.5f),make_float3(0.5f, 1.5f, -0.5f),
+		make_float3(-0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, 0.5f),
+		make_float3(-0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, 0.5f),make_float3(-0.5f, 0.5f, 0.5f)
+	};
+	std::vector<float3> cubenormals =
+	{
+		{ 0,1,0 }, { 0,1,0 }, { 0,0,-1 },
+		{ 0,0,-1 }, { 0,0,1 }, { 0,0,1 },
+		{ -1,0,0 }, { -1,0,0 }, { 1,0,0 },
+		{ 1,0,0 },{ 0,-1,0 }, { 0,-1,0 }
+	};
 
 	Material red;
 	red.Albedo = { .7,0,0 };
@@ -118,22 +68,11 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
 
-	Mesh mesh1(planefloorpositions, planefloornormals, 1);
+	Mesh planefloormesh(planefloorpositions, planefloornormals, 1);
+	Mesh cubemesh(cubepositions, cubenormals);
 
-	m_Scene->m_Meshes.push_back(mesh1);
-
-	/*m_Scene->m_Triangles.push_back(tri1x);
-	m_Scene->m_Triangles.push_back(tri2x);
-	m_Scene->m_Triangles.push_back(tri3x);
-	m_Scene->m_Triangles.push_back(tri4x);
-	m_Scene->m_Triangles.push_back(tri5x);
-	m_Scene->m_Triangles.push_back(tri6x);
-	m_Scene->m_Triangles.push_back(tri7x);
-	m_Scene->m_Triangles.push_back(tri8x);
-	m_Scene->m_Triangles.push_back(tri9x);
-	m_Scene->m_Triangles.push_back(tri10x);
-	m_Scene->m_Triangles.push_back(tri11x);
-	m_Scene->m_Triangles.push_back(tri12x);*/
+	m_Scene->m_Meshes.push_back(planefloormesh);
+	m_Scene->m_Meshes.push_back(cubemesh);
 
 	m_DevMetrics.m_TrianglesCount = 0;
 	m_DevMetrics.m_MaterialsCount = m_Scene->m_Material.size();
