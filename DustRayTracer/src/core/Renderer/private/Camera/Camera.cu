@@ -43,6 +43,10 @@ public:
 	glm::vec3 vertical;
 */
 
+__host__ void Camera::OnUpdate(float3 velocity, float delta)
+{
+	m_Position += m_movement_speed * velocity * delta;
+}
 
 __device__ float3 Camera::GetRayDir(float2 _uv, float vfovdeg, float width, float height) const
 {

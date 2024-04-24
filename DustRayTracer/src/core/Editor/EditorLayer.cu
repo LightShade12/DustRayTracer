@@ -10,6 +10,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include <glm/glm.hpp>
+#include <glm/mat3x3.hpp>
 
 #include <stb_image_write.h>
 
@@ -74,7 +76,13 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Meshes.push_back(planefloormesh);
 	m_Scene->m_Meshes.push_back(cubemesh);
 
-	m_DevMetrics.m_TrianglesCount = 0;
+	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
+
+	for (Mesh mesh : m_Scene->m_Meshes)
+	{
+		m_DevMetrics.m_TrianglesCount += mesh.m_trisCount;
+	}
+
 	m_DevMetrics.m_MaterialsCount = m_Scene->m_Material.size();
 
 	stbi_flip_vertically_on_write(true);
@@ -95,12 +103,12 @@ void EditorLayer::OnUIRender()
 		ImGui::Text(msg.c_str());
 		if (ImGui::Button("save png"))
 		{
-			std::vector<GLubyte> frame_data(m_Renderer.m_BufferWidth * m_Renderer.m_BufferHeight * 4);
+			std::vector<GLubyte> frame_data(m_Renderer.getBufferWidth() * m_Renderer.getBufferHeight() * 4);//RGBA8
 			glBindTexture(GL_TEXTURE_2D, m_Renderer.GetRenderTargetImage_name());
 			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data.data());
 			glBindTexture(GL_TEXTURE_2D, 0);
 
-			if (saveImage("image", m_Renderer.m_BufferWidth, m_Renderer.m_BufferHeight, frame_data.data()))
+			if (saveImage("image", m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight(), frame_data.data()))
 				msg = "Image saved";
 			else
 				msg = "Image save failed";
@@ -204,13 +212,15 @@ void EditorLayer::OnUIRender()
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
 	if (m_Renderer.GetRenderTargetImage_name() != NULL)
 		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
-			ImVec2(m_Renderer.m_BufferWidth, m_Renderer.m_BufferHeight), { 0,1 }, { 1,0 });
+			ImVec2(m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight()), { 0,1 }, { 1,0 });
 
 	ImGui::BeginChild("statusbar", ImVec2(ImGui::GetContentRegionAvail().x, 14), 0);
 
 	//ImGui::SetCursorScreenPos({ ImGui::GetCursorScreenPos().x + 5, ImGui::GetCursorScreenPos().y + 4 });
 
-	ImGui::Text("dims: %d x %d px", m_Renderer.m_BufferWidth, m_Renderer.m_BufferHeight);
+	ImGui::Text("dims: %d x %d px", m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight());
+	ImGui::SameLine();
+	ImGui::Text(" | RGBA8");
 	ImGui::EndChild();
 	ImGui::End();
 	ImGui::PopStyleVar(1);
@@ -220,7 +230,7 @@ void EditorLayer::OnUIRender()
 
 	vpdims.y -= 12;
 	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
-	m_Renderer.Render(m_dcamera, *m_Scene, &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
+	m_Renderer.Render(m_dcamera, (*m_Scene), &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
 
 	m_LastFrameTime = timer.ElapsedMillis();
 }
@@ -231,45 +241,45 @@ bool moving = false;
 void processInput(GLFWwindow* window, Camera* cam, float delta)
 {
 	moving = false;
-	//movement lateral
-	float cameraSpeed = static_cast<float>(5 * delta);
+	float3 velocity = { 0,0,0 };
 
+	//movement lateral
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	{
 		moving = true;
-		(cam)->m_Position -= cameraSpeed * (cam)->m_Forward_dir;
+		velocity -= (cam)->m_Forward_dir;
 	}
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		moving = true;
-		float3 movedir = cameraSpeed * (cam)->m_Forward_dir;
-		//printf("key pressed, x:%.3f, y:%.3f, z:%.3f\n", movedir.x,movedir.y,movedir.z);
-		(cam)->m_Position += movedir;
+		velocity += (cam)->m_Forward_dir;
 	}
 
 	//strafe
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
 		moving = true;
-		(cam)->m_Position -= normalize((cam)->m_Right_dir) * cameraSpeed;
+		velocity -= normalize((cam)->m_Right_dir);
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
 		moving = true;
-		(cam)->m_Position += normalize((cam)->m_Right_dir) * cameraSpeed;
+		velocity += normalize((cam)->m_Right_dir);
 	}
 
 	//UP/DOWN
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
 		moving = true;
-		(cam)->m_Position -= normalize((cam)->m_Up_dir) * cameraSpeed;
+		velocity -= normalize((cam)->m_Up_dir);
 	}
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
 		moving = true;
-		(cam)->m_Position += normalize((cam)->m_Up_dir) * cameraSpeed;
+		velocity += normalize((cam)->m_Up_dir);
 	}
+
+	cam->OnUpdate(velocity, delta);
 }
 
 void processmouse(GLFWwindow* window, Camera* cam, int width, int height)
@@ -354,5 +364,6 @@ void EditorLayer::OnUpdate(float ts)
 void EditorLayer::OnDetach()
 {
 	delete m_dcamera;
+	cudaDeviceSynchronize();
 	delete m_Scene;
 }
