@@ -54,7 +54,7 @@ __host__ void EditorLayer::OnAttach()
 	//------------------------------------------------------------------------
 
 	tinygltf::Model loadedmodel;
-	if (!loadModel(loadedmodel, "./src/models/suzanne_plane.glb"))
+	if (!loadModel(loadedmodel, "./src/models/room.glb"))
 	{
 		std::cout << "model loading error\n";
 		std::abort();
@@ -149,7 +149,7 @@ __host__ void EditorLayer::OnAttach()
 		}
 
 		printf("constructing mesh\n");
-		Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals);
+		Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals, 1);//TODO: will crash if obj count > mat count
 		printf("adding mesh\n");
 		m_Scene->m_Meshes.push_back(loadedmesh);
 		printf("success\n");
