@@ -109,6 +109,7 @@
     </ClCompile>
     <ClCompile Include="src\core\Common\Timer.cpp" />
     <ClCompile Include="src\core\Editor\Theme\EditorTheme.cpp" />
+    <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />

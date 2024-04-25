@@ -10,6 +10,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include <tiny_gltf.h>
 
 #include <stb_image_write.h>
 
@@ -22,6 +23,28 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return true;
 	else
 		return false;
+}
+
+bool loadModel(tinygltf::Model& model, const char* filename) {
+	tinygltf::TinyGLTF loader;
+	std::string err;
+	std::string warn;
+
+	bool res = loader.LoadBinaryFromFile(&model, &err, &warn, filename);
+	if (!warn.empty()) {
+		std::cout << "WARN: " << warn << std::endl;
+	}
+
+	if (!err.empty()) {
+		std::cout << "ERR: " << err << std::endl;
+	}
+
+	if (!res)
+		std::cout << "Failed to load glTF: " << filename << std::endl;
+	else
+		std::cout << "Loaded glTF: " << filename << std::endl;
+
+	return res;
 }
 
 __host__ void EditorLayer::OnAttach()
@@ -59,6 +82,59 @@ __host__ void EditorLayer::OnAttach()
 		{ -1,0,0 }, { -1,0,0 }, { 1,0,0 },
 		{ 1,0,0 },{ 0,-1,0 }, { 0,-1,0 }
 	};
+	//------------------------------------------------------------------------
+
+	tinygltf::Model loadedmodel;
+	if (!loadModel(loadedmodel, "./src/models/cube.glb"))
+	{
+		std::cout << "model loading error\n";
+		std::abort();
+	}
+
+	std::vector<float3> loadedmodelpositions;
+	std::vector<float3>loadedmodelnormals(12, make_float3(0, 1, 0));
+
+	for (size_t primIdx = 0; primIdx < loadedmodel.meshes[0].primitives.size(); primIdx++)
+	{
+		int pos_attrib_accesorIdx = loadedmodel.meshes[0].primitives[primIdx].attributes["POSITION"];
+		int nrm_attrib_accesorIdx = loadedmodel.meshes[0].primitives[primIdx].attributes["NORMAL"];
+		int indices_accesorIdx = loadedmodel.meshes[0].primitives[primIdx].indices;
+
+		tinygltf::Accessor pos_accesor = loadedmodel.accessors[pos_attrib_accesorIdx];
+		tinygltf::Accessor nrm_accesor = loadedmodel.accessors[nrm_attrib_accesorIdx];
+		tinygltf::Accessor indices_accesor = loadedmodel.accessors[indices_accesorIdx];
+
+		int pos_accesor_byte_offset = pos_accesor.byteOffset;//redundant
+		int nrm_accesor_byte_offset = nrm_accesor.byteOffset;//redundant
+		int indices_accesor_byte_offset = indices_accesor.byteOffset;//redundant
+
+		tinygltf::BufferView pos_bufferview = loadedmodel.bufferViews[pos_accesor.bufferView];
+		tinygltf::BufferView nrm_bufferview = loadedmodel.bufferViews[nrm_accesor.bufferView];
+		tinygltf::BufferView indices_bufferview = loadedmodel.bufferViews[indices_accesor.bufferView];
+
+		int pos_buffer_byte_offset = pos_bufferview.byteOffset;
+		int nrm_buffer_byte_offset = nrm_bufferview.byteOffset;
+		tinygltf::Buffer cube_buffer = loadedmodel.buffers[0];
+
+		printf("nrm accesor count: %d\n", nrm_accesor.count);
+
+		unsigned short* indicesbuffer = (unsigned short*)(cube_buffer.data.data());
+		float3* positions_buffer = (float3*)(cube_buffer.data.data() + pos_buffer_byte_offset);
+		float3* normals_buffer = (float3*)(cube_buffer.data.data() + nrm_buffer_byte_offset);
+
+		for (int i = (indices_bufferview.byteOffset / 2); i < (indices_bufferview.byteLength + indices_bufferview.byteOffset) / 2; i++)
+		{
+			loadedmodelpositions.push_back(positions_buffer[indicesbuffer[i]]);
+			loadedmodelnormals.push_back(normals_buffer[indicesbuffer[i]]);
+		}
+	}
+
+	printf("constructed positions: %d \n", loadedmodelpositions.size());//should be 36 for cube
+
+	for (float3 pos : loadedmodelpositions)
+	{
+		printf("x:%.3f y:%.3f z:%.3f \n", pos.x, pos.y, pos.z);
+	}
 
 	Material red;
 	red.Albedo = { .7,0,0 };
@@ -68,11 +144,13 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
 
-	Mesh planefloormesh(planefloorpositions, planefloornormals, 1);
-	Mesh cubemesh(cubepositions, cubenormals);
+	//Mesh planefloormesh(planefloorpositions, planefloornormals, 1);
+	//Mesh cubemesh(cubepositions, cubenormals);
+	Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals);
 
-	m_Scene->m_Meshes.push_back(planefloormesh);
-	m_Scene->m_Meshes.push_back(cubemesh);
+	//m_Scene->m_Meshes.push_back(planefloormesh);
+	//m_Scene->m_Meshes.push_back(cubemesh);
+	m_Scene->m_Meshes.push_back(loadedmesh);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 

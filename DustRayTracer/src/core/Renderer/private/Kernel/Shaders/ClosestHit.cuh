@@ -11,10 +11,10 @@ __device__ HitPayload ClosestHit(const Ray& ray, uint32_t obj_idx, float hit_dis
 	payload.world_position = ray.origin + ray.direction * hit_distance;//hit position
 	payload.object_idx = obj_idx;
 
-	if (dot(triangle.normal, ray.direction) > 0)
-		payload.world_normal = -float3(triangle.normal);
+	if (dot(triangle.face_normal, ray.direction) > 0)
+		payload.world_normal = -float3(triangle.face_normal);
 	else
-		payload.world_normal = triangle.normal;
+		payload.world_normal = triangle.face_normal;
 
 	return payload;
 };

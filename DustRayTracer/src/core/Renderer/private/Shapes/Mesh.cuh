@@ -9,8 +9,8 @@ class Mesh
 {
 public:
 	Mesh() = default;
-	__host__ Mesh(std::vector<float3> positions, std::vector<float3>normals, uint32_t matidx=0);
-	
+	__host__ Mesh(const std::vector<float3> &positions, const std::vector<float3> &vertex_normals, uint32_t matidx = 0);
+
 	__host__ void Cleanup();
 
 	Triangle* m_dev_triangles;//device ptr
