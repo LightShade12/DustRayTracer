@@ -54,7 +54,7 @@ __host__ void EditorLayer::OnAttach()
 	//------------------------------------------------------------------------
 
 	tinygltf::Model loadedmodel;
-	if (!loadModel(loadedmodel, "./src/models/cube.glb"))
+	if (!loadModel(loadedmodel, "./src/models/suzanne_plane.glb"))
 	{
 		std::cout << "model loading error\n";
 		std::abort();

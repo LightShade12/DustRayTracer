@@ -22,7 +22,7 @@ __host__ Mesh::Mesh(const std::vector<float3> &positions, const std::vector<floa
 		float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
 
 		tris.push_back(Triangle(Vertex(positions[i], vertex_normals[i]), Vertex(positions[i + 1], vertex_normals[i + 1]), Vertex(positions[i + 2], vertex_normals[i + 2]),
-			surface_normal, matidx));
+			normalize(surface_normal), matidx));
 	}
 
 	m_trisCount = tris.size();
