@@ -12,3 +12,6 @@
 [submodule "DustRayTracer/thirdparty/glfw"]
 	path = DustRayTracer/thirdparty/glfw
 	url = https://github.com/LightShade12/glfw.git
+[submodule "DustRayTracer/thirdparty/tinygltf"]
+	path = DustRayTracer/thirdparty/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
