@@ -51,37 +51,6 @@ __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
-
-	std::vector<float3>planefloorpositions =
-	{ make_float3(2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, -2.5f),
-	make_float3(-2.5f, -0.2f, -2.5f), make_float3(2.5f, -0.2f, 2.5f), make_float3(-2.5f, -0.2f, 2.5f) };
-	std::vector<float3>planefloornormals =
-	{
-		make_float3(0, 1, 0),
-		make_float3(0, 1, 0)
-	};
-	std::vector<float3> cubepositions =
-	{
-		make_float3(0.5f, 1.5f, -0.5f),make_float3(0.5f, 1.5f, 0.5f), make_float3(-0.5f, 1.5f, -0.5f),
-		make_float3(-0.5f, 1.5f, -0.5f), make_float3(0.5f, 1.5f, 0.5f), make_float3(-0.5f, 1.5f, 0.5f),
-		make_float3(-0.5f, 0.5f, -0.5f), make_float3(0.5f, 0.5f, -0.5f),  make_float3(0.5f, 1.5f, -0.5f),
-		make_float3(-0.5f, 0.5f, -0.5f), make_float3(0.5f, 1.5f, -0.5f), make_float3(-0.5f, 1.5f, -0.5f),
-		make_float3(-0.5f, 0.5f, 0.5f), make_float3(0.5f, 0.5f, 0.5f), make_float3(0.5f, 1.5f, 0.5f),
-		make_float3(-0.5f, 0.5f, 0.5f), make_float3(0.5f, 1.5f, 0.5f), make_float3(-0.5f, 1.5f, 0.5f),
-		make_float3(-0.5f, 0.5f, -0.5f),make_float3(-0.5f, 0.5f, 0.5f),	make_float3(-0.5f, 1.5f, -0.5f),
-		make_float3(-0.5f, 0.5f, 0.5f),make_float3(-0.5f, 1.5f, 0.5f),make_float3(-0.5f, 1.5f, -0.5f),
-		make_float3(0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, 0.5f),make_float3(0.5f, 1.5f, -0.5f),
-		make_float3(0.5f, 0.5f, 0.5f),make_float3(0.5f, 1.5f, 0.5f),make_float3(0.5f, 1.5f, -0.5f),
-		make_float3(-0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, 0.5f),
-		make_float3(-0.5f, 0.5f, -0.5f),make_float3(0.5f, 0.5f, 0.5f),make_float3(-0.5f, 0.5f, 0.5f)
-	};
-	std::vector<float3> cubenormals =
-	{
-		{ 0,1,0 }, { 0,1,0 }, { 0,0,-1 },
-		{ 0,0,-1 }, { 0,0,1 }, { 0,0,1 },
-		{ -1,0,0 }, { -1,0,0 }, { 1,0,0 },
-		{ 1,0,0 },{ 0,-1,0 }, { 0,-1,0 }
-	};
 	//------------------------------------------------------------------------
 
 	tinygltf::Model loadedmodel;
@@ -91,49 +60,99 @@ __host__ void EditorLayer::OnAttach()
 		std::abort();
 	}
 
-	std::vector<float3> loadedmodelpositions;
-	std::vector<float3>loadedmodelnormals(12, make_float3(0, 1, 0));
-
-	for (size_t primIdx = 0; primIdx < loadedmodel.meshes[0].primitives.size(); primIdx++)
+	//mesh looping
+	for (size_t meshIdx = 0; meshIdx < loadedmodel.meshes.size(); meshIdx++)
 	{
-		int pos_attrib_accesorIdx = loadedmodel.meshes[0].primitives[primIdx].attributes["POSITION"];
-		int nrm_attrib_accesorIdx = loadedmodel.meshes[0].primitives[primIdx].attributes["NORMAL"];
-		int indices_accesorIdx = loadedmodel.meshes[0].primitives[primIdx].indices;
+		std::vector<float3> loadedmodelpositions;
+		std::vector<float3>loadedmodelnormals;
 
-		tinygltf::Accessor pos_accesor = loadedmodel.accessors[pos_attrib_accesorIdx];
-		tinygltf::Accessor nrm_accesor = loadedmodel.accessors[nrm_attrib_accesorIdx];
-		tinygltf::Accessor indices_accesor = loadedmodel.accessors[indices_accesorIdx];
+		printf("processing mesh index: %d\n", meshIdx);
 
-		int pos_accesor_byte_offset = pos_accesor.byteOffset;//redundant
-		int nrm_accesor_byte_offset = nrm_accesor.byteOffset;//redundant
-		int indices_accesor_byte_offset = indices_accesor.byteOffset;//redundant
-
-		tinygltf::BufferView pos_bufferview = loadedmodel.bufferViews[pos_accesor.bufferView];
-		tinygltf::BufferView nrm_bufferview = loadedmodel.bufferViews[nrm_accesor.bufferView];
-		tinygltf::BufferView indices_bufferview = loadedmodel.bufferViews[indices_accesor.bufferView];
-
-		int pos_buffer_byte_offset = pos_bufferview.byteOffset;
-		int nrm_buffer_byte_offset = nrm_bufferview.byteOffset;
-		tinygltf::Buffer cube_buffer = loadedmodel.buffers[0];
-
-		printf("nrm accesor count: %d\n", nrm_accesor.count);
-
-		unsigned short* indicesbuffer = (unsigned short*)(cube_buffer.data.data());
-		float3* positions_buffer = (float3*)(cube_buffer.data.data() + pos_buffer_byte_offset);
-		float3* normals_buffer = (float3*)(cube_buffer.data.data() + nrm_buffer_byte_offset);
-
-		for (int i = (indices_bufferview.byteOffset / 2); i < (indices_bufferview.byteLength + indices_bufferview.byteOffset) / 2; i++)
+		for (size_t primIdx = 0; primIdx < loadedmodel.meshes[meshIdx].primitives.size(); primIdx++)
 		{
-			loadedmodelpositions.push_back(positions_buffer[indicesbuffer[i]]);
-			loadedmodelnormals.push_back(normals_buffer[indicesbuffer[i]]);
+			int pos_attrib_accesorIdx = loadedmodel.meshes[meshIdx].primitives[primIdx].attributes["POSITION"];
+			int nrm_attrib_accesorIdx = loadedmodel.meshes[meshIdx].primitives[primIdx].attributes["NORMAL"];
+			int indices_accesorIdx = loadedmodel.meshes[meshIdx].primitives[primIdx].indices;
+
+			tinygltf::Accessor pos_accesor = loadedmodel.accessors[pos_attrib_accesorIdx];
+			tinygltf::Accessor nrm_accesor = loadedmodel.accessors[nrm_attrib_accesorIdx];
+			tinygltf::Accessor indices_accesor = loadedmodel.accessors[indices_accesorIdx];
+
+			int pos_accesor_byte_offset = pos_accesor.byteOffset;//redundant
+			int nrm_accesor_byte_offset = nrm_accesor.byteOffset;//redundant
+			int indices_accesor_byte_offset = indices_accesor.byteOffset;//redundant
+
+			tinygltf::BufferView pos_bufferview = loadedmodel.bufferViews[pos_accesor.bufferView];
+			tinygltf::BufferView nrm_bufferview = loadedmodel.bufferViews[nrm_accesor.bufferView];
+			tinygltf::BufferView indices_bufferview = loadedmodel.bufferViews[indices_accesor.bufferView];
+
+			int pos_buffer_byte_offset = pos_bufferview.byteOffset;
+			int nrm_buffer_byte_offset = nrm_bufferview.byteOffset;
+			tinygltf::Buffer cube_buffer = loadedmodel.buffers[0];//should alawys be zero
+
+			printf("normals accesor count: %d\n", nrm_accesor.count);
+			printf("positions accesor count: %d\n", pos_accesor.count);
+			printf("indices accesor count: %d\n", indices_accesor.count);
+
+			unsigned short* indicesbuffer = (unsigned short*)(cube_buffer.data.data());
+			float3* positions_buffer = (float3*)(cube_buffer.data.data() + pos_buffer_byte_offset);
+			float3* normals_buffer = (float3*)(cube_buffer.data.data() + nrm_buffer_byte_offset);
+
+			for (int i = (indices_bufferview.byteOffset / 2); i < (indices_bufferview.byteLength + indices_bufferview.byteOffset) / 2; i++)
+			{
+				loadedmodelpositions.push_back(positions_buffer[indicesbuffer[i]]);
+				loadedmodelnormals.push_back(normals_buffer[indicesbuffer[i]]);
+			}
 		}
-	}
 
-	printf("constructed positions: %d \n", loadedmodelpositions.size());//should be 36 for cube
+		printf("constructed positions count: %d \n", loadedmodelpositions.size());//should be 36 for cube
+		printf("constructed normals count: %d \n", loadedmodelnormals.size());//should be 36 for cube
 
-	for (float3 pos : loadedmodelpositions)
-	{
-		printf("x:%.3f y:%.3f z:%.3f \n", pos.x, pos.y, pos.z);
+		if (loadedmodelpositions.size() == loadedmodelnormals.size())
+		{
+			bool stop = false;
+			printf("positions:\n");
+			for (size_t i = 0; i < loadedmodelpositions.size(); i++)
+			{
+				if (i > 3 && i < loadedmodelpositions.size() - 3)
+				{
+					if (!stop)
+					{
+						printf("...\n");
+						stop = true;
+					}
+					continue;
+				}
+				float3 pos = loadedmodelpositions[i];
+				printf("x:%.3f y:%.3f z:%.3f\n", pos.x, pos.y, pos.z);
+			}
+			stop = false;
+			printf("normals:\n");
+			for (size_t i = 0; i < loadedmodelnormals.size(); i++)
+			{
+				if (i > 3 && i < loadedmodelnormals.size() - 3)
+				{
+					if (!stop)
+					{
+						printf("...\n");
+						stop = true;
+					}
+					continue;
+				}
+				float3 nrm = loadedmodelnormals[i];
+				printf("x:%.3f y:%.3f z:%.3f\n", nrm.x, nrm.y, nrm.z);
+			}
+		}
+		else
+		{
+			printf("positions-normals count mismatch!\n");
+		}
+
+		printf("constructing mesh\n");
+		Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals);
+		printf("adding mesh\n");
+		m_Scene->m_Meshes.push_back(loadedmesh);
+		printf("success\n");
 	}
 
 	Material red;
@@ -143,14 +162,6 @@ __host__ void EditorLayer::OnAttach()
 
 	m_Scene->m_Material.push_back(red);
 	m_Scene->m_Material.push_back(blue);
-
-	//Mesh planefloormesh(planefloorpositions, planefloornormals, 1);
-	//Mesh cubemesh(cubepositions, cubenormals);
-	Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals);
-
-	//m_Scene->m_Meshes.push_back(planefloormesh);
-	//m_Scene->m_Meshes.push_back(cubemesh);
-	m_Scene->m_Meshes.push_back(loadedmesh);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
