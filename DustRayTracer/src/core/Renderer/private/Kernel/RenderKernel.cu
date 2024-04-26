@@ -18,7 +18,7 @@
 //Render Kernel
 __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam,
 	const Material* materialvector, uint32_t frameidx, float3* accumulation_buffer,
-	const Mesh* MeshBufferPtr, size_t MeshBufferSize)
+	const Mesh* MeshBufferPtr, size_t MeshBufferSize, const Texture* TextureBufferPtr, size_t TextureBufferSize)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -26,7 +26,7 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 	if ((i >= max_x) || (j >= max_y)) return;
 
 	float3 fcolor = RayGen(i, j, max_x, max_y, cam, 
-		materialvector, frameidx, MeshBufferPtr, MeshBufferSize);
+		materialvector, frameidx, MeshBufferPtr, MeshBufferSize, TextureBufferPtr, TextureBufferSize);
 
 	accumulation_buffer[i + j * max_x] += fcolor;
 	float3 accol = accumulation_buffer[i + j * max_x] / frameidx;
@@ -41,8 +41,9 @@ void InvokeRenderKernel(
 {
 	const Material* DeviceMaterialVector = thrust::raw_pointer_cast(scene.m_Material.data());;
 	const Mesh* DeviceMeshBuffer = thrust::raw_pointer_cast(scene.m_Meshes.data());
+	const Texture* DeviceTextureBuffer = thrust::raw_pointer_cast(scene.m_Textures.data());
 
 	kernel << < _blocks, _threads >> >
 		(surfaceobj, width, height, cam,
-			DeviceMaterialVector, frameidx, accumulation_buffer, DeviceMeshBuffer, scene.m_Meshes.size());
+			DeviceMaterialVector, frameidx, accumulation_buffer, DeviceMeshBuffer, scene.m_Meshes.size(), DeviceTextureBuffer, scene.m_Textures.size());
 }

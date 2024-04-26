@@ -28,8 +28,8 @@ BUILDING:
    You can #define STBIW_MEMMOVE() to replace memmove()
    You can #define STBIW_ZLIB_COMPRESS to use a custom zlib-style compress function
    for PNG compression (instead of the builtin one), it must have the following signature:
-   unsigned char * my_compress(unsigned char *data, int data_len, int *out_len, int quality);
-   The returned data will be freed with STBIW_FREE() (free() by default),
+   unsigned char * my_compress(unsigned char *d_data, int data_len, int *out_len, int quality);
+   The returned d_data will be freed with STBIW_FREE() (free() by default),
    so it must be heap allocated with STBIW_MALLOC() (malloc() by default),
 
 UNICODE:
@@ -44,25 +44,25 @@ USAGE:
 
    There are five functions, one for each image file format:
 
-     int stbi_write_png(char const *filename, int w, int h, int comp, const void *data, int stride_in_bytes);
-     int stbi_write_bmp(char const *filename, int w, int h, int comp, const void *data);
-     int stbi_write_tga(char const *filename, int w, int h, int comp, const void *data);
-     int stbi_write_jpg(char const *filename, int w, int h, int comp, const void *data, int quality);
-     int stbi_write_hdr(char const *filename, int w, int h, int comp, const float *data);
+     int stbi_write_png(char const *filename, int w, int h, int comp, const void *d_data, int stride_in_bytes);
+     int stbi_write_bmp(char const *filename, int w, int h, int comp, const void *d_data);
+     int stbi_write_tga(char const *filename, int w, int h, int comp, const void *d_data);
+     int stbi_write_jpg(char const *filename, int w, int h, int comp, const void *d_data, int quality);
+     int stbi_write_hdr(char const *filename, int w, int h, int comp, const float *d_data);
 
-     void stbi_flip_vertically_on_write(int flag); // flag is non-zero to flip data vertically
+     void stbi_flip_vertically_on_write(int flag); // flag is non-zero to flip d_data vertically
 
    There are also five equivalent functions that use an arbitrary write function. You are
    expected to open/close your file-equivalent before and after calling these:
 
-     int stbi_write_png_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const void  *data, int stride_in_bytes);
-     int stbi_write_bmp_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const void  *data);
-     int stbi_write_tga_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const void  *data);
-     int stbi_write_hdr_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const float *data);
-     int stbi_write_jpg_to_func(stbi_write_func *func, void *context, int x, int y, int comp, const void *data, int quality);
+     int stbi_write_png_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const void  *d_data, int stride_in_bytes);
+     int stbi_write_bmp_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const void  *d_data);
+     int stbi_write_tga_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const void  *d_data);
+     int stbi_write_hdr_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const float *d_data);
+     int stbi_write_jpg_to_func(stbi_write_func *func, void *context, int x, int y, int comp, const void *d_data, int quality);
 
    where the callback is:
-      void stbi_write_func(void *context, void *data, int size);
+      void stbi_write_func(void *context, void *d_data, int size);
 
    You can configure it with these global variables:
       int stbi_write_tga_with_rle;             // defaults to true; set to 0 to disable RLE
@@ -78,10 +78,10 @@ USAGE:
 
    The functions create an image file defined by the parameters. The image
    is a rectangle of pixels stored from left-to-right, top-to-bottom.
-   Each pixel contains 'comp' channels of data stored interleaved with 8-bits
+   Each pixel contains 'comp' channels of d_data stored interleaved with 8-bits
    per channel, in the following order: 1=Y, 2=YA, 3=RGB, 4=RGBA. (Y is
    monochrome color.) The rectangle is 'w' pixels wide and 'h' pixels tall.
-   The *data pointer points to the first byte of the top-left-most pixel.
+   The *d_data pointer points to the first byte of the top-left-most pixel.
    For PNG, "stride_in_bytes" is the distance in bytes from the first byte of
    a row of pixels to the first byte of the next row of pixels.
 
@@ -89,8 +89,8 @@ USAGE:
    The BMP format expands Y to RGB in the file format and does not
    output alpha.
 
-   PNG supports writing rectangles of data even when the bytes storing rows of
-   data are not consecutive in memory (e.g. sub-rectangles of a larger image),
+   PNG supports writing rectangles of d_data even when the bytes storing rows of
+   d_data are not consecutive in memory (e.g. sub-rectangles of a larger image),
    by supplying the stride between the beginning of adjacent rows. The other
    formats do not. (Thus you cannot write a native-format BMP through the BMP
    writer, both because it is in BGR order and because it may have padding
@@ -99,14 +99,14 @@ USAGE:
    PNG allows you to set the deflate compression level by setting the global
    variable 'stbi_write_png_compression_level' (it defaults to 8).
 
-   HDR expects linear float data. Since the format is always 32-bit rgb(e)
-   data, alpha (if provided) is discarded, and for monochrome data it is
+   HDR expects linear float d_data. Since the format is always 32-bit rgb(e)
+   d_data, alpha (if provided) is discarded, and for monochrome d_data it is
    replicated across all three channels.
 
-   TGA supports RLE or non-RLE compressed data. To use non-RLE-compressed
-   data, set the global variable 'stbi_write_tga_with_rle' to 0.
+   TGA supports RLE or non-RLE compressed d_data. To use non-RLE-compressed
+   d_data, set the global variable 'stbi_write_tga_with_rle' to 0.
 
-   JPEG does ignore alpha channels in input data; quality is between 1 and 100.
+   JPEG does ignore alpha channels in input d_data; quality is between 1 and 100.
    Higher quality looks better but results in a bigger image.
    JPEG baseline (no JPEG progressive).
 
@@ -920,7 +920,7 @@ STBIWDEF unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, i
 
    i=0;
    while (i < data_len-3) {
-      // hash next 3 bytes of data to be compressed
+      // hash next 3 bytes of d_data to be compressed
       int h = stbiw__zhash(data+i)&(stbiw__ZHASH-1), best=3;
       unsigned char *bestloc = 0;
       unsigned char **hlist = hash_table[h];
@@ -1168,7 +1168,7 @@ STBIWDEF unsigned char *stbi_write_png_to_mem(const unsigned char *pixels, int s
             filter_type = best_filter;
          }
       }
-      // when we get here, filter_type contains the filter type, and line_buffer contains the data
+      // when we get here, filter_type contains the filter type, and line_buffer contains the d_data
       filt[j*(x*n+1)] = (unsigned char) filter_type;
       STBIW_MEMMOVE(filt+j*(x*n+1)+1, line_buffer, x*n);
    }

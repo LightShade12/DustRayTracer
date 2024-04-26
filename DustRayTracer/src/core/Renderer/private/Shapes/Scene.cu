@@ -1,13 +1,52 @@
 #include "Scene.cuh"
 
+//#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#include "core/Common/CudaCommon.cuh"
+#include <cuda_runtime.h>
+
 #include <tiny_gltf.h>
+
+//8 bit img only
+Texture::Texture(const char* filepath)
+{
+	unsigned char* imgdata = stbi_load(filepath, &width, &height, &componentCount, 3);//for now 3
+	size_t imgbuffersize = width * height * componentCount * sizeof(unsigned char);//1byte ik; till float texture support, this is format
+	cudaMallocManaged((void**)&d_data, imgbuffersize);
+	checkCudaErrors(cudaGetLastError());
+	cudaMemcpy(d_data, imgdata, imgbuffersize, cudaMemcpyHostToDevice);
+	checkCudaErrors(cudaGetLastError());
+}
+
+__device__ float3 Texture::getPixel(float2 UV) const
+{
+	//(y*width)+x
+
+	uchar3* coldata = (uchar3*)d_data;
+	int x = UV.x * width;
+	int y = UV.y * height;
+	uchar3 fcol = (coldata[y * width + x]);
+	//printf("r: %u g: %u b: %u ||", (unsigned int)fcol.x, (unsigned int)fcol.y, (unsigned int)fcol.z);
+
+	float3 fltcol = make_float3(fcol.x / (float)255, fcol.y / (float)255, fcol.z / (float)255);
+	//printf("r: %.3f g: %.3f b: %.3f ||", fltcol.x, fltcol.y, fltcol.z);
+
+	return fltcol;
+}
+
+void Texture::Cleanup()
+{
+	cudaFree(d_data);
+	checkCudaErrors(cudaGetLastError());
+}
 
 bool loadModel(tinygltf::Model& model, const char* filename) {
 	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
 
-	bool res = loader.LoadBinaryFromFile(&model, &err, &warn, filename);
+	bool res = loader.LoadASCIIFromFile(&model, &err, &warn, filename);
 	if (!warn.empty()) {
 		std::cout << "WARN: " << warn << std::endl;
 	}
@@ -31,17 +70,42 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	for (size_t matIdx = 0; matIdx < model.materials.size(); matIdx++)
 	{
 		tinygltf::Material mat = model.materials[matIdx];
+		Material drt_mat;
+
 		std::vector<double> color = mat.pbrMetallicRoughness.baseColorFactor;
 		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
-		m_Material.push_back(Material(albedo));
+
+		drt_mat.Albedo = albedo;
+		drt_mat.AlbedoTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;//should be -1 when empty
+		printf("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
+		m_Material.push_back(drt_mat);
 	}
 	printf("loaded materials count: %d \n\n", m_Material.size());//should be 36 for cube
 
 	return true;
 }
 
+bool Scene::loadTextures(tinygltf::Model& model)
+{
+	const char* imgdir = "./src/models/";
+	printf("Images count in file: %d\n", model.images.size());
+
+	for (size_t textureIdx = 0; textureIdx < model.images.size(); textureIdx++)
+	{
+		tinygltf::Image current_img = model.images[textureIdx];
+		printf("uri: %s\n", current_img.uri.c_str());
+		printf("processing idx: %d,name= %s\n", textureIdx, current_img.name.c_str());
+
+		printf("load path: %s\n", (imgdir + current_img.uri).c_str());
+		Texture tex = Texture((imgdir + current_img.uri).c_str());
+		printf("img dims: w:%d h:%d ch:%d\n", tex.width, tex.height, tex.componentCount);
+		m_Textures.push_back(tex);//whitespace will be incorrectly parsed
+	}
+	return false;
+}
+
 //does not support reused mesh
-bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals, 
+bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals,
 	std::vector<float2>& UVs)
 {
 	for (size_t primIdx = 0; primIdx < mesh.primitives.size(); primIdx++)
@@ -98,18 +162,21 @@ bool Scene::loadGLTFmodel(const char* filepath)
 {
 	tinygltf::Model loadedmodel;
 	loadModel(loadedmodel, filepath);
+	loadTextures(loadedmodel);
 	loadMaterials(loadedmodel);
 
 	//mesh looping
-	for (size_t meshIdx = 0; meshIdx < loadedmodel.meshes.size(); meshIdx++)
+	for (size_t nodeIdx = 0; nodeIdx < loadedmodel.nodes.size(); nodeIdx++)
 	{
 		std::vector<float3> loadedMeshPositions;
 		std::vector<float3>loadedMeshNormals;
 		std::vector<float2>loadedMeshUVs;
 
-		tinygltf::Mesh current_mesh = loadedmodel.meshes[meshIdx];
+		tinygltf::Node current_node = loadedmodel.nodes[nodeIdx];
 
-		printf("processing mesh: %s , index= %d\n", current_mesh.name.c_str(), meshIdx);
+		tinygltf::Mesh current_mesh = loadedmodel.meshes[current_node.mesh];
+
+		printf("processing node: %s with mesh: %s , mesh index= %d\n", current_node.name.c_str(), current_mesh.name.c_str(), current_node.mesh);
 
 		parseMesh(current_mesh, loadedmodel, loadedMeshPositions, loadedMeshNormals, loadedMeshUVs);
 
@@ -117,7 +184,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		printf("constructed normals count: %d \n", loadedMeshNormals.size());//should be 36 for cube
 		printf("constructed UVs count: %d \n", loadedMeshUVs.size());//should be 36 for cube
 
-		//DEBUG positions-normal-data print
+		//DEBUG positions-normal-d_data print
 		if (loadedMeshPositions.size() == loadedMeshNormals.size())
 		{
 			bool stop = false;
@@ -175,7 +242,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		}
 
 		printf("constructing mesh\n");
-		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals,loadedMeshUVs, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
+		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, loadedMeshUVs, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
 		printf("adding mesh\n");
 		m_Meshes.push_back(loadedMesh);
 		printf("success\n\n");
@@ -189,5 +256,9 @@ Scene::~Scene()
 	for (Mesh mesh : m_Meshes)
 	{
 		mesh.Cleanup();
+	}
+	for (Texture texture : m_Textures)
+	{
+		texture.Cleanup();
 	}
 }

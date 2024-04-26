@@ -10,7 +10,7 @@
 
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, const Material* matvector, uint32_t frameidx,
-	const Mesh* MeshBufferPtr, size_t MeshBufferSize) {
+	const Mesh* MeshBufferPtr, size_t MeshBufferSize, const Texture* TextureBufferPtr, size_t TextureBufferSize) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
 	float3 sunpos = { 100,100,100 };
@@ -29,10 +29,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 1;
+	int bounces = 10;
 
 	for (int i = 0; i < bounces; i++)
 	{
+		float2 uv = {0,1};//DEBUG
 		HitPayload payload = TraceRay(ray, MeshBufferPtr, MeshBufferSize);
 		seed += i;
 		//sky
@@ -52,7 +53,24 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		Material material = matvector[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error; maybe not cuz miss shading handles before exec here
 
 		//light = material.Albedo;
-		contribution *= material.Albedo;
+
+		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
+
+		if (material.AlbedoTextureIndex < 0) 
+		{
+			contribution *= material.Albedo;
+		}
+		else
+		{
+			//printf("exec ");
+			Triangle tri = closestMesh.m_dev_triangles[payload.triangle_idx];
+			uv = {
+				 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
+				  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
+			};
+			contribution *= TextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+			//contribution *= {0,1,0};
+		}
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 
@@ -66,10 +84,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
 		//light = payload.world_normal;//debug normals
-		light = payload.UVW;//debug UV
+		//light = payload.UVW;//debug barycentric coords
+		//light = {uv.x,uv.y,0};//debug UV
 	}
 
-	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	light = fminf(light, { 1,1,1 });
 	return light;
 };

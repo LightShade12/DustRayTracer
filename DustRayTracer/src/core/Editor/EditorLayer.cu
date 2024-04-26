@@ -13,7 +13,6 @@
 
 #include <stb_image_write.h>
 
-
 //appends extension automatically;png
 bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 {
@@ -30,7 +29,7 @@ __host__ void EditorLayer::OnAttach()
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/cornell_box.glb");
+	m_Scene->loadGLTFmodel("./src/models/cornell_box.gltf");
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
@@ -40,9 +39,9 @@ __host__ void EditorLayer::OnAttach()
 	}
 
 	m_DevMetrics.m_MaterialsCount = m_Scene->m_Material.size();
+	m_DevMetrics.m_TexturesCount = m_Scene->m_Textures.size();
 
 	stbi_flip_vertically_on_write(true);
-
 
 	ImGuiThemes::dark();
 	//ImGuiThemes::UE4();
@@ -143,6 +142,12 @@ void EditorLayer::OnUIRender()
 		ImGui::Text("Materials loaded");
 		ImGui::TableSetColumnIndex(1);
 		ImGui::Text("%d", m_DevMetrics.m_MaterialsCount);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::Text("Textures loaded");
+		ImGui::TableSetColumnIndex(1);
+		ImGui::Text("%d", m_DevMetrics.m_TexturesCount);
 
 		ImGui::EndTable();
 

@@ -24,6 +24,7 @@ __device__ HitPayload ClosestHit(const Ray& ray, uint32_t obj_idx, float hit_dis
 	payload.UVW.z = (d00 * d21 - d01 * d20) / denom;
 	payload.UVW.x = 1.0f - payload.UVW.y - payload.UVW.z;
 
+	payload.triangle_idx = triangleIdx;
 	payload.hit_distance = hit_distance;
 	payload.world_position = ray.origin + ray.direction * hit_distance;//hit position
 	payload.object_idx = obj_idx;

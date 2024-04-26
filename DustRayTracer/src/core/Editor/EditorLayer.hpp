@@ -19,6 +19,7 @@ private:
 		uint32_t m_TrianglesCount = 0;
 		uint32_t m_ObjectsCount = 0;
 		uint32_t m_MaterialsCount = 0;
+		uint32_t m_TexturesCount = 0;
 	};
 
 	float m_LastFrameTime = 0;//ms
