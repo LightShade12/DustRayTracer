@@ -120,5 +120,6 @@
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Scene.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
   </ItemGroup>
 </Project>

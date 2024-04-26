@@ -54,11 +54,22 @@ __host__ void EditorLayer::OnAttach()
 	//------------------------------------------------------------------------
 
 	tinygltf::Model loadedmodel;
-	if (!loadModel(loadedmodel, "./src/models/room.glb"))
+	if (!loadModel(loadedmodel, "./src/models/cornell_box.glb"))
 	{
 		std::cout << "model loading error\n";
 		std::abort();
 	}
+
+	printf("loading materials\n\n");
+	printf("detected materials count in file: %d\n", loadedmodel.materials.size());
+	for (size_t matIdx = 0; matIdx < loadedmodel.materials.size(); matIdx++)
+	{
+		tinygltf::Material mat = loadedmodel.materials[matIdx];
+		auto color = mat.pbrMetallicRoughness.baseColorFactor;
+		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
+		m_Scene->m_Material.push_back(Material(albedo));
+	}
+	printf("loaded materials count: %d \n\n", m_Scene->m_Material.size());//should be 36 for cube
 
 	//mesh looping
 	for (size_t meshIdx = 0; meshIdx < loadedmodel.meshes.size(); meshIdx++)
@@ -66,7 +77,7 @@ __host__ void EditorLayer::OnAttach()
 		std::vector<float3> loadedmodelpositions;
 		std::vector<float3>loadedmodelnormals;
 
-		printf("processing mesh index: %d\n", meshIdx);
+		printf("processing mesh: %s , index= %d\n", loadedmodel.meshes[meshIdx].name, meshIdx);
 
 		for (size_t primIdx = 0; primIdx < loadedmodel.meshes[meshIdx].primitives.size(); primIdx++)
 		{
@@ -149,19 +160,12 @@ __host__ void EditorLayer::OnAttach()
 		}
 
 		printf("constructing mesh\n");
-		Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals, 1);//TODO: will crash if obj count > mat count
+		Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals,
+			loadedmodel.meshes[meshIdx].primitives[0].material);//TODO: will crash if obj count > mat count
 		printf("adding mesh\n");
 		m_Scene->m_Meshes.push_back(loadedmesh);
-		printf("success\n");
+		printf("success\n\n");
 	}
-
-	Material red;
-	red.Albedo = { .7,0,0 };
-	Material blue;
-	blue.Albedo = make_float3(.7, .7, .7);
-
-	m_Scene->m_Material.push_back(red);
-	m_Scene->m_Material.push_back(blue);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
