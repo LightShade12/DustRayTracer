@@ -1,6 +1,6 @@
 #include <imgui.h>
 
-namespace ImGuithemes {
+namespace ImGuiThemes {
 
     void nighttheme();
 

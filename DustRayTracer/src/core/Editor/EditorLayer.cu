@@ -10,9 +10,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include <tiny_gltf.h>
 
 #include <stb_image_write.h>
+
 
 //appends extension automatically;png
 bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
@@ -25,147 +25,12 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return false;
 }
 
-bool loadModel(tinygltf::Model& model, const char* filename) {
-	tinygltf::TinyGLTF loader;
-	std::string err;
-	std::string warn;
-
-	bool res = loader.LoadBinaryFromFile(&model, &err, &warn, filename);
-	if (!warn.empty()) {
-		std::cout << "WARN: " << warn << std::endl;
-	}
-
-	if (!err.empty()) {
-		std::cout << "ERR: " << err << std::endl;
-	}
-
-	if (!res)
-		std::cout << "Failed to load glTF: " << filename << std::endl;
-	else
-		std::cout << "Loaded glTF: " << filename << std::endl;
-
-	return res;
-}
-
 __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
 	//------------------------------------------------------------------------
-
-	tinygltf::Model loadedmodel;
-	if (!loadModel(loadedmodel, "./src/models/cornell_box.glb"))
-	{
-		std::cout << "model loading error\n";
-		std::abort();
-	}
-
-	printf("loading materials\n\n");
-	printf("detected materials count in file: %d\n", loadedmodel.materials.size());
-	for (size_t matIdx = 0; matIdx < loadedmodel.materials.size(); matIdx++)
-	{
-		tinygltf::Material mat = loadedmodel.materials[matIdx];
-		auto color = mat.pbrMetallicRoughness.baseColorFactor;
-		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
-		m_Scene->m_Material.push_back(Material(albedo));
-	}
-	printf("loaded materials count: %d \n\n", m_Scene->m_Material.size());//should be 36 for cube
-
-	//mesh looping
-	for (size_t meshIdx = 0; meshIdx < loadedmodel.meshes.size(); meshIdx++)
-	{
-		std::vector<float3> loadedmodelpositions;
-		std::vector<float3>loadedmodelnormals;
-
-		printf("processing mesh: %s , index= %d\n", loadedmodel.meshes[meshIdx].name, meshIdx);
-
-		for (size_t primIdx = 0; primIdx < loadedmodel.meshes[meshIdx].primitives.size(); primIdx++)
-		{
-			int pos_attrib_accesorIdx = loadedmodel.meshes[meshIdx].primitives[primIdx].attributes["POSITION"];
-			int nrm_attrib_accesorIdx = loadedmodel.meshes[meshIdx].primitives[primIdx].attributes["NORMAL"];
-			int indices_accesorIdx = loadedmodel.meshes[meshIdx].primitives[primIdx].indices;
-
-			tinygltf::Accessor pos_accesor = loadedmodel.accessors[pos_attrib_accesorIdx];
-			tinygltf::Accessor nrm_accesor = loadedmodel.accessors[nrm_attrib_accesorIdx];
-			tinygltf::Accessor indices_accesor = loadedmodel.accessors[indices_accesorIdx];
-
-			int pos_accesor_byte_offset = pos_accesor.byteOffset;//redundant
-			int nrm_accesor_byte_offset = nrm_accesor.byteOffset;//redundant
-			int indices_accesor_byte_offset = indices_accesor.byteOffset;//redundant
-
-			tinygltf::BufferView pos_bufferview = loadedmodel.bufferViews[pos_accesor.bufferView];
-			tinygltf::BufferView nrm_bufferview = loadedmodel.bufferViews[nrm_accesor.bufferView];
-			tinygltf::BufferView indices_bufferview = loadedmodel.bufferViews[indices_accesor.bufferView];
-
-			int pos_buffer_byte_offset = pos_bufferview.byteOffset;
-			int nrm_buffer_byte_offset = nrm_bufferview.byteOffset;
-			tinygltf::Buffer cube_buffer = loadedmodel.buffers[0];//should alawys be zero
-
-			printf("normals accesor count: %d\n", nrm_accesor.count);
-			printf("positions accesor count: %d\n", pos_accesor.count);
-			printf("indices accesor count: %d\n", indices_accesor.count);
-
-			unsigned short* indicesbuffer = (unsigned short*)(cube_buffer.data.data());
-			float3* positions_buffer = (float3*)(cube_buffer.data.data() + pos_buffer_byte_offset);
-			float3* normals_buffer = (float3*)(cube_buffer.data.data() + nrm_buffer_byte_offset);
-
-			for (int i = (indices_bufferview.byteOffset / 2); i < (indices_bufferview.byteLength + indices_bufferview.byteOffset) / 2; i++)
-			{
-				loadedmodelpositions.push_back(positions_buffer[indicesbuffer[i]]);
-				loadedmodelnormals.push_back(normals_buffer[indicesbuffer[i]]);
-			}
-		}
-
-		printf("constructed positions count: %d \n", loadedmodelpositions.size());//should be 36 for cube
-		printf("constructed normals count: %d \n", loadedmodelnormals.size());//should be 36 for cube
-
-		if (loadedmodelpositions.size() == loadedmodelnormals.size())
-		{
-			bool stop = false;
-			printf("positions:\n");
-			for (size_t i = 0; i < loadedmodelpositions.size(); i++)
-			{
-				if (i > 3 && i < loadedmodelpositions.size() - 3)
-				{
-					if (!stop)
-					{
-						printf("...\n");
-						stop = true;
-					}
-					continue;
-				}
-				float3 pos = loadedmodelpositions[i];
-				printf("x:%.3f y:%.3f z:%.3f\n", pos.x, pos.y, pos.z);
-			}
-			stop = false;
-			printf("normals:\n");
-			for (size_t i = 0; i < loadedmodelnormals.size(); i++)
-			{
-				if (i > 3 && i < loadedmodelnormals.size() - 3)
-				{
-					if (!stop)
-					{
-						printf("...\n");
-						stop = true;
-					}
-					continue;
-				}
-				float3 nrm = loadedmodelnormals[i];
-				printf("x:%.3f y:%.3f z:%.3f\n", nrm.x, nrm.y, nrm.z);
-			}
-		}
-		else
-		{
-			printf("positions-normals count mismatch!\n");
-		}
-
-		printf("constructing mesh\n");
-		Mesh loadedmesh(loadedmodelpositions, loadedmodelnormals,
-			loadedmodel.meshes[meshIdx].primitives[0].material);//TODO: will crash if obj count > mat count
-		printf("adding mesh\n");
-		m_Scene->m_Meshes.push_back(loadedmesh);
-		printf("success\n\n");
-	}
+	m_Scene->loadGLTFmodel("./src/models/cornell_box.glb");
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
@@ -178,8 +43,9 @@ __host__ void EditorLayer::OnAttach()
 
 	stbi_flip_vertically_on_write(true);
 
-	ImGuithemes::dark();
-	//ImGuithemes::UE4();
+
+	ImGuiThemes::dark();
+	//ImGuiThemes::UE4();
 }
 
 void EditorLayer::OnUIRender()

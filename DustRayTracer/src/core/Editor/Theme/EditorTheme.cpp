@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-void ImGuithemes::nighttheme() {
+void ImGuiThemes::nighttheme() {
 	ImGuiStyle& style = ImGui::GetStyle();
 
 	style.WindowRounding = 5.3f;
@@ -54,7 +54,7 @@ void ImGuithemes::nighttheme() {
 	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 }
 
-void ImGuithemes::UE4() {
+void ImGuiThemes::UE4() {
 	ImVec4* colors = ImGui::GetStyle().Colors;
 	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.23f, 0.24f, 0.25f, 1.00f);
 	colors[ImGuiCol_TabActive] = ImVec4(0.84f, 0.84f, 0.84f, 0.40f);
@@ -103,7 +103,7 @@ void ImGuithemes::UE4() {
 	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 };
 
-void ImGuithemes::vs() {
+void ImGuiThemes::vs() {
 	auto ColorFromBytes = [](uint8_t r, uint8_t g, uint8_t b)
 		{
 			return ImVec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, 1.0f);
@@ -181,7 +181,7 @@ void ImGuithemes::vs() {
 	style.TabRounding = 0.0f;
 }
 
-void ImGuithemes::embraceTheDarkness() {
+void ImGuiThemes::embraceTheDarkness() {
 	ImVec4* colors = ImGui::GetStyle().Colors;
 	colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 	colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -264,7 +264,7 @@ void ImGuithemes::embraceTheDarkness() {
 	style.TabRounding = 4;
 }
 
-void ImGuithemes::dark() {
+void ImGuiThemes::dark() {
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.Colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 	style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
