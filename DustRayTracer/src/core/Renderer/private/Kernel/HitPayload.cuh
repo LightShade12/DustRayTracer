@@ -8,4 +8,5 @@ struct HitPayload
 	float3 world_normal;
 	float3 world_position;
 	uint32_t object_idx;
+	float3 UVW;
 };

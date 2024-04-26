@@ -9,7 +9,7 @@ class Mesh
 {
 public:
 	Mesh() = default;
-	__host__ Mesh(const std::vector<float3> &positions, const std::vector<float3> &vertex_normals, uint32_t matidx = 0);
+	__host__ Mesh(const std::vector<float3> &positions, const std::vector<float3> &vertex_normals, const std::vector<float2>& vertex_UVs, uint32_t matidx = 0);
 
 	__host__ void Cleanup();
 

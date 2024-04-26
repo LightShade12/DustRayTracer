@@ -5,13 +5,15 @@
 
 #include <cuda_runtime.h>
 
-__host__ Mesh::Mesh(const std::vector<float3> &positions, const std::vector<float3> &vertex_normals, uint32_t matidx)
+Mesh::Mesh(const std::vector<float3>& positions,
+	const std::vector<float3>& vertex_normals, const std::vector<float2>& vertex_UVs, uint32_t matidx)
 {
 	std::vector <Triangle> tris;
 
 	//Positions.size() and vertex_normals.size() must be equal!
 	for (size_t i = 0; i < positions.size(); i += 3)
 	{
+		//surface normal construction
 		float3 p0 = positions[i + 1] - positions[i];
 		float3 p1 = positions[i + 2] - positions[i];
 		float3 faceNormal = cross(p0, p1);
@@ -21,7 +23,10 @@ __host__ Mesh::Mesh(const std::vector<float3> &positions, const std::vector<floa
 
 		float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
 
-		tris.push_back(Triangle(Vertex(positions[i], vertex_normals[i]), Vertex(positions[i + 1], vertex_normals[i + 1]), Vertex(positions[i + 2], vertex_normals[i + 2]),
+		tris.push_back(Triangle(
+			Vertex(positions[i], vertex_normals[i], vertex_UVs[i]),
+			Vertex(positions[i + 1], vertex_normals[i + 1], vertex_UVs[i + 1]),
+			Vertex(positions[i + 2], vertex_normals[i + 2], vertex_UVs[i + 2]),
 			normalize(surface_normal), matidx));
 	}
 

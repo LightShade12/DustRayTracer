@@ -40,43 +40,54 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	return true;
 }
 
-bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals)
+//does not support reused mesh
+bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals, 
+	std::vector<float2>& UVs)
 {
 	for (size_t primIdx = 0; primIdx < mesh.primitives.size(); primIdx++)
 	{
 		int pos_attrib_accesorIdx = mesh.primitives[primIdx].attributes["POSITION"];
 		int nrm_attrib_accesorIdx = mesh.primitives[primIdx].attributes["NORMAL"];
+		int uv_attrib_accesorIdx = mesh.primitives[primIdx].attributes["TEXCOORD_0"];
+
 		int indices_accesorIdx = mesh.primitives[primIdx].indices;
 
 		tinygltf::Accessor pos_accesor = model.accessors[pos_attrib_accesorIdx];
 		tinygltf::Accessor nrm_accesor = model.accessors[nrm_attrib_accesorIdx];
+		tinygltf::Accessor uv_accesor = model.accessors[uv_attrib_accesorIdx];
 		tinygltf::Accessor indices_accesor = model.accessors[indices_accesorIdx];
 
 		int pos_accesor_byte_offset = pos_accesor.byteOffset;//redundant
 		int nrm_accesor_byte_offset = nrm_accesor.byteOffset;//redundant
+		int uv_accesor_byte_offset = uv_accesor.byteOffset;//redundant
 		int indices_accesor_byte_offset = indices_accesor.byteOffset;//redundant
 
 		tinygltf::BufferView pos_bufferview = model.bufferViews[pos_accesor.bufferView];
 		tinygltf::BufferView nrm_bufferview = model.bufferViews[nrm_accesor.bufferView];
+		tinygltf::BufferView uv_bufferview = model.bufferViews[uv_accesor.bufferView];
 		tinygltf::BufferView indices_bufferview = model.bufferViews[indices_accesor.bufferView];
 
 		int pos_buffer_byte_offset = pos_bufferview.byteOffset;
 		int nrm_buffer_byte_offset = nrm_bufferview.byteOffset;
+		int uv_buffer_byte_offset = uv_bufferview.byteOffset;
 
 		tinygltf::Buffer indices_buffer = model.buffers[indices_bufferview.buffer];//should alawys be zero?
 
 		printf("normals accesor count: %d\n", nrm_accesor.count);
 		printf("positions accesor count: %d\n", pos_accesor.count);
+		printf("UVs accesor count: %d\n", uv_accesor.count);
 		printf("indices accesor count: %d\n", indices_accesor.count);
 
 		unsigned short* indicesbuffer = (unsigned short*)(indices_buffer.data.data());
 		float3* positions_buffer = (float3*)(indices_buffer.data.data() + pos_buffer_byte_offset);
 		float3* normals_buffer = (float3*)(indices_buffer.data.data() + nrm_buffer_byte_offset);
+		float2* UVs_buffer = (float2*)(indices_buffer.data.data() + uv_buffer_byte_offset);
 
 		for (int i = (indices_bufferview.byteOffset / 2); i < (indices_bufferview.byteLength + indices_bufferview.byteOffset) / 2; i++)
 		{
 			positions.push_back(positions_buffer[indicesbuffer[i]]);
 			normals.push_back(normals_buffer[indicesbuffer[i]]);
+			UVs.push_back(UVs_buffer[indicesbuffer[i]]);
 		}
 	}
 	return true;
@@ -94,15 +105,17 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	{
 		std::vector<float3> loadedMeshPositions;
 		std::vector<float3>loadedMeshNormals;
+		std::vector<float2>loadedMeshUVs;
 
 		tinygltf::Mesh current_mesh = loadedmodel.meshes[meshIdx];
 
-		printf("processing mesh: %s , index= %d\n", current_mesh.name, meshIdx);
+		printf("processing mesh: %s , index= %d\n", current_mesh.name.c_str(), meshIdx);
 
-		parseMesh(current_mesh, loadedmodel, loadedMeshPositions, loadedMeshNormals);
+		parseMesh(current_mesh, loadedmodel, loadedMeshPositions, loadedMeshNormals, loadedMeshUVs);
 
 		printf("constructed positions count: %d \n", loadedMeshPositions.size());//should be 36 for cube
 		printf("constructed normals count: %d \n", loadedMeshNormals.size());//should be 36 for cube
+		printf("constructed UVs count: %d \n", loadedMeshUVs.size());//should be 36 for cube
 
 		//DEBUG positions-normal-data print
 		if (loadedMeshPositions.size() == loadedMeshNormals.size())
@@ -111,7 +124,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 			printf("positions:\n");
 			for (size_t i = 0; i < loadedMeshPositions.size(); i++)
 			{
-				if (i > 3 && i < loadedMeshPositions.size() - 3)
+				if (i > 2 && i < loadedMeshPositions.size() - 3)
 				{
 					if (!stop)
 					{
@@ -127,7 +140,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 			printf("normals:\n");
 			for (size_t i = 0; i < loadedMeshNormals.size(); i++)
 			{
-				if (i > 3 && i < loadedMeshNormals.size() - 3)
+				if (i > 2 && i < loadedMeshNormals.size() - 3)
 				{
 					if (!stop)
 					{
@@ -139,6 +152,22 @@ bool Scene::loadGLTFmodel(const char* filepath)
 				float3 nrm = loadedMeshNormals[i];
 				printf("x:%.3f y:%.3f z:%.3f\n", nrm.x, nrm.y, nrm.z);
 			}
+			stop = false;
+			printf("UVs:\n");
+			for (size_t i = 0; i < loadedMeshUVs.size(); i++)
+			{
+				if (i > 2 && i < loadedMeshUVs.size() - 3)
+				{
+					if (!stop)
+					{
+						printf("...\n");
+						stop = true;
+					}
+					continue;
+				}
+				float2 uv = loadedMeshUVs[i];
+				printf("U:%.3f V:%.3f \n", uv.x, uv.y);
+			}
 		}
 		else
 		{
@@ -146,7 +175,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		}
 
 		printf("constructing mesh\n");
-		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
+		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals,loadedMeshUVs, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
 		printf("adding mesh\n");
 		m_Meshes.push_back(loadedMesh);
 		printf("success\n\n");

@@ -29,7 +29,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 10;
+	int bounces = 1;
 
 	for (int i = 0; i < bounces; i++)
 	{
@@ -65,10 +65,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.origin = newRayOrigin;
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
-		//light = { payload.world_normal.x, payload.world_normal.y, payload.world_normal.z };//debug normals
+		//light = payload.world_normal;//debug normals
+		light = payload.UVW;//debug UV
 	}
 
-	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	light = fminf(light, { 1,1,1 });
 	return light;
 };
