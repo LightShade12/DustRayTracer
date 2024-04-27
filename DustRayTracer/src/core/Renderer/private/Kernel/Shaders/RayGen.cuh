@@ -9,8 +9,7 @@
 #include <core/Renderer/private/Shapes/Scene.cuh>
 
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* cam, const Material* matvector, uint32_t frameidx,
-	const Mesh* MeshBufferPtr, size_t MeshBufferSize, const Texture* TextureBufferPtr, size_t TextureBufferSize) {
+	const Camera* cam, uint32_t frameidx, const SceneData scenedata) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
 	float3 sunpos = { 100,100,100 };
@@ -29,12 +28,12 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 10;
+	int bounces = 5;
 
 	for (int i = 0; i < bounces; i++)
 	{
-		float2 uv = {0,1};//DEBUG
-		HitPayload payload = TraceRay(ray, MeshBufferPtr, MeshBufferSize);
+		float2 uv = { 0,1 };//DEBUG
+		HitPayload payload = TraceRay(ray, scenedata.DeviceMeshBufferPtr, scenedata.DeviceMeshBufferSize);
 		seed += i;
 		//sky
 		if (payload.hit_distance < 0)
@@ -49,14 +48,15 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
-		const Mesh closestMesh = MeshBufferPtr[payload.object_idx];
-		Material material = matvector[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error; maybe not cuz miss shading handles before exec here
+		const Mesh closestMesh = scenedata.DeviceMeshBufferPtr[payload.object_idx];
+		Material material = scenedata.DeviceMaterialBufferPtr[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error; maybe not cuz miss shading handles before exec here
 
 		//light = material.Albedo;
 
 		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
 
-		if (material.AlbedoTextureIndex < 0) 
+		//if (false)
+		if (material.AlbedoTextureIndex < 0)
 		{
 			contribution *= material.Albedo;
 		}
@@ -68,16 +68,20 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
 				  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
 			};
-			contribution *= TextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
-			//contribution *= {0,1,0};
+			contribution *= scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
 		}
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 
 		if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
-			MeshBufferPtr, MeshBufferSize))
+			scenedata.DeviceMeshBufferPtr, scenedata.DeviceMeshBufferSize))
 		{
-			light += (material.Albedo * suncol) * 0.5;
+			if (material.AlbedoTextureIndex < 0)
+				light += (material.Albedo * suncol) * 0.5;
+			else
+			{
+				light += scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+			}
 		}
 
 		ray.origin = newRayOrigin;
@@ -88,7 +92,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//light = {uv.x,uv.y,0};//debug UV
 	}
 
-	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	light = fminf(light, { 1,1,1 });
 	return light;
 };

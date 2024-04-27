@@ -7,11 +7,22 @@
 #include <cuda_runtime.h>
 
 #include <tiny_gltf.h>
+#include "Scene.cuh"
 
 //8 bit img only
 Texture::Texture(const char* filepath)
 {
 	unsigned char* imgdata = stbi_load(filepath, &width, &height, &componentCount, 3);//for now 3
+	size_t imgbuffersize = width * height * componentCount * sizeof(unsigned char);//1byte ik; till float texture support, this is format
+	cudaMallocManaged((void**)&d_data, imgbuffersize);
+	checkCudaErrors(cudaGetLastError());
+	cudaMemcpy(d_data, imgdata, imgbuffersize, cudaMemcpyHostToDevice);
+	checkCudaErrors(cudaGetLastError());
+}
+
+Texture::Texture(unsigned char* data, size_t bytesize)
+{
+	unsigned char* imgdata = stbi_load_from_memory(data, bytesize, &width, &height, &componentCount, 3);
 	size_t imgbuffersize = width * height * componentCount * sizeof(unsigned char);//1byte ik; till float texture support, this is format
 	cudaMallocManaged((void**)&d_data, imgbuffersize);
 	checkCudaErrors(cudaGetLastError());
@@ -41,12 +52,33 @@ void Texture::Cleanup()
 	checkCudaErrors(cudaGetLastError());
 }
 
-bool loadModel(tinygltf::Model& model, const char* filename) {
+static std::string GetFilePathExtension(const std::string& FileName) {
+	if (FileName.find_last_of(".") != std::string::npos)
+		return FileName.substr(FileName.find_last_of(".") + 1);
+	return "";
+}
+
+bool loadModel(tinygltf::Model& model, const char* filename, bool& is_binary) {
 	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
 
-	bool res = loader.LoadASCIIFromFile(&model, &err, &warn, filename);
+	std::string ext = GetFilePathExtension(filename);
+
+	//printf("extension %s \n", ext.c_str());
+
+	bool res = false;
+	if (ext.compare("glb") == 0) {
+		// assume binary glTF.
+		res =
+			loader.LoadBinaryFromFile(&model, &err, &warn, filename);
+		is_binary = true;
+	}
+	else {
+		// assume ascii glTF.
+		res = loader.LoadASCIIFromFile(&model, &err, &warn, filename);
+	}
+
 	if (!warn.empty()) {
 		std::cout << "WARN: " << warn << std::endl;
 	}
@@ -85,7 +117,7 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	return true;
 }
 
-bool Scene::loadTextures(tinygltf::Model& model)
+bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 {
 	const char* imgdir = "./src/models/";
 	printf("Images count in file: %d\n", model.images.size());
@@ -93,12 +125,23 @@ bool Scene::loadTextures(tinygltf::Model& model)
 	for (size_t textureIdx = 0; textureIdx < model.images.size(); textureIdx++)
 	{
 		tinygltf::Image current_img = model.images[textureIdx];
-		printf("uri: %s\n", current_img.uri.c_str());
-		printf("processing idx: %d,name= %s\n", textureIdx, current_img.name.c_str());
-
-		printf("load path: %s\n", (imgdir + current_img.uri).c_str());
-		Texture tex = Texture((imgdir + current_img.uri).c_str());
-		printf("img dims: w:%d h:%d ch:%d\n", tex.width, tex.height, tex.componentCount);
+		Texture tex;
+		if (is_binary)
+		{
+			tinygltf::BufferView imgbufferview = model.bufferViews[current_img.bufferView];
+			imgbufferview.byteOffset;
+			imgbufferview.buffer;
+			unsigned char* imgdata = model.buffers[imgbufferview.buffer].data.data() + imgbufferview.byteOffset;
+			tex = Texture(imgdata, imgbufferview.byteLength);
+		}
+		else
+		{
+			printf("uri: %s\n", current_img.uri.c_str());
+			printf("processing idx: %d,name= %s\n", textureIdx, current_img.name.c_str());
+			printf("load path: %s\n", (imgdir + current_img.uri).c_str());
+			tex = Texture((imgdir + current_img.uri).c_str());
+			printf("img dims: w:%d h:%d ch:%d\n", tex.width, tex.height, tex.componentCount);
+		}
 		m_Textures.push_back(tex);//whitespace will be incorrectly parsed
 	}
 	return false;
@@ -160,9 +203,10 @@ bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& 
 //tinyGLTF impl
 bool Scene::loadGLTFmodel(const char* filepath)
 {
+	bool isBinary = false;
 	tinygltf::Model loadedmodel;
-	loadModel(loadedmodel, filepath);
-	loadTextures(loadedmodel);
+	loadModel(loadedmodel, filepath, isBinary);
+	loadTextures(loadedmodel, isBinary);
 	loadMaterials(loadedmodel);
 
 	//mesh looping
