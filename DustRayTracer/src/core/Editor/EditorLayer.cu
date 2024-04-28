@@ -193,7 +193,7 @@ void EditorLayer::OnUIRender()
 	ImGui::Begin("Padding window");
 	ImGui::End();
 
-	vpdims.y -= 12;
+	vpdims.y -= 12;//TODO: make this sensible; not a constant
 	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
 	m_Renderer.Render(m_dcamera, (*m_Scene), &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
 

@@ -32,3 +32,8 @@ int main(int argc, char* argv[])
 	return 0;
 
 }
+
+/*
+* TODO: refactor utils and helpers into encapsulated logic
+* TODO: add units to variables and arguments
+*/

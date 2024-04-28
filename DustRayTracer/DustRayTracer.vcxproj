@@ -139,6 +139,7 @@
     <ClInclude Include="src\core\Common\Managed.cuh" />
     <ClInclude Include="src\core\Common\Timer.hpp" />
     <ClInclude Include="src\core\Editor\EditorLayer.hpp" />
+    <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
     <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />

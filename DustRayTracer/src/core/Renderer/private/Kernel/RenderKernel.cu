@@ -27,9 +27,10 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 
 	accumulation_buffer[i + j * max_x] += fcolor;
 	float3 accol = accumulation_buffer[i + j * max_x] / frameidx;
-	uchar4 color = { unsigned char(255 * accol.x),unsigned char(255 * accol.y),unsigned char(255 * accol.z), 255 };
+	float4 color = { accol.x, accol.y, accol.z, 1 };
+	//uchar4 color = { unsigned char(255 * accol.x),unsigned char(255 * accol.y),unsigned char(255 * accol.z), 255 };
 
-	surf2Dwrite(color, _surfobj, i * 4, j);
+	surf2Dwrite(color, _surfobj, i * (int)sizeof(float4), j);//has to be uchar4/2/1 or float4/2/1; no 3 comp color
 };
 
 void InvokeRenderKernel(

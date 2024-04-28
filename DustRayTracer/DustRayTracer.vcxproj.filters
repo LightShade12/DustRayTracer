@@ -93,6 +93,7 @@
     <ClInclude Include="src\core\Common\CudaCommon.cuh" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
     <ClInclude Include="src\core\Application\private\Input.hpp" />
+    <ClInclude Include="src\core\Common\physical_units.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">

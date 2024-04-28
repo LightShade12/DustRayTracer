@@ -51,7 +51,7 @@ void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
 		// resize
 		glBindTexture(GL_TEXTURE_2D, m_RenderTarget_name);
 		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_BufferWidth, m_BufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_BufferWidth, m_BufferHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 		}
 		glBindTexture(GL_TEXTURE_2D, 0);
 		// register back
@@ -73,7 +73,7 @@ void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_BufferWidth, m_BufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_BufferWidth, m_BufferHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 

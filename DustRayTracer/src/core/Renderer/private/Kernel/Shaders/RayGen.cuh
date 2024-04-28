@@ -51,18 +51,15 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		const Mesh closestMesh = scenedata.DeviceMeshBufferPtr[payload.object_idx];
 		Material material = scenedata.DeviceMaterialBufferPtr[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error; maybe not cuz miss shading handles before exec here
 
-		//light = material.Albedo;
 
 		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
 
-		//if (false)
 		if (material.AlbedoTextureIndex < 0)
 		{
 			contribution *= material.Albedo;
 		}
 		else
 		{
-			//printf("exec ");
 			Triangle tri = closestMesh.m_dev_triangles[payload.triangle_idx];
 			uv = {
 				 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
@@ -87,12 +84,12 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.origin = newRayOrigin;
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
+		//light = material.Albedo;
 		//light = payload.world_normal;//debug normals
 		//light = payload.UVW;//debug barycentric coords
 		//light = {uv.x,uv.y,0};//debug UV
 	}
 
 	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
-	light = fminf(light, { 1,1,1 });
 	return light;
 };
