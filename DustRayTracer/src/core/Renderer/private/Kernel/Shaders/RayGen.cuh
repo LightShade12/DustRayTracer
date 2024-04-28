@@ -28,12 +28,12 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 5;
+	int bounces = 10;
 
 	for (int i = 0; i < bounces; i++)
 	{
 		float2 uv = { 0,1 };//DEBUG
-		HitPayload payload = TraceRay(ray, scenedata.DeviceMeshBufferPtr, scenedata.DeviceMeshBufferSize);
+		HitPayload payload = TraceRay(ray, &scenedata);
 		seed += i;
 		//sky
 		if (payload.hit_distance < 0)
@@ -50,7 +50,6 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		const Mesh closestMesh = scenedata.DeviceMeshBufferPtr[payload.object_idx];
 		Material material = scenedata.DeviceMaterialBufferPtr[closestMesh.m_dev_triangles[0].MaterialIdx];//TODO: might cause error; maybe not cuz miss shading handles before exec here
-
 
 		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
 
@@ -71,7 +70,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 
 		if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
-			scenedata.DeviceMeshBufferPtr, scenedata.DeviceMeshBufferSize))
+			&scenedata))
 		{
 			if (material.AlbedoTextureIndex < 0)
 				light += (material.Albedo * suncol) * 0.5;
@@ -90,6 +89,6 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//light = {uv.x,uv.y,0};//debug UV
 	}
 
-	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	return light;
 };

@@ -3,7 +3,7 @@
 
 __device__ HitPayload ClosestHit(const Ray& ray, uint32_t obj_idx, float hit_distance,
 	const Mesh* meshBuffer, int triangleIdx) {
-	Triangle triangle = meshBuffer[obj_idx].m_dev_triangles[triangleIdx];
+	const Triangle triangle = meshBuffer[obj_idx].m_dev_triangles[triangleIdx];
 
 	HitPayload payload;
 

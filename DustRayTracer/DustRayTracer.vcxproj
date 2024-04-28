@@ -144,6 +144,7 @@
     <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\ClosestHit.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Miss.cuh" />
