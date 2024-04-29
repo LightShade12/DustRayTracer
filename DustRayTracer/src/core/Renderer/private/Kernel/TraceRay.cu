@@ -45,7 +45,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 	return ClosestHit(ray, closestObjectIdx, hitDistance, scenedata->DeviceMeshBufferPtr, hitTriangleIdx);
 }
 
-//does not support transparent surfaces; cuz bool and no anyhit-shader/mat processing
+//does not support glass material; cuz no mat processing
 __device__ bool RayTest(const Ray& ray, const SceneData* scenedata)
 {
 	HitPayload workingPayload;
