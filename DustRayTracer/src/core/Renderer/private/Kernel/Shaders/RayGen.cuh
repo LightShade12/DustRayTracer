@@ -89,6 +89,6 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//light = {uv.x,uv.y,0};//debug UV
 	}
 
-	light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
 	return light;
 };

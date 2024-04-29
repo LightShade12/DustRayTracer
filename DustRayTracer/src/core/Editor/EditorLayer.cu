@@ -185,7 +185,7 @@ void EditorLayer::OnUIRender()
 
 	ImGui::Text("dims: %d x %d px", m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight());
 	ImGui::SameLine();
-	ImGui::Text(" | RGBA8");
+	ImGui::Text(" | RGBA32F");
 	ImGui::EndChild();
 	ImGui::End();
 	ImGui::PopStyleVar(1);
