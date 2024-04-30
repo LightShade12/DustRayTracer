@@ -142,6 +142,7 @@
     <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
     <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\BVH.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />

@@ -95,6 +95,7 @@
     <ClInclude Include="src\core\Application\private\Input.hpp" />
     <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\BVH.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">

@@ -6,6 +6,7 @@
 #include "core/Renderer/private/Shapes/Scene.cuh"//has thrust so editor needs to be compiled by nvcc
 #include "core/Renderer/private/Camera/Camera.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
+#include "core/Renderer/private/Kernel/BVH.cuh"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -28,6 +29,7 @@ __host__ void EditorLayer::OnAttach()
 {
 	m_dcamera = new Camera();
 	m_Scene = new Scene();
+
 	//------------------------------------------------------------------------
 	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest.glb");
 

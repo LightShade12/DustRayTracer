@@ -13,6 +13,7 @@ public:
 
 	__host__ void Cleanup();
 
+	Bounds3f Bounds;
 	Triangle* m_dev_triangles;//device ptr
 	size_t m_trisCount = 0;
 };

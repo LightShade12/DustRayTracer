@@ -23,6 +23,18 @@ Mesh::Mesh(const std::vector<float3>& positions,
 
 		float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
 
+		//bounding box
+		for (size_t j = i; j < i + 3; j++)
+		{
+			if (Bounds.pMax.x < positions[j].x)Bounds.pMax.x = positions[j].x;
+			if (Bounds.pMax.y < positions[j].y)Bounds.pMax.y = positions[j].y;
+			if (Bounds.pMax.z < positions[j].z)Bounds.pMax.z = positions[j].z;
+
+			if (Bounds.pMin.x > positions[j].x)Bounds.pMin.x = positions[j].x;
+			if (Bounds.pMin.y > positions[j].y)Bounds.pMin.y = positions[j].y;
+			if (Bounds.pMin.z > positions[j].z)Bounds.pMin.z = positions[j].z;
+		}
+
 		tris.push_back(Triangle(
 			Vertex(positions[i], vertex_normals[i], vertex_UVs[i]),
 			Vertex(positions[i + 1], vertex_normals[i + 1], vertex_UVs[i + 1]),

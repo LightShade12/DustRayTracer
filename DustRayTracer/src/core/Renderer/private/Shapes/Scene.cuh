@@ -10,6 +10,8 @@ namespace tinygltf
 	class Model;
 }
 
+class Node;
+
 class Texture
 {
 public:
@@ -33,9 +35,9 @@ struct SceneData
 	SceneData(Texture* device_texture_buffer_ptr, size_t device_texture_buffer_size)
 		:DeviceTextureBufferPtr(device_texture_buffer_ptr), DeviceTextureBufferSize(device_texture_buffer_size) {};
 
-	const Texture* DeviceTextureBufferPtr;
-	const Material* DeviceMaterialBufferPtr;
-	const Mesh* DeviceMeshBufferPtr;
+	const Texture* DeviceTextureBufferPtr = nullptr;
+	const Material* DeviceMaterialBufferPtr = nullptr;
+	const Mesh* DeviceMeshBufferPtr = nullptr;
 
 	size_t DeviceTextureBufferSize = 0;//unused
 	size_t DeviceMaterialBufferSize = 0;//unused
@@ -47,7 +49,7 @@ struct Scene
 	thrust::device_vector<Mesh> m_Meshes;
 	thrust::device_vector<Material> m_Material;
 	thrust::device_vector<Texture>m_Textures;
-
+	Node* d_BVHTreeRoot=nullptr;
 	bool loadGLTFmodel(const char* filepath);
 
 	~Scene();

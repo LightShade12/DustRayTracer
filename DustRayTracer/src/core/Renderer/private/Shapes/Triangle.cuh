@@ -1,5 +1,6 @@
 #pragma once
 #include <vector_types.h>
+#include <float.h>
 
 struct Vertex
 {
@@ -8,6 +9,12 @@ struct Vertex
 	float3 position;
 	float3 normal;
 	float2 UV;
+};
+
+struct Bounds3f
+{
+	float3 pMin = { FLT_MAX,FLT_MAX, FLT_MAX };
+	float3 pMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
 };
 
 struct Triangle {

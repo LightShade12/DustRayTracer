@@ -4,10 +4,13 @@
 #include "stb_image.h"
 
 #include "core/Common/CudaCommon.cuh"
+
+#include "core/Renderer/private/Kernel/BVH.cuh"
+
 #include <cuda_runtime.h>
+#include <thrust/host_vector.h>
 
 #include <tiny_gltf.h>
-#include "Scene.cuh"
 
 //8 bit img only
 Texture::Texture(const char* filepath)
@@ -237,6 +240,8 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	loadTextures(loadedmodel, isBinary);
 	loadMaterials(loadedmodel);
 
+	thrust::host_vector<Mesh> host_meshes;
+
 	//mesh looping
 	for (size_t nodeIdx = 0; nodeIdx < loadedmodel.nodes.size(); nodeIdx++)
 	{
@@ -315,16 +320,54 @@ bool Scene::loadGLTFmodel(const char* filepath)
 
 		printf("constructing mesh\n");
 		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, loadedMeshUVs, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
+		printf("bbox max: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMax.x, loadedMesh.Bounds.pMax.y, loadedMesh.Bounds.pMax.z);
+		printf("bbox min: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMin.x, loadedMesh.Bounds.pMin.y, loadedMesh.Bounds.pMin.z);
 		printf("adding mesh\n");
-		m_Meshes.push_back(loadedMesh);
+
+		host_meshes.push_back(loadedMesh);
 		printf("success\n\n");
 	}
+
+	m_Meshes = host_meshes;//implicit cudamemcpy
+	//bvh build
+	Node root;
+	thrust::host_vector<Node> childnodes;
+
+	for (int meshIdx = 0; meshIdx < m_Meshes.size(); meshIdx++)
+	{
+		Node node;
+		node.bounds = host_meshes[meshIdx].Bounds;
+		//no children yet; 2 level bvh
+		node.children;
+		node.d_Mesh = thrust::raw_pointer_cast(&(m_Meshes.data()[meshIdx]));
+
+		if (root.bounds.pMax.x < node.bounds.pMax.x) root.bounds.pMax.x = node.bounds.pMax.x;
+		if (root.bounds.pMax.y < node.bounds.pMax.y) root.bounds.pMax.y = node.bounds.pMax.y;
+		if (root.bounds.pMax.z < node.bounds.pMax.z) root.bounds.pMax.z = node.bounds.pMax.z;
+
+		if (root.bounds.pMin.x > node.bounds.pMin.x) root.bounds.pMin.x = node.bounds.pMin.x;
+		if (root.bounds.pMin.y > node.bounds.pMin.y) root.bounds.pMin.y = node.bounds.pMin.y;
+		if (root.bounds.pMin.z > node.bounds.pMin.z) root.bounds.pMin.z = node.bounds.pMin.z;
+
+		childnodes.push_back(node);
+	}
+
+	root.children = childnodes.data();
+	root.childrenCount = childnodes.size();
+
+	size_t buffersize = sizeof(root) + (root.childrenCount * sizeof(root.children[0]));
+
+	cudaMemcpy(d_BVHTreeRoot, &root, buffersize, cudaMemcpyHostToDevice);//count is wrong?
 
 	return true;
 };
 
 Scene::~Scene()
 {
+	cudaDeviceSynchronize();
+	cudaFree(d_BVHTreeRoot);
+	checkCudaErrors(cudaGetLastError());
+
 	for (Mesh mesh : m_Meshes)
 	{
 		mesh.Cleanup();
