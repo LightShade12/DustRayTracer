@@ -44,5 +44,10 @@ void InvokeRenderKernel(
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DeviceBVHTreePtr = scene.d_BVHTreeRoot;
 
+	//printf("pointer: %p\n", scenedata.DeviceMeshBufferPtr);
+	//printf("pointer: %p\n", scenedata.DeviceMaterialBufferPtr);
+	//printf("pointer: %p\n", scenedata.DeviceTextureBufferPtr);
+	//printf("pointer: %p\n", scene.d_BVHTreeRoot);
+
 	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, frameidx, accumulation_buffer, scenedata);
 }

@@ -4,6 +4,7 @@
 
 struct HitPayload
 {
+	bool debug = false;
 	float hit_distance = -1;
 	float3 world_normal;
 	float3 world_position;

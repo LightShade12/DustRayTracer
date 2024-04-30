@@ -331,7 +331,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	m_Meshes = host_meshes;//implicit cudamemcpy
 	//bvh build
 	Node root;
-	thrust::host_vector<Node> childnodes;
+	thrust::device_vector<Node> childnodes;
 
 	for (int meshIdx = 0; meshIdx < m_Meshes.size(); meshIdx++)
 	{
@@ -353,12 +353,16 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		childnodes.push_back(node);
 	}
 
-	root.children = childnodes.data();
+	root.children = thrust::raw_pointer_cast(childnodes.data());
 	root.childrenCount = childnodes.size();
 
 	size_t buffersize = sizeof(root) + (root.childrenCount * sizeof(root.children[0]));
 
+	cudaDeviceSynchronize();
+	cudaMallocManaged((void**)&d_BVHTreeRoot, buffersize);
+	checkCudaErrors(cudaGetLastError());
 	cudaMemcpy(d_BVHTreeRoot, &root, buffersize, cudaMemcpyHostToDevice);//count is wrong?
+	checkCudaErrors(cudaGetLastError());
 
 	return true;
 };

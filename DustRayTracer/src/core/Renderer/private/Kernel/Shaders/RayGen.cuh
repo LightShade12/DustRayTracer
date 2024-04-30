@@ -35,6 +35,12 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float2 uv = { 0,1 };//DEBUG
 		HitPayload payload = TraceRay(ray, &scenedata);
 		seed += i;
+
+		if (payload.debug)
+		{
+			return make_float3(1, 0, 0);
+		}
+
 		//sky
 		if (payload.hit_distance < 0)
 		{

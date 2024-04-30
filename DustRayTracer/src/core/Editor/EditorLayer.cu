@@ -31,7 +31,7 @@ __host__ void EditorLayer::OnAttach()
 	m_Scene = new Scene();
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest.glb");
+	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest_optimised.glb");
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 

@@ -147,6 +147,7 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\ClosestHit.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Debug.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Miss.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\RayGen.cuh" />
