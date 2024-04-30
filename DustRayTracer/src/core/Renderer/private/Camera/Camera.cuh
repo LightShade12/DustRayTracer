@@ -7,12 +7,14 @@
 class Camera : public Managed
 {
 public:
-	__host__ Camera() { m_Right_dir = cross(m_Forward_dir, m_Up_dir); };
+	__host__ Camera(float3 pos = { 0,2,5 }) :m_Position(pos) { m_Right_dir = cross(m_Forward_dir, m_Up_dir); };
 
 	__host__ void OnUpdate(float3 velocity, float delta);
 	__host__ void Rotate(float4 delta_degrees);
 
 	__device__ float3 GetRayDir(float2 _uv, float vfovdeg, float width, float height) const;
+
+	__host__ float3 GetPosition() const { return m_Position; };
 
 	void setMovementSpeed(float speed) { m_movement_speed = speed; };
 

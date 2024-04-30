@@ -166,6 +166,13 @@ void EditorLayer::OnUIRender()
 		ImGui::TableSetColumnIndex(1);
 		ImGui::Text("%d", m_Renderer.getSampleCount());
 
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::Text("Viewer position");
+		ImGui::TableSetColumnIndex(1);
+		float3 pos = m_dcamera->GetPosition();
+		ImGui::Text("x: %.3f y: %.3f z: %.3f", pos.x, pos.y, pos.z);
+
 		ImGui::EndTable();
 
 		ImGui::End();

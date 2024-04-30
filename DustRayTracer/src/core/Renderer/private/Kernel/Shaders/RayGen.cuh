@@ -13,7 +13,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
 	float3 sunpos = { 100,100,100 };
-	float3 suncol = { 1.0, 1.0, 0.584 };
+	float3 suncol = { 1.000,0.944,0.917 };
 	//uv.x *= ((float)max_x / (float)max_y);
 	//uv.x = uv.x * 2.f - ((float)max_x / (float)max_y);
 	//uv.y = uv.y * 2.f - 1.f;
@@ -75,14 +75,16 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 
+		//shadow ray for sunlight
+		if(false)
 		if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
 			&scenedata))
 		{
 			if (material.AlbedoTextureIndex < 0)
-				light += (material.Albedo * suncol) * 0.5;
+				light += (material.Albedo * suncol);
 			else
 			{
-				light += scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+				light += scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv) * suncol;
 			}
 		}
 
