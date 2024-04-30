@@ -7,21 +7,11 @@
 class Node
 {
 public:
-	Node();
-	~Node();
-	
-	__device__ bool Intersect(Ray ray);
+	__device__ bool IntersectAABB(const Ray& ray, float t_min = 0.0001f, float t_max = FLT_MAX) const;
 
 	Bounds3f bounds;
 	Node* children;
 	size_t childrenCount = 0;
 	Mesh* d_Mesh;
+	int MeshIndex = -1;
 };
-
-Node::Node()
-{
-}
-
-Node::~Node()
-{
-}

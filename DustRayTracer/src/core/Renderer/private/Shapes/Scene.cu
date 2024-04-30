@@ -340,6 +340,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		//no children yet; 2 level bvh
 		node.children;
 		node.d_Mesh = thrust::raw_pointer_cast(&(m_Meshes.data()[meshIdx]));
+		node.MeshIndex = meshIdx;//should correspond to deviceMeshBuffer
 
 		if (root.bounds.pMax.x < node.bounds.pMax.x) root.bounds.pMax.x = node.bounds.pMax.x;
 		if (root.bounds.pMax.y < node.bounds.pMax.y) root.bounds.pMax.y = node.bounds.pMax.y;

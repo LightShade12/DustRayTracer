@@ -42,6 +42,7 @@ void InvokeRenderKernel(
 	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
 	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Material.data());
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
+	scenedata.DeviceBVHTreePtr = scene.d_BVHTreeRoot;
 
 	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, frameidx, accumulation_buffer, scenedata);
 }

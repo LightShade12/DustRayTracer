@@ -1,6 +1,7 @@
 #include "TraceRay.cuh"
 
 #include "core/Renderer/private/Shapes/Scene.cuh"
+#include "core/Renderer/private/Kernel/BVH.cuh"
 
 #include "Shaders/ClosestHit.cuh"
 #include "Shaders/Miss.cuh"
@@ -16,25 +17,56 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 	float hitDistance = FLT_MAX;
 	HitPayload workingPayload;
 
-	for (size_t meshIdx = 0; meshIdx < scenedata->DeviceMeshBufferSize; meshIdx++)
+	//top level
+	if (scenedata->DeviceBVHTreePtr->IntersectAABB(ray))
 	{
-		const Mesh* currentmesh = &(scenedata->DeviceMeshBufferPtr[meshIdx]);
-
-		for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+		for (int nodeIdx = 0; nodeIdx < scenedata->DeviceBVHTreePtr->childrenCount; nodeIdx++)
 		{
-			const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
-			workingPayload = Intersection(ray, triangle);
+			const Node currentnode = scenedata->DeviceBVHTreePtr->children[nodeIdx];
 
-			if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+			//2nd level
+			if (currentnode.IntersectAABB(ray))
 			{
-				if (!AnyHit(ray, scenedata,
-					currentmesh, triangle, workingPayload.hit_distance))continue;
-				hitDistance = workingPayload.hit_distance;
-				closestObjectIdx = meshIdx;
-				hitTriangleIdx = triangleIdx;
+				const Mesh* currentmesh = currentnode.d_Mesh;
+
+				for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+				{
+					const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
+					workingPayload = Intersection(ray, triangle);
+
+					if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+					{
+						if (!AnyHit(ray, scenedata,
+							currentmesh, triangle, workingPayload.hit_distance))continue;
+						hitDistance = workingPayload.hit_distance;
+						closestObjectIdx = currentnode.MeshIndex;
+						hitTriangleIdx = triangleIdx;
+					}
+				}
 			}
 		}
 	}
+
+	if (false)
+		for (size_t meshIdx = 0; meshIdx < scenedata->DeviceMeshBufferSize; meshIdx++)
+		{
+			const Mesh* currentmesh = &(scenedata->DeviceMeshBufferPtr[meshIdx]);
+
+			for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+			{
+				const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
+				workingPayload = Intersection(ray, triangle);
+
+				if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+				{
+					if (!AnyHit(ray, scenedata,
+						currentmesh, triangle, workingPayload.hit_distance))continue;
+					hitDistance = workingPayload.hit_distance;
+					closestObjectIdx = meshIdx;
+					hitTriangleIdx = triangleIdx;
+				}
+			}
+		}
 
 	//Have not hit
 	if (closestObjectIdx < 0)

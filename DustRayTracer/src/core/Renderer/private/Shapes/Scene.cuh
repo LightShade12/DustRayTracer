@@ -38,6 +38,7 @@ struct SceneData
 	const Texture* DeviceTextureBufferPtr = nullptr;
 	const Material* DeviceMaterialBufferPtr = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
+	const Node* DeviceBVHTreePtr = nullptr;
 
 	size_t DeviceTextureBufferSize = 0;//unused
 	size_t DeviceMaterialBufferSize = 0;//unused
@@ -49,7 +50,7 @@ struct Scene
 	thrust::device_vector<Mesh> m_Meshes;
 	thrust::device_vector<Material> m_Material;
 	thrust::device_vector<Texture>m_Textures;
-	Node* d_BVHTreeRoot=nullptr;
+	Node* d_BVHTreeRoot = nullptr;
 	bool loadGLTFmodel(const char* filepath);
 
 	~Scene();

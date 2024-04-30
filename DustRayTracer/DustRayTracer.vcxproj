@@ -177,6 +177,7 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
