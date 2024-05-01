@@ -213,7 +213,7 @@ void EditorLayer::OnUIRender()
 				}
 				else {//DEBUG MODE
 					ImGui::Text("Debug view:"); ImGui::SameLine();
-					if (ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs"))
+					if (ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs\0MeshBVH\0WorldBounds"))
 					{
 						m_Renderer.m_RendererSettings.DebugMode = (RendererSettings::DebugModes)debug_view; m_Renderer.resetAccumulationBuffer();
 					}
@@ -228,11 +228,14 @@ void EditorLayer::OnUIRender()
 			}
 			if (ImGui::BeginTabItem("Scene"))
 			{
+				ImGui::CollapsingHeader("Sun light", ImGuiTreeNodeFlags_Leaf);
 				ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color));
-				ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 100);
+				ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10);
+				if (ImGui::SliderAngle("Sunlight Y rotation", &(m_Renderer.m_RendererSettings.sunlight_dir.x)))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderAngle("Sunlight altitude", &(m_Renderer.m_RendererSettings.sunlight_dir.y), 0, 90))m_Renderer.resetAccumulationBuffer();
+				ImGui::CollapsingHeader("Sky light", ImGuiTreeNodeFlags_Leaf);
 				ImGui::ColorEdit3("Sky color", (float*)&(m_Renderer.m_RendererSettings.sky_color));
-				ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 100);
-				ImGui::SliderFloat3("Sunlight direction", (float*)&(m_Renderer.m_RendererSettings.sunlight_dir), -1, 1);
+				ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 10);
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();

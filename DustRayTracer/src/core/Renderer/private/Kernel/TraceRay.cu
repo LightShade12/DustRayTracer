@@ -23,6 +23,10 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 	{
 		if (scenedata->DeviceBVHTreePtr[0].IntersectAABB(ray))
 		{
+			if (scenedata->RenderSettings.DebugMode == RendererSettings::DebugModes::WORLDBVH_DEBUG
+				&& scenedata->RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
+				return Debug();
+
 			for (int nodeIdx = 0; nodeIdx < scenedata->DeviceBVHTreePtr->childrenCount; nodeIdx++)
 			{
 				const Node currentnode = scenedata->DeviceBVHTreePtr[0].children[nodeIdx];
@@ -30,8 +34,9 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 				if (currentnode.IntersectAABB(ray))
 				{
 					const Mesh* currentmesh = currentnode.d_Mesh;
-					//if (currentnode.MeshIndex % 2 != 0)
-					//return Debug();
+					if (scenedata->RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG
+						&& scenedata->RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
+						return Debug();
 					for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
 					{
 						const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);

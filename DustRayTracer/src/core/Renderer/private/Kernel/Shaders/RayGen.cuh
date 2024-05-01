@@ -12,7 +12,10 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, uint32_t frameidx, const SceneData scenedata) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
-	float3 sunpos = scenedata.RenderSettings.sunlight_dir * 100;
+	float3 sunpos = make_float3(
+		sin(scenedata.RenderSettings.sunlight_dir.x) * (1 - sin(scenedata.RenderSettings.sunlight_dir.y)),
+		sin(scenedata.RenderSettings.sunlight_dir.y),
+		cos(scenedata.RenderSettings.sunlight_dir.x) * (1 - sin(scenedata.RenderSettings.sunlight_dir.y))) * 100;
 	float3 suncol = scenedata.RenderSettings.sunlight_color * scenedata.RenderSettings.sunlight_intensity;
 	//uv.x *= ((float)max_x / (float)max_y);
 	//uv.x = uv.x * 2.f - ((float)max_x / (float)max_y);
