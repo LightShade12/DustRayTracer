@@ -98,7 +98,6 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\BVH.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Debug.cuh" />
     <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
-    <ClInclude Include="src\core\Editor\ConsoleWindow.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">
@@ -117,7 +116,6 @@
     <ClCompile Include="src\core\Editor\Theme\EditorTheme.cpp" />
     <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
     <ClCompile Include="src\core\Application\private\Input.cpp" />
-    <ClCompile Include="src\core\Editor\ConsoleWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />

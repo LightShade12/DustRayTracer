@@ -1,7 +1,7 @@
 #pragma once
 #include "core/Application/private/Layer.hpp"
-#include "ConsoleWindow.hpp"
 #include "core/Renderer/Renderer.hpp"
+#include <vector>
 
 #include <string>
 
@@ -14,6 +14,7 @@ public:
 	__host__ virtual void OnUIRender() override;
 	__host__ virtual void OnUpdate(float ts) override;
 	__host__ virtual void OnDetach() override;
+	std::vector<const char*> ConsoleLogs;
 private:
 	bool saveImage(const char* filename, int _width, int _height, GLubyte* data);
 
@@ -32,7 +33,6 @@ private:
 	std::string test_window_text = "Hello World";
 
 private:
-	ConsoleWindow m_Console;
 	DevMetrics m_DevMetrics;
 	Renderer m_Renderer;
 	Scene* m_Scene = nullptr;

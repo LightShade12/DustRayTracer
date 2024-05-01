@@ -12,7 +12,6 @@
 extern bool g_ApplicationRunning;
 static Application* s_Instance = nullptr;
 
-
 static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -39,7 +38,7 @@ void Application::Run()
 			layer->OnUpdate(m_TimeStep_secs);
 
 		glClear(GL_COLOR_BUFFER_BIT);
-		
+
 		{
 			int width, height;
 			glfwGetWindowSize(m_WindowHandle, &(width), &(height));
@@ -93,7 +92,6 @@ void Application::Run()
 		for (auto& layer : m_LayerStack)
 			layer->OnUIRender();
 
-
 		ImGui::End();
 
 		//End---------------------------------------------------------------------------------------------
@@ -115,13 +113,6 @@ void Application::Run()
 		m_TimeStep_secs = glm::min<float>(m_FrameTime_secs, 0.0333f);
 		m_LastFrameTime_secs = time_secs;
 	}
-}
-
-void Application::logMessage(const char* msg)
-{
-	printf(msg);
-	printf("\n");
-	appLogs.push_back(msg);
 }
 
 Application::~Application()

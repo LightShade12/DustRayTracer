@@ -17,14 +17,12 @@ struct ApplicationSpecification
 class Application
 {
 public:
-	std::vector<const char*> appLogs;
 	Application(const ApplicationSpecification& applicationSpecification = ApplicationSpecification());
 	static Application& Get();
 	void Close();
 	float GetTime_seconds();
 	float GetFrameTime_secs() const { return m_FrameTime_secs; }
 	void Run();
-	void logMessage(const char* msg);
 	template<typename T>
 	void PushLayer()
 	{

@@ -35,6 +35,11 @@ void EditorLayer::OnAttach()
 	m_device_Camera = new Camera();
 	m_Scene = new Scene();
 
+	ConsoleLogs.push_back("-------------------console initialized-------------------");
+	ConsoleLogs.push_back("GLFW 3.4");
+	ConsoleLogs.push_back("CUDA 12.4");
+	ConsoleLogs.push_back("OPENGL 4.6");
+
 	//------------------------------------------------------------------------
 	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest_optimised.glb");
 
@@ -59,7 +64,7 @@ void EditorLayer::OnUIRender()
 	//-------------------------------------------------------------------------------------------------
 	Timer timer;
 
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 
 	{
 		ImGui::Begin("test");
@@ -251,7 +256,13 @@ void EditorLayer::OnUIRender()
 	ImGui::End();
 	ImGui::PopStyleVar(1);
 
-	m_Console.Render();
+	ImGui::Begin("Console window");
+	for (const char* log : ConsoleLogs)
+		ImGui::Text(log);
+	ImGui::End();
+
+	ImGui::Begin("SceneGraph");
+	ImGui::End();
 
 	vpdims.y -= 12;//TODO: make this sensible; not a constant
 	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));

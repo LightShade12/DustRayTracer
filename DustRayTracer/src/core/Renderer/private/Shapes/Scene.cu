@@ -4,7 +4,6 @@
 #include "stb_image.h"
 
 #include "core/Editor/Common/CudaCommon.cuh"
-#include "core/Editor/ConsoleWindow.hpp" //TODO: bad dependency
 
 #include "core/Renderer/private/Kernel/BVH.cuh"
 
