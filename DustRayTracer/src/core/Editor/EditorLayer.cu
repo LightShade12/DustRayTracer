@@ -1,5 +1,7 @@
 #include "EditorLayer.hpp"
 
+#include "core/Application/private/Input.hpp"
+
 #include "Theme/EditorTheme.hpp"
 #include "core/Application/Application.hpp"
 #include "core/Common/Timer.hpp"
@@ -15,7 +17,10 @@
 #include <stb_image_write.h>
 
 //appends extension automatically;png
-bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
+//input handling
+bool firstclick = true;
+
+bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLubyte* data)
 {
 	if (
 		stbi_write_png((std::string(std::string(filename) + ".png")).c_str(), _width, _height, 4, data, 4 * sizeof(GLubyte) * _width)
@@ -25,9 +30,9 @@ bool saveImage(const char* filename, int _width, int _height, GLubyte* data)
 		return false;
 }
 
-__host__ void EditorLayer::OnAttach()
+void EditorLayer::OnAttach()
 {
-	m_dcamera = new Camera();
+	m_device_Camera = new Camera();
 	m_Scene = new Scene();
 
 	//------------------------------------------------------------------------
@@ -54,11 +59,11 @@ void EditorLayer::OnUIRender()
 	//-------------------------------------------------------------------------------------------------
 	Timer timer;
 
-	//ImGui::ShowDemoWindow();
+	ImGui::ShowDemoWindow();
 
 	{
 		ImGui::Begin("test");
-		ImGui::Text(msg.c_str());
+		ImGui::Text(test_window_text.c_str());
 		if (ImGui::Button("save png"))
 		{
 			std::vector<GLubyte> frame_data(m_Renderer.getBufferWidth() * m_Renderer.getBufferHeight() * 4);//RGBA8
@@ -67,9 +72,9 @@ void EditorLayer::OnUIRender()
 			glBindTexture(GL_TEXTURE_2D, 0);
 
 			if (saveImage("image", m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight(), frame_data.data()))
-				msg = "Image saved";
+				test_window_text = "Image saved";
 			else
-				msg = "Image save failed";
+				test_window_text = "Image save failed";
 		}
 		ImGui::End();
 	}
@@ -89,33 +94,33 @@ void EditorLayer::OnUIRender()
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("Application frame time");
 		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", Application::Get().GetFrameTime() * 1000);
+		ImGui::Text("%.3fms", Application::Get().GetFrameTime_secs() * 1000);//???
 		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1 / Application::Get().GetFrameTime()));
+		ImGui::Text("%d hz", int(1 / Application::Get().GetFrameTime_secs()));
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("GUI frame time(EditorLayer)");
 		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", m_LastFrameTime);
+		ImGui::Text("%.3fms", m_LastFrameTime_ms);
 		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1000 / m_LastFrameTime));
+		ImGui::Text("%d hz", int(1000 / m_LastFrameTime_ms));
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("CPU code execution time");
 		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", (m_LastFrameTime - m_LastRenderTime));
+		ImGui::Text("%.3fms", (m_LastFrameTime_ms - m_LastRenderTime_ms));
 		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1000 / (m_LastFrameTime - m_LastRenderTime)));
+		ImGui::Text("%d hz", int(1000 / (m_LastFrameTime_ms - m_LastRenderTime_ms)));
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("GPU Kernel time");
 		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", m_LastRenderTime);
+		ImGui::Text("%.3fms", m_LastRenderTime_ms);
 		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1000 / m_LastRenderTime));
+		ImGui::Text("%d hz", int(1000 / m_LastRenderTime_ms));
 
 		ImGui::EndTable();
 
@@ -170,10 +175,58 @@ void EditorLayer::OnUIRender()
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("Viewer position");
 		ImGui::TableSetColumnIndex(1);
-		float3 pos = m_dcamera->GetPosition();
+		float3 pos = m_device_Camera->GetPosition();
 		ImGui::Text("x: %.3f y: %.3f z: %.3f", pos.x, pos.y, pos.z);
 
 		ImGui::EndTable();
+
+		ImGui::End();
+	}
+
+	{
+		ImGui::Begin("Settings");
+
+		ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+		if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+		{
+			if (ImGui::BeginTabItem("Renderer"))
+			{
+				static int renderer_mode = 0;
+				static int debug_view = 0;
+				ImGui::Text("Renderer mode:"); ImGui::SameLine();
+				ImGui::Combo("###Renderer mode", &renderer_mode, "Normal\0Debug");
+
+				if ((Renderer::RenderModes)renderer_mode == Renderer::RenderModes::NORMALMODE) {
+					ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight));
+					ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.gamma_correction));
+					ImGui::Text("Ray bounce limit:"); ImGui::SameLine();
+					ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit));
+					ImGui::Text("Max samples limit:"); ImGui::SameLine();
+					ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples));
+				}
+				else {
+					ImGui::Text("Debug view:"); ImGui::SameLine();
+					ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs");
+				}
+
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("Camera"))
+			{
+				ImGui::SliderAngle("FOV", &(m_device_Camera->vfov_deg), 5, 120);
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("Scene"))
+			{
+				ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color));
+				ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 100);
+				ImGui::ColorEdit3("Sky color", (float*)&(m_Renderer.m_RendererSettings.sky_color));
+				ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 100);
+				ImGui::SliderFloat3("Sunlight direction", (float*)&(m_Renderer.m_RendererSettings.sunlight_dir), -1, 1);
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
+		}
 
 		ImGui::End();
 	}
@@ -182,7 +235,6 @@ void EditorLayer::OnUIRender()
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
 
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
-	ImGui::GetMousePos();
 
 	if (m_Renderer.GetRenderTargetImage_name() != NULL)
 		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
@@ -199,18 +251,14 @@ void EditorLayer::OnUIRender()
 	ImGui::End();
 	ImGui::PopStyleVar(1);
 
-	ImGui::Begin("Padding window");
-	ImGui::End();
+	m_Console.Render();
 
 	vpdims.y -= 12;//TODO: make this sensible; not a constant
 	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
-	m_Renderer.Render(m_dcamera, (*m_Scene), &m_LastRenderTime);//make lastrendertime a member var of renderer and access it?
+	m_Renderer.Render(m_device_Camera, (*m_Scene), &m_LastRenderTime_ms);//make lastrendertime a member var of renderer and access it?
 
-	m_LastFrameTime = timer.ElapsedMillis();
+	m_LastFrameTime_ms = timer.ElapsedMillis();
 }
-
-//input handling
-bool firstclick = true;
 
 //general purpose input handler
 bool processInput(GLFWwindow* window, Camera* cam, float delta)
@@ -236,50 +284,48 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 			}
 
 			//movement lateral
-			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			if (Input::IsKeyDown(KeyCode::S))
 			{
 				has_moved = true;
 				velocity.z -= 1;
 			}
-			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			if (Input::IsKeyDown(KeyCode::W))
 			{
 				has_moved = true;
 				velocity.z += 1;
 			}
 
 			//strafe
-			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			if (Input::IsKeyDown(KeyCode::A))
 			{
 				has_moved = true;
 				velocity.x -= 1;
 			}
-			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			if (Input::IsKeyDown(KeyCode::D))
 			{
 				has_moved = true;
 				velocity.x += 1;
 			}
 
 			//UP/DOWN
-			if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+			if (Input::IsKeyDown(KeyCode::Q))
 			{
 				has_moved = true;
 				velocity.y -= 1;
 			}
-			if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+			if (Input::IsKeyDown(KeyCode::E))
 			{
 				has_moved = true;
 				velocity.y += 1;
 			}
 
 			//TODO: Input::GetMouseDeltaDegrees?
-			double mouseX;
-			double mouseY;
-			glfwGetCursorPos(window, &mouseX, &mouseY);
+			glm::vec2 mousePos = Input::getMousePosition();
 
 			// Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
 			// and then "transforms" them into degrees
-			float rotX = sensitivity * (float)(mouseY - (height / 2)) / height;
-			float rotY = sensitivity * (float)(mouseX - (width / 2)) / width;
+			float rotX = sensitivity * (float)(mousePos.y - (height / 2)) / height;
+			float rotY = sensitivity * (float)(mousePos.x - (width / 2)) / width;
 
 			float sin_x = sin(-rotY);
 			float cos_x = cos(-rotY);
@@ -310,14 +356,14 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 
 void EditorLayer::OnUpdate(float ts)
 {
-	m_LastApplicationFrameTime = ts;
-	if (processInput(Application::Get().GetWindowHandle(), (m_dcamera), ts))
+	//m_LastApplicationFrameTime = ts;
+	if (processInput(Application::Get().GetWindowHandle(), (m_device_Camera), ts))
 		m_Renderer.resetAccumulationBuffer();
 }
 
 void EditorLayer::OnDetach()
 {
-	delete m_dcamera;
+	delete m_device_Camera;
 	cudaDeviceSynchronize();
 	delete m_Scene;
 }

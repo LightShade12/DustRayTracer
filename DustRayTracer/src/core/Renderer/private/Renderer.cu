@@ -1,7 +1,7 @@
 #include "core/Renderer/Renderer.hpp"
 #include "core/Renderer/private/Camera/Camera.cuh"
 
-#include "core/Common/CudaCommon.cuh"
+#include "core/Editor/Common/CudaCommon.cuh"
 #include "Kernel/RenderKernel.cuh"
 #include <thrust/device_vector.h>
 #include <iostream>
@@ -10,17 +10,6 @@ struct FrameBufferWrapper
 {
 	thrust::device_vector<float3>ColorDataBuffer;
 };
-
-void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line)
-{
-	if (result) {
-		std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
-			file << ":" << line << " '" << func << "' \n";
-		// Make sure we call CUDA Device Reset before exiting
-		cudaDeviceReset();
-		exit(99);
-	}
-}
 
 Renderer::Renderer()
 {

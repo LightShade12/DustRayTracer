@@ -1,5 +1,6 @@
 #pragma once
 #include "core/Application/private/Layer.hpp"
+#include "ConsoleWindow.hpp"
 #include "core/Renderer/Renderer.hpp"
 
 #include <string>
@@ -14,6 +15,9 @@ public:
 	__host__ virtual void OnUpdate(float ts) override;
 	__host__ virtual void OnDetach() override;
 private:
+	bool saveImage(const char* filename, int _width, int _height, GLubyte* data);
+
+private:
 	struct DevMetrics
 	{
 		uint32_t m_TrianglesCount = 0;
@@ -22,15 +26,15 @@ private:
 		uint32_t m_TexturesCount = 0;
 	};
 
-	float m_LastFrameTime = 0;//ms
-	float m_LastApplicationFrameTime = 0;
-	float m_LastRenderTime = 0;//ms
-	float2 mousedelta = { 0,0 };
-	float3 movedir = { 0,0,0 };
-	std::string msg = "Hello World";
+	float m_LastFrameTime_ms = 0;//ms
+	//float m_LastApplicationFrameTime = 0;
+	float m_LastRenderTime_ms = 0;//ms
+	std::string test_window_text = "Hello World";
+
 private:
+	ConsoleWindow m_Console;
 	DevMetrics m_DevMetrics;
 	Renderer m_Renderer;
 	Scene* m_Scene = nullptr;
-	Camera* m_dcamera = nullptr;
+	Camera* m_device_Camera = nullptr;
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include "core/Common/Managed.cuh"
+#include "core/Editor/Common/Managed.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 //TODO: Camera InputProcess() which calls rotate and translate and cas mouseInput specific code
@@ -12,12 +12,15 @@ public:
 	__host__ void OnUpdate(float3 velocity, float delta);
 	__host__ void Rotate(float4 delta_degrees);
 
-	__device__ float3 GetRayDir(float2 _uv, float vfovdeg, float width, float height) const;
+	__device__ float3 GetRayDir(float2 _uv, float width, float height) const;
 
 	__host__ float3 GetPosition() const { return m_Position; };
 
 	void setMovementSpeed(float speed) { m_movement_speed = speed; };
-
+private:
+	__host__ __device__ float deg2rad(float degree);
+public:
+	float vfov_deg = deg2rad(60);
 	float m_movement_speed = 5;
 	float3 m_Position = { 0,2,5 };
 	float3 m_Forward_dir = { 0,0,-1 };

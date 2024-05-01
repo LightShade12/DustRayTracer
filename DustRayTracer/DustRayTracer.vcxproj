@@ -134,10 +134,12 @@
   <ItemGroup>
     <ClInclude Include="src\core\Application\Application.hpp" />
     <ClInclude Include="src\core\Application\private\Input.hpp" />
+    <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
     <ClInclude Include="src\core\Application\private\Layer.hpp" />
-    <ClInclude Include="src\core\Common\CudaCommon.cuh" />
-    <ClInclude Include="src\core\Common\Managed.cuh" />
+    <ClInclude Include="src\core\Editor\Common\CudaCommon.cuh" />
+    <ClInclude Include="src\core\Editor\Common\Managed.cuh" />
     <ClInclude Include="src\core\Common\Timer.hpp" />
+    <ClInclude Include="src\core\Editor\ConsoleWindow.hpp" />
     <ClInclude Include="src\core\Editor\EditorLayer.hpp" />
     <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
@@ -165,7 +167,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp" />
+    <ClCompile Include="src\core\Application\private\Input.cpp" />
     <ClCompile Include="src\core\Common\Timer.cpp" />
+    <ClCompile Include="src\core\Editor\ConsoleWindow.cpp" />
     <ClCompile Include="src\core\Editor\Theme\EditorTheme.cpp" />
     <ClCompile Include="src\core\Main\main.cpp" />
     <ClCompile Include="thirdparty\stb_image\stb_image.cpp" />
@@ -178,6 +182,7 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
+    <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
@@ -194,6 +199,9 @@
     <ProjectReference Include="thirdparty\imgui\ImGui.vcxproj">
       <Project>{C0FF640D-2C14-8DBE-F595-301E616989EF}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="dev_docs.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

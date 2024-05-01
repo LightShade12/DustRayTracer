@@ -3,12 +3,6 @@
 #include <glm/glm.hpp>
 #include <glm/mat3x3.hpp>
 
-__device__ float deg2rad(float degree)
-{
-	float const PI = 3.14159265359;
-	return (degree * (PI / 180));
-}
-
 /*
 camera(float vfov, glm::vec3 lookfrom, glm::vec3 lookdir, glm::vec3 vup, float aperture, float focus_dist) {
 	auto theta = degrees_to_radians(vfov);
@@ -83,9 +77,10 @@ __host__ void Camera::Rotate(float4 delta_degrees)
 	m_Right_dir = cross(m_Forward_dir, m_Up_dir);
 }
 
-__device__ float3 Camera::GetRayDir(float2 _uv, float vfovdeg, float width, float height) const
+__device__ float3 Camera::GetRayDir(float2 _uv, float width, float height) const
 {
-	float theta = deg2rad(vfovdeg);
+	//float theta = deg2rad(vfov_deg);
+	float theta = vfov_deg / 2;
 	auto h = tan(theta / 2);
 	float viewport_height = 2.0 * h;
 	float viewport_width = viewport_height * (width / height);//aspect ratio
@@ -102,4 +97,10 @@ __device__ float3 Camera::GetRayDir(float2 _uv, float vfovdeg, float width, floa
 
 	//return float3(lower_left_corner + _uv.x * horizontal + _uv.y * vertical - m_Position);
 	return float3((m_Position + w) + _uv.x * horizontal + _uv.y * vertical - m_Position);
+}
+
+__host__ __device__ float Camera::deg2rad(float degree)
+{
+	float const PI = 3.14159265359;
+	return (degree * (PI / 180));
 }

@@ -3,8 +3,6 @@
 * using SI units
 */
 
-
-
 float operator"" _km(long double x) { return x * 1000; }
 float operator "" _cm(long double x) { return x / 100; }
 

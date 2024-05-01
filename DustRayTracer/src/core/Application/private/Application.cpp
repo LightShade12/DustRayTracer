@@ -12,6 +12,7 @@
 extern bool g_ApplicationRunning;
 static Application* s_Instance = nullptr;
 
+
 static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -35,7 +36,7 @@ void Application::Run()
 		glfwPollEvents();
 
 		for (auto& layer : m_LayerStack)
-			layer->OnUpdate(m_TimeStep);
+			layer->OnUpdate(m_TimeStep_secs);
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		
@@ -109,11 +110,18 @@ void Application::Run()
 
 		glfwSwapBuffers(m_WindowHandle);
 
-		float time = GetTime();
-		m_FrameTime = time - m_LastFrameTime;
-		m_TimeStep = glm::min<float>(m_FrameTime, 0.0333f);
-		m_LastFrameTime = time;
+		float time_secs = GetTime_seconds();
+		m_FrameTime_secs = time_secs - m_LastFrameTime_secs;
+		m_TimeStep_secs = glm::min<float>(m_FrameTime_secs, 0.0333f);
+		m_LastFrameTime_secs = time_secs;
 	}
+}
+
+void Application::logMessage(const char* msg)
+{
+	printf(msg);
+	printf("\n");
+	appLogs.push_back(msg);
 }
 
 Application::~Application()
@@ -133,7 +141,7 @@ void Application::Close()
 	m_Running = false;
 }
 
-float Application::GetTime()
+float Application::GetTime_seconds()
 {
 	return (float)glfwGetTime();
 }

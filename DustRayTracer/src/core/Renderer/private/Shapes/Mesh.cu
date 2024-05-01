@@ -1,6 +1,6 @@
 #include "Mesh.cuh"
 
-#include "core/Common/CudaCommon.cuh"
+#include "core/Editor/Common/CudaCommon.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 #include <cuda_runtime.h>

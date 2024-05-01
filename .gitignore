@@ -387,3 +387,4 @@ FodyWeavers.xsd
 /build
 /DustRayTracer/thirdparty/glad/bin/Glad-Release
 /bin/DustRayTracer-Release/DustRayTracer-Release-x86_64.exe
+/DustRayTracer/dev_docs.txt

@@ -3,7 +3,8 @@
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include "core/Common/CudaCommon.cuh"
+#include "core/Editor/Common/CudaCommon.cuh"
+#include "core/Editor/ConsoleWindow.hpp" //TODO: bad dependency
 
 #include "core/Renderer/private/Kernel/BVH.cuh"
 

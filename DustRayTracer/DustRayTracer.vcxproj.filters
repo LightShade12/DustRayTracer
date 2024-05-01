@@ -51,7 +51,7 @@
     <ClInclude Include="src\core\Application\private\Layer.hpp">
       <Filter>src\core\Application\private</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Common\Managed.cuh">
+    <ClInclude Include="src\core\Editor\Common\Managed.cuh">
       <Filter>src\core\Common</Filter>
     </ClInclude>
     <ClInclude Include="src\core\Common\Timer.hpp">
@@ -90,13 +90,15 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
-    <ClInclude Include="src\core\Common\CudaCommon.cuh" />
+    <ClInclude Include="src\core\Editor\Common\CudaCommon.cuh" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
     <ClInclude Include="src\core\Application\private\Input.hpp" />
     <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\BVH.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Debug.cuh" />
+    <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
+    <ClInclude Include="src\core\Editor\ConsoleWindow.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">
@@ -114,6 +116,8 @@
     <ClCompile Include="src\core\Common\Timer.cpp" />
     <ClCompile Include="src\core\Editor\Theme\EditorTheme.cpp" />
     <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
+    <ClCompile Include="src\core\Application\private\Input.cpp" />
+    <ClCompile Include="src\core\Editor\ConsoleWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />
@@ -126,5 +130,9 @@
     <CudaCompile Include="src\core\Renderer\private\Shapes\Scene.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
+    <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="dev_docs.txt" />
   </ItemGroup>
 </Project>

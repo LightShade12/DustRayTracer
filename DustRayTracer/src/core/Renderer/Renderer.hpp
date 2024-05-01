@@ -15,9 +15,21 @@ class Renderer
 public:
 	struct RendererSettings
 	{
-		uint32_t max_samples = 0;
-		uint32_t ray_bounce_limit = 5;
+		bool gamma_correction = false;
+		bool enableSunlight = false;
+		int max_samples = 0;
+		int ray_bounce_limit = 5;
 		bool debug_normals = false;
+		float3 sunlight_dir = {1,1,1};
+		float3 sunlight_color;
+		float sunlight_intensity = 1;
+		float3 sky_color;
+		float sky_intensity = 1;
+	};
+	enum class RenderModes
+	{
+		NORMALMODE = 0,
+		DEBUGMODE = 1
 	};
 
 	Renderer();
