@@ -12,8 +12,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, uint32_t frameidx, const SceneData scenedata) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
 
-	float3 sunpos = { 100,100,100 };
-	float3 suncol = { 1.000,0.944,0.917 };
+	float3 sunpos = scenedata.RenderSettings.sunlight_dir * 100;
+	float3 suncol = scenedata.RenderSettings.sunlight_color * scenedata.RenderSettings.sunlight_intensity;
 	//uv.x *= ((float)max_x / (float)max_y);
 	//uv.x = uv.x * 2.f - ((float)max_x / (float)max_y);
 	//uv.y = uv.y * 2.f - 1.f;
@@ -28,7 +28,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	float3 contribution = { 1,1,1 };
-	int bounces = 10;
+	int bounces = scenedata.RenderSettings.ray_bounce_limit;
 
 	for (int i = 0; i < bounces; i++)
 	{
@@ -45,7 +45,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		if (payload.hit_distance < 0)
 		{
 			float a = 0.5 * (1 + (normalize(ray.direction)).y);
-			float3 col1 = { 0.2,0.5,1.0 };
+			float3 col1 = scenedata.RenderSettings.sky_color * scenedata.RenderSettings.sky_intensity;
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
 			light += fcol * contribution;
@@ -76,7 +76,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 
 		//shadow ray for sunlight
-		if (false)
+		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 			if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
 				&scenedata))
 			{
@@ -91,12 +91,36 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.origin = newRayOrigin;
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
 
-		//light = material.Albedo;
-		//light = payload.world_normal;//debug normals
-		//light = payload.UVW;//debug barycentric coords
-		//light = {uv.x,uv.y,0};//debug UV
+		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
+		{
+			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
+			{
+				if (material.AlbedoTextureIndex < 0)
+				{
+					light = material.Albedo;
+				}
+				else
+				{
+					Triangle tri = closestMesh.m_dev_triangles[payload.triangle_idx];
+					uv = {
+						 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
+						  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
+					};
+					light = scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+				}
+			}
+			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::NORMAL_DEBUG)
+				light = payload.world_normal;//debug normals
+			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::BARYCENTRIC_DEBUG)
+				light = payload.UVW;//debug barycentric coords
+			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::UVS_DEBUG)
+				light = { uv.x,uv.y,0 };//debug UV
+		}
+		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)break;
 	}
 
-	//light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+	if (scenedata.RenderSettings.gamma_correction && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
+		light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+
 	return light;
 };

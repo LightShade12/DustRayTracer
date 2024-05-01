@@ -132,6 +132,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\core\Renderer\private\Kernel\RendererSettings.h" />
     <ClInclude Include="src\core\Application\Application.hpp" />
     <ClInclude Include="src\core\Application\private\Input.hpp" />
     <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
@@ -165,6 +166,7 @@
     <ClInclude Include="thirdparty\stb_image\stb_image_write.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\Renderer\private\Kernel\RendererSettings.cpp" />
     <ClCompile Include="src\core\Application\private\Application.cpp" />
     <ClCompile Include="src\core\Application\private\Input.cpp" />
     <ClCompile Include="src\core\Common\Timer.cpp" />

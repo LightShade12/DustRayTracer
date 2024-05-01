@@ -74,6 +74,8 @@ void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
 
 void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 {
+	if (m_FrameIndex == m_RendererSettings.max_samples)return;
+
 	cudaGraphicsMapResources(1, &m_viewCudaResource);
 
 	cudaArray_t viewCudaArray;
@@ -91,7 +93,7 @@ void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 
 	//printf("acc buffer size: %d", m_AccumulationBuffer->ColorDataBuffer.size());
 	InvokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight,
-		blocks, threads, cam, scene, m_FrameIndex,
+		blocks, threads, cam, scene, m_RendererSettings, m_FrameIndex,
 		thrust::raw_pointer_cast(m_AccumulationBuffer->ColorDataBuffer.data()));
 	checkCudaErrors(cudaGetLastError());
 

@@ -2,6 +2,7 @@
 
 #include "core/Renderer/private/Shapes/Material.cuh"
 #include "core/Renderer/private/Shapes/Mesh.cuh"
+#include "core/Renderer/private/Kernel/RendererSettings.h"
 
 #include <thrust/device_vector.h>
 
@@ -39,6 +40,8 @@ struct SceneData
 	const Material* DeviceMaterialBufferPtr = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
 	const Node* DeviceBVHTreePtr = nullptr;
+
+	RendererSettings RenderSettings;
 
 	size_t DeviceTextureBufferSize = 0;//unused
 	size_t DeviceMaterialBufferSize = 0;//unused

@@ -35,7 +35,7 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 
 void InvokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
-	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, uint32_t frameidx, float3* accumulation_buffer)
+	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
 {
 	SceneData scenedata;
 	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
@@ -43,7 +43,7 @@ void InvokeRenderKernel(
 	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Material.data());
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DeviceBVHTreePtr = scene.d_BVHTreeRoot;
-
+	scenedata.RenderSettings = settings;
 	//printf("pointer: %p\n", scenedata.DeviceMeshBufferPtr);
 	//printf("pointer: %p\n", scenedata.DeviceMaterialBufferPtr);
 	//printf("pointer: %p\n", scenedata.DeviceTextureBufferPtr);

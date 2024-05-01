@@ -197,11 +197,13 @@ void EditorLayer::OnUIRender()
 			if (ImGui::BeginTabItem("Renderer"))
 			{
 				static int renderer_mode = 0;
-				static int debug_view = 0;
+				static int debug_view = 1;
 				ImGui::Text("Renderer mode:"); ImGui::SameLine();
-				ImGui::Combo("###Renderer mode", &renderer_mode, "Normal\0Debug");
+				if (ImGui::Combo("###Renderer mode", &renderer_mode, "Normal\0Debug")) {
+					m_Renderer.m_RendererSettings.RenderMode = (RendererSettings::RenderModes)renderer_mode; m_Renderer.resetAccumulationBuffer();
+				}
 
-				if ((Renderer::RenderModes)renderer_mode == Renderer::RenderModes::NORMALMODE) {
+				if ((RendererSettings::RenderModes)renderer_mode == RendererSettings::RenderModes::NORMALMODE) {
 					ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight));
 					ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.gamma_correction));
 					ImGui::Text("Ray bounce limit:"); ImGui::SameLine();
@@ -209,9 +211,12 @@ void EditorLayer::OnUIRender()
 					ImGui::Text("Max samples limit:"); ImGui::SameLine();
 					ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples));
 				}
-				else {
+				else {//DEBUG MODE
 					ImGui::Text("Debug view:"); ImGui::SameLine();
-					ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs");
+					if (ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs"))
+					{
+						m_Renderer.m_RendererSettings.DebugMode = (RendererSettings::DebugModes)debug_view; m_Renderer.resetAccumulationBuffer();
+					}
 				}
 
 				ImGui::EndTabItem();

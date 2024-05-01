@@ -1,5 +1,6 @@
 #pragma once
 //#include "private/Camera/Camera.cuh"
+#include "private/Kernel/RendererSettings.h"
 
 #include <glad/glad.h>
 #include <cuda_gl_interop.h>//for member cuda objects
@@ -13,24 +14,6 @@ struct FrameBufferWrapper;
 class Renderer
 {
 public:
-	struct RendererSettings
-	{
-		bool gamma_correction = false;
-		bool enableSunlight = false;
-		int max_samples = 0;
-		int ray_bounce_limit = 5;
-		bool debug_normals = false;
-		float3 sunlight_dir = {1,1,1};
-		float3 sunlight_color;
-		float sunlight_intensity = 1;
-		float3 sky_color;
-		float sky_intensity = 1;
-	};
-	enum class RenderModes
-	{
-		NORMALMODE = 0,
-		DEBUGMODE = 1
-	};
 
 	Renderer();
 	void ResizeBuffer(uint32_t width, uint32_t height);
