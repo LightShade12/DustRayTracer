@@ -196,8 +196,8 @@ void EditorLayer::OnUIRender()
 		{
 			if (ImGui::BeginTabItem("Renderer"))
 			{
-				static int renderer_mode = 0;
-				static int debug_view = 1;
+				static int renderer_mode = (int)m_Renderer.m_RendererSettings.RenderMode;
+				static int debug_view = (int)m_Renderer.m_RendererSettings.DebugMode;
 				ImGui::Text("Renderer mode:"); ImGui::SameLine();
 				if (ImGui::Combo("###Renderer mode", &renderer_mode, "Normal\0Debug")) {
 					m_Renderer.m_RendererSettings.RenderMode = (RendererSettings::RenderModes)renderer_mode; m_Renderer.resetAccumulationBuffer();

@@ -23,7 +23,7 @@ struct RendererSettings
 	bool enableSunlight = false;
 	int max_samples = 50;
 	int ray_bounce_limit = 5;
-	RenderModes RenderMode = RenderModes::NORMALMODE;
+	RenderModes RenderMode = RenderModes::DEBUGMODE;
 	DebugModes DebugMode = DebugModes::ALBEDO_DEBUG;
 	float2 sunlight_dir = { 0.83,0.41 };
 	float3 sunlight_color = { 1.000,0.944,0.917 };
