@@ -92,25 +92,53 @@ __device__ bool RayTest(const Ray& ray, const SceneData* scenedata)
 {
 	HitPayload workingPayload;
 
-	for (size_t meshIdx = 0; meshIdx < scenedata->DeviceMeshBufferSize; meshIdx++)
+	if (scenedata->DeviceBVHTreePtr[0].IntersectAABB(ray))
 	{
-		const Mesh* currentmesh = &(scenedata->DeviceMeshBufferPtr[meshIdx]);
-		//loop over mesh and triangles
-		for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
-		{
-			const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
-			workingPayload = Intersection(ray, triangle);
 
-			//if intersecting
-			if (workingPayload.hit_distance > 0)
+		for (int nodeIdx = 0; nodeIdx < scenedata->DeviceBVHTreePtr->childrenCount; nodeIdx++)
+		{
+			const Node currentnode = scenedata->DeviceBVHTreePtr[0].children[nodeIdx];
+
+			if (currentnode.IntersectAABB(ray))
 			{
-				//if opaque
-				if (AnyHit(ray, scenedata,
-					currentmesh, triangle, workingPayload.hit_distance))
-					return true;
+				const Mesh* currentmesh = currentnode.d_Mesh;
+				for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+				{
+					const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
+					workingPayload = Intersection(ray, triangle);
+
+					//if intersecting
+					if (workingPayload.hit_distance > 0)
+					{
+						//if opaque
+						if (AnyHit(ray, scenedata,
+							currentmesh, triangle, workingPayload.hit_distance))
+							return true;
+					}
+				}
 			}
 		}
 	}
+
+	//for (size_t meshIdx = 0; meshIdx < scenedata->DeviceMeshBufferSize; meshIdx++)
+	//{
+	//	const Mesh* currentmesh = &(scenedata->DeviceMeshBufferPtr[meshIdx]);
+	//	//loop over mesh and triangles
+	//	for (int triangleIdx = 0; triangleIdx < currentmesh->m_trisCount; triangleIdx++)
+	//	{
+	//		const Triangle* triangle = &(currentmesh->m_dev_triangles[triangleIdx]);
+	//		workingPayload = Intersection(ray, triangle);
+
+	//		//if intersecting
+	//		if (workingPayload.hit_distance > 0)
+	//		{
+	//			//if opaque
+	//			if (AnyHit(ray, scenedata,
+	//				currentmesh, triangle, workingPayload.hit_distance))
+	//				return true;
+	//		}
+	//	}
+	//}
 
 	return false;
 }

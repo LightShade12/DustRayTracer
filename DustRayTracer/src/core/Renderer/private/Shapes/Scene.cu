@@ -128,8 +128,8 @@ bool loadModel(tinygltf::Model& model, const char* filename, bool& is_binary) {
 
 bool Scene::loadMaterials(tinygltf::Model& model)
 {
-	printf("loading materials\n\n");
-	printf("detected materials count in file: %d\n", model.materials.size());
+	//printf("loading materials\n\n");
+	//printf("detected materials count in file: %d\n", model.materials.size());
 	for (size_t matIdx = 0; matIdx < model.materials.size(); matIdx++)
 	{
 		tinygltf::Material mat = model.materials[matIdx];
@@ -140,10 +140,10 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 
 		drt_mat.Albedo = albedo;
 		drt_mat.AlbedoTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;//should be -1 when empty
-		printf("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
+		//printf("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
 		m_Material.push_back(drt_mat);
 	}
-	printf("loaded materials count: %d \n\n", m_Material.size());//should be 36 for cube
+	//printf("loaded materials count: %d \n\n", m_Material.size());//should be 36 for cube
 
 	return true;
 }
@@ -151,7 +151,7 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 {
 	const char* imgdir = "./src/models/";
-	printf("Images count in file: %d\n", model.images.size());
+	//printf("Images count in file: %d\n", model.images.size());
 
 	for (size_t textureIdx = 0; textureIdx < model.images.size(); textureIdx++)
 	{
@@ -167,11 +167,11 @@ bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 		}
 		else
 		{
-			printf("uri: %s\n", current_img.uri.c_str());
-			printf("processing idx: %d,name= %s\n", textureIdx, current_img.name.c_str());
-			printf("load path: %s\n", (imgdir + current_img.uri).c_str());
+			//printf("uri: %s\n", current_img.uri.c_str());
+			//printf("processing idx: %d,name= %s\n", textureIdx, current_img.name.c_str());
+			//printf("load path: %s\n", (imgdir + current_img.uri).c_str());
 			tex = Texture((imgdir + current_img.uri).c_str());
-			printf("img dims: w:%d h:%d ch:%d\n", tex.width, tex.height, tex.componentCount);
+			//printf("img dims: w:%d h:%d ch:%d\n", tex.width, tex.height, tex.componentCount);
 		}
 		m_Textures.push_back(tex);//whitespace will be incorrectly parsed
 	}
@@ -211,10 +211,10 @@ bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& 
 
 		tinygltf::Buffer indices_buffer = model.buffers[indices_bufferview.buffer];//should alawys be zero?
 
-		printf("normals accesor count: %d\n", nrm_accesor.count);
-		printf("positions accesor count: %d\n", pos_accesor.count);
-		printf("UVs accesor count: %d\n", uv_accesor.count);
-		printf("indices accesor count: %d\n", indices_accesor.count);
+		//printf("normals accesor count: %d\n", nrm_accesor.count);
+		//printf("positions accesor count: %d\n", pos_accesor.count);
+		//printf("UVs accesor count: %d\n", uv_accesor.count);
+		//printf("indices accesor count: %d\n", indices_accesor.count);
 
 		unsigned short* indicesbuffer = (unsigned short*)(indices_buffer.data.data());
 		float3* positions_buffer = (float3*)(indices_buffer.data.data() + pos_buffer_byte_offset);
@@ -253,79 +253,79 @@ bool Scene::loadGLTFmodel(const char* filepath)
 
 		tinygltf::Mesh current_mesh = loadedmodel.meshes[current_node.mesh];
 
-		printf("processing node: %s with mesh: %s , mesh index= %d\n", current_node.name.c_str(), current_mesh.name.c_str(), current_node.mesh);
+		//printf("processing node: %s with mesh: %s , mesh index= %d\n", current_node.name.c_str(), current_mesh.name.c_str(), current_node.mesh);
 
 		parseMesh(current_mesh, loadedmodel, loadedMeshPositions, loadedMeshNormals, loadedMeshUVs);
 
-		printf("constructed positions count: %d \n", loadedMeshPositions.size());//should be 36 for cube
-		printf("constructed normals count: %d \n", loadedMeshNormals.size());//should be 36 for cube
-		printf("constructed UVs count: %d \n", loadedMeshUVs.size());//should be 36 for cube
+		//printf("constructed positions count: %d \n", loadedMeshPositions.size());//should be 36 for cube
+		//printf("constructed normals count: %d \n", loadedMeshNormals.size());//should be 36 for cube
+		//printf("constructed UVs count: %d \n", loadedMeshUVs.size());//should be 36 for cube
 
 		//DEBUG positions-normal-d_data print
 		if (loadedMeshPositions.size() == loadedMeshNormals.size())
 		{
 			bool stop = false;
-			printf("positions:\n");
+			//printf("positions:\n");
 			for (size_t i = 0; i < loadedMeshPositions.size(); i++)
 			{
 				if (i > 2 && i < loadedMeshPositions.size() - 3)
 				{
 					if (!stop)
 					{
-						printf("...\n");
+						//printf("...\n");
 						stop = true;
 					}
 					continue;
 				}
 				float3 pos = loadedMeshPositions[i];
-				printf("x:%.3f y:%.3f z:%.3f\n", pos.x, pos.y, pos.z);
+				//printf("x:%.3f y:%.3f z:%.3f\n", pos.x, pos.y, pos.z);
 			}
 			stop = false;
-			printf("normals:\n");
+			//printf("normals:\n");
 			for (size_t i = 0; i < loadedMeshNormals.size(); i++)
 			{
 				if (i > 2 && i < loadedMeshNormals.size() - 3)
 				{
 					if (!stop)
 					{
-						printf("...\n");
+						//printf("...\n");
 						stop = true;
 					}
 					continue;
 				}
 				float3 nrm = loadedMeshNormals[i];
-				printf("x:%.3f y:%.3f z:%.3f\n", nrm.x, nrm.y, nrm.z);
+				//printf("x:%.3f y:%.3f z:%.3f\n", nrm.x, nrm.y, nrm.z);
 			}
 			stop = false;
-			printf("UVs:\n");
+			//printf("UVs:\n");
 			for (size_t i = 0; i < loadedMeshUVs.size(); i++)
 			{
 				if (i > 2 && i < loadedMeshUVs.size() - 3)
 				{
 					if (!stop)
 					{
-						printf("...\n");
+						//printf("...\n");
 						stop = true;
 					}
 					continue;
 				}
 				float2 uv = loadedMeshUVs[i];
-				printf("U:%.3f V:%.3f \n", uv.x, uv.y);
+				//printf("U:%.3f V:%.3f \n", uv.x, uv.y);
 			}
 		}
 		else
 		{
-			printf("positions-normals count mismatch!\n");
+			//printf("positions-normals count mismatch!\n");
 		}
 
-		printf("constructing mesh\n");
+		//printf("constructing mesh\n");
 		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, loadedMeshUVs, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
-		printf("bbox max: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMax.x, loadedMesh.Bounds.pMax.y, loadedMesh.Bounds.pMax.z);
-		printf("bbox min: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMin.x, loadedMesh.Bounds.pMin.y, loadedMesh.Bounds.pMin.z);
-		printf("adding mesh\n");
+		//printf("bbox max: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMax.x, loadedMesh.Bounds.pMax.y, loadedMesh.Bounds.pMax.z);
+		//printf("bbox min: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMin.x, loadedMesh.Bounds.pMin.y, loadedMesh.Bounds.pMin.z);
+		//printf("adding mesh\n");
 
 		host_meshes.push_back(loadedMesh);
-		printf("success\n\n");
+		//printf("success\n\n");
 	}
 
 	m_Meshes = host_meshes;//implicit cudamemcpy
@@ -356,12 +356,16 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	root.children = thrust::raw_pointer_cast(childnodes.data());
 	root.childrenCount = childnodes.size();
 
-	size_t buffersize = sizeof(root) + (root.childrenCount * sizeof(root.children[0]));
+	//size_t buffersize = sizeof(root) + size_t(root.childrenCount * sizeof(root.children[0]));
+	size_t buffersize = sizeof(root);
+
+	////printf("byte alloc: %zu \n", buffersize);
 
 	cudaDeviceSynchronize();
 	cudaMallocManaged((void**)&d_BVHTreeRoot, buffersize);
 	checkCudaErrors(cudaGetLastError());
-	cudaMemcpy(d_BVHTreeRoot, &root, buffersize, cudaMemcpyHostToDevice);//count is wrong?
+	if (cudaErrorInvalidValue == cudaMemcpy(d_BVHTreeRoot, &root, buffersize, cudaMemcpyHostToDevice))
+		//printf("loss\n");//count is wrong?
 	checkCudaErrors(cudaGetLastError());
 
 	return true;

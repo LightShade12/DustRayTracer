@@ -32,7 +32,7 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera();
+	m_device_Camera = new Camera(make_float3(0, 5, 5));
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -41,7 +41,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest_optimised.glb");
+	m_Scene->loadGLTFmodel("./src/models/mcMidTest.glb");
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
@@ -204,12 +204,12 @@ void EditorLayer::OnUIRender()
 				}
 
 				if ((RendererSettings::RenderModes)renderer_mode == RendererSettings::RenderModes::NORMALMODE) {
-					ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight));
-					ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.gamma_correction));
+					if (ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight)))m_Renderer.resetAccumulationBuffer();
+					if (ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.gamma_correction)))m_Renderer.resetAccumulationBuffer();
 					ImGui::Text("Ray bounce limit:"); ImGui::SameLine();
-					ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit));
+					if (ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit)))m_Renderer.resetAccumulationBuffer();
 					ImGui::Text("Max samples limit:"); ImGui::SameLine();
-					ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples));
+					if (ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples)))m_Renderer.resetAccumulationBuffer();
 				}
 				else {//DEBUG MODE
 					ImGui::Text("Debug view:"); ImGui::SameLine();
@@ -223,7 +223,7 @@ void EditorLayer::OnUIRender()
 			}
 			if (ImGui::BeginTabItem("Camera"))
 			{
-				ImGui::SliderAngle("FOV", &(m_device_Camera->vfov_deg), 5, 120);
+				if (ImGui::SliderAngle("FOV", &(m_device_Camera->vfov_deg), 5, 120))m_Renderer.resetAccumulationBuffer();
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem("Scene"))

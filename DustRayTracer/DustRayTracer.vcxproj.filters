@@ -99,6 +99,7 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Debug.cuh" />
     <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
     <ClInclude Include="src\core\Renderer\private\Kernel\RendererSettings.h" />
+    <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">

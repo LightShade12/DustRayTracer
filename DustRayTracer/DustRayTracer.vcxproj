@@ -164,6 +164,7 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\RenderKernel.cuh" />
     <ClInclude Include="thirdparty\stb_image\stb_image.h" />
     <ClInclude Include="thirdparty\stb_image\stb_image_write.h" />
+    <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Renderer\private\Kernel\RendererSettings.cpp" />
