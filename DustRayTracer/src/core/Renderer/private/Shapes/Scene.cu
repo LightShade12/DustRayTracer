@@ -365,7 +365,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	cudaMallocManaged((void**)&d_BVHTreeRoot, buffersize);
 	checkCudaErrors(cudaGetLastError());
 	if (cudaErrorInvalidValue == cudaMemcpy(d_BVHTreeRoot, &root, buffersize, cudaMemcpyHostToDevice))
-		//printf("loss\n");//count is wrong?
+		printf("loss\n");//count is wrong?
 	checkCudaErrors(cudaGetLastError());
 
 	return true;

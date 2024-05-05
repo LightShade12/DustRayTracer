@@ -19,7 +19,7 @@ struct RendererSettings
 		WORLDBVH_DEBUG =5
 	};
 
-	bool gamma_correction = false;
+	bool gamma_correction = true;
 	bool enableSunlight = false;
 	int max_samples = 50;
 	int ray_bounce_limit = 5;

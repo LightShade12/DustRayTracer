@@ -11,6 +11,8 @@ __device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const Mesh* m
 	HitPayload payload;
 
 	const Material material = scenedata->DeviceMaterialBufferPtr[mesh->m_dev_triangles[0].MaterialIdx];
+	if (material.AlbedoTextureIndex < 0)
+		return true;
 	const Texture tex = scenedata->DeviceTextureBufferPtr[material.AlbedoTextureIndex];
 
 	if (tex.componentCount < 4)

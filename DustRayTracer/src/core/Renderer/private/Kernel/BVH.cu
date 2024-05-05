@@ -1,4 +1,5 @@
 #include "BVH.cuh"
+#include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 
 __device__ bool Node::IntersectAABB(const Ray& ray, float t_min, float t_max) const {

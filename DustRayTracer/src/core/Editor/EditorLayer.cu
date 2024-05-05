@@ -32,7 +32,7 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera(make_float3(0, 5, 5));
+	m_device_Camera = new Camera(make_float3(0, 0, 5));
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -41,7 +41,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/mcMidTest.glb");
+	m_Scene->loadGLTFmodel("./src/models/cornell_box.glb");
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
@@ -229,13 +229,13 @@ void EditorLayer::OnUIRender()
 			if (ImGui::BeginTabItem("Scene"))
 			{
 				ImGui::CollapsingHeader("Sun light", ImGuiTreeNodeFlags_Leaf);
-				ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color));
-				ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10);
+				if (ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color)))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10))m_Renderer.resetAccumulationBuffer();
 				if (ImGui::SliderAngle("Sunlight Y rotation", &(m_Renderer.m_RendererSettings.sunlight_dir.x)))m_Renderer.resetAccumulationBuffer();
 				if (ImGui::SliderAngle("Sunlight altitude", &(m_Renderer.m_RendererSettings.sunlight_dir.y), 0, 90))m_Renderer.resetAccumulationBuffer();
 				ImGui::CollapsingHeader("Sky light", ImGuiTreeNodeFlags_Leaf);
-				ImGui::ColorEdit3("Sky color", (float*)&(m_Renderer.m_RendererSettings.sky_color));
-				ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 10);
+				if (ImGui::ColorEdit3("Sky color", (float*)&(m_Renderer.m_RendererSettings.sky_color)))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 10))m_Renderer.resetAccumulationBuffer();
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -284,7 +284,6 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 {
 	bool has_moved = false;
 	float sensitivity = 1;
-	//has_moved = false;
 	float3 velocity = { 0,0,0 };
 	int width = 0, height = 0;
 	glfwGetWindowSize(window, &width, &height);
@@ -294,7 +293,7 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 		{
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+			
 			// Prevents camera from jumping on the first click
 			if (firstclick)
 			{
@@ -340,7 +339,8 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 
 			//TODO: Input::GetMouseDeltaDegrees?
 			glm::vec2 mousePos = Input::getMousePosition();
-
+			glfwSetCursorPos(window, (width / 2), (height / 2));
+			
 			// Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
 			// and then "transforms" them into degrees
 			float rotX = sensitivity * (float)(mousePos.y - (height / 2)) / height;
@@ -376,7 +376,8 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 void EditorLayer::OnUpdate(float ts)
 {
 	//m_LastApplicationFrameTime = ts;
-	if (processInput(Application::Get().GetWindowHandle(), (m_device_Camera), ts))
+
+	if (processInput(Application::Get().GetWindowHandle(), m_device_Camera, ts))
 		m_Renderer.resetAccumulationBuffer();
 }
 
