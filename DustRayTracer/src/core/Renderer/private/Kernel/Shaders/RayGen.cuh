@@ -58,7 +58,9 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
 		const Mesh closestMesh = scenedata.DeviceMeshBufferPtr[payload.object_idx];
-		Material material = scenedata.DeviceMaterialBufferPtr[closestMesh.m_dev_triangles[0].MaterialIdx];
+		//Material material = scenedata.DeviceMaterialBufferPtr[closestMesh.m_dev_triangles[0].MaterialIdx];
+		//Material material = scenedata.DeviceMaterialBufferPtr[closestMesh.m_dev_triangles[payload.triangle_idx].MaterialIdx];
+		Material material = scenedata.DeviceMaterialBufferPtr[payload.primitive->MaterialIdx];
 
 		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
 

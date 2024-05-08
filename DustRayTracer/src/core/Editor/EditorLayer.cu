@@ -41,7 +41,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest_optimised.glb");
+	m_Scene->loadGLTFmodel("./src/models/multiMaterialMeshTest.glb");
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 

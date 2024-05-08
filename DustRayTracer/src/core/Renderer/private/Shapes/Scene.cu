@@ -109,15 +109,18 @@ bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 
 //does not support reused mesh
 bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals,
-	std::vector<float2>& UVs)
+	std::vector<float2>& UVs, std::vector<int>& prim_mat_idx)
 {
 	for (size_t primIdx = 0; primIdx < mesh.primitives.size(); primIdx++)
 	{
-		int pos_attrib_accesorIdx = mesh.primitives[primIdx].attributes["POSITION"];
-		int nrm_attrib_accesorIdx = mesh.primitives[primIdx].attributes["NORMAL"];
-		int uv_attrib_accesorIdx = mesh.primitives[primIdx].attributes["TEXCOORD_0"];
+		printf("prim idx:%zu \n", primIdx);
+		tinygltf::Primitive primitive = mesh.primitives[primIdx];
 
-		int indices_accesorIdx = mesh.primitives[primIdx].indices;
+		int pos_attrib_accesorIdx = primitive.attributes["POSITION"];
+		int nrm_attrib_accesorIdx = primitive.attributes["NORMAL"];
+		int uv_attrib_accesorIdx = primitive.attributes["TEXCOORD_0"];
+
+		int indices_accesorIdx = primitive.indices;
 
 		tinygltf::Accessor pos_accesor = model.accessors[pos_attrib_accesorIdx];
 		tinygltf::Accessor nrm_accesor = model.accessors[nrm_attrib_accesorIdx];
@@ -156,6 +159,10 @@ bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& 
 			normals.push_back(normals_buffer[indicesbuffer[i]]);
 			UVs.push_back(UVs_buffer[indicesbuffer[i]]);
 		}
+		for (size_t i = 0; i < positions.size() / 3; i++)
+		{
+			prim_mat_idx.push_back(primitive.material);
+		}
 	}
 	return true;
 }
@@ -177,6 +184,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		std::vector<float3> loadedMeshPositions;
 		std::vector<float3>loadedMeshNormals;
 		std::vector<float2>loadedMeshUVs;
+		std::vector<int>loadedMeshPrimitiveMatIdx;
 
 		tinygltf::Node current_node = loadedmodel.nodes[nodeIdx];
 
@@ -184,7 +192,8 @@ bool Scene::loadGLTFmodel(const char* filepath)
 
 		//printf("processing node: %s with mesh: %s , mesh index= %d\n", current_node.name.c_str(), current_mesh.name.c_str(), current_node.mesh);
 
-		parseMesh(current_mesh, loadedmodel, loadedMeshPositions, loadedMeshNormals, loadedMeshUVs);
+		parseMesh(current_mesh, loadedmodel, loadedMeshPositions,
+			loadedMeshNormals, loadedMeshUVs, loadedMeshPrimitiveMatIdx);
 
 		//printf("constructed positions count: %d \n", loadedMeshPositions.size());//should be 36 for cube
 		//printf("constructed normals count: %d \n", loadedMeshNormals.size());//should be 36 for cube
@@ -248,7 +257,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		}
 
 		//printf("constructing mesh\n");
-		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, loadedMeshUVs, current_mesh.primitives[0].material);//TODO: does not support per primitive material so idx=0 for now
+		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, loadedMeshUVs, loadedMeshPrimitiveMatIdx);//TODO: does not support per primitive material so idx=0 for now
 		//printf("bbox max: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMax.x, loadedMesh.Bounds.pMax.y, loadedMesh.Bounds.pMax.z);
 		//printf("bbox min: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMin.x, loadedMesh.Bounds.pMin.y, loadedMesh.Bounds.pMin.z);
 		//printf("adding mesh\n");

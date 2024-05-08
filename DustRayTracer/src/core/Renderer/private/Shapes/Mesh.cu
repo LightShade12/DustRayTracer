@@ -5,8 +5,8 @@
 
 #include <cuda_runtime.h>
 
-Mesh::Mesh(const std::vector<float3>& positions,
-	const std::vector<float3>& vertex_normals, const std::vector<float2>& vertex_UVs, uint32_t matidx)
+Mesh::Mesh(const std::vector<float3>& positions, const std::vector<float3>& vertex_normals,
+	const std::vector<float2>& vertex_UVs, const std::vector<int>& prim_mat_idx)
 {
 	std::vector <Triangle> tris;
 
@@ -39,7 +39,7 @@ Mesh::Mesh(const std::vector<float3>& positions,
 			Vertex(positions[i], vertex_normals[i], vertex_UVs[i]),
 			Vertex(positions[i + 1], vertex_normals[i + 1], vertex_UVs[i + 1]),
 			Vertex(positions[i + 2], vertex_normals[i + 2], vertex_UVs[i + 2]),
-			normalize(surface_normal), matidx));
+			normalize(surface_normal), prim_mat_idx[i / 3]));
 	}
 
 	m_trisCount = tris.size();
