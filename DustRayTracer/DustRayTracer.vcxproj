@@ -133,6 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHBuilder.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHNode.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHTraversal.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\RendererSettings.h" />
     <ClInclude Include="src\core\Application\Application.hpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Miss.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\RayGen.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Texture.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
@@ -188,6 +190,7 @@
     <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />

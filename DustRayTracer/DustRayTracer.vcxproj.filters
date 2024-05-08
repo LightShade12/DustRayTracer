@@ -102,6 +102,8 @@
     <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
     <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHBuilder.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHTraversal.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\Texture.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHNode.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Application\private\Application.cpp">
@@ -135,6 +137,7 @@
     <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
     <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="dev_docs.txt" />

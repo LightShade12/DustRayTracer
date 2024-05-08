@@ -32,13 +32,14 @@ void Application::Run()
 	//windowloop
 	while (!glfwWindowShouldClose(m_WindowHandle) && m_Running)
 	{
+		//Polling---------------------------------------------------------------------------------
 		glfwPollEvents();
 
 		for (auto& layer : m_LayerStack)
 			layer->OnUpdate(m_TimeStep_secs);
 
+		//Clear and Resize
 		glClear(GL_COLOR_BUFFER_BIT);
-
 		{
 			int width, height;
 			glfwGetWindowSize(m_WindowHandle, &(width), &(height));
@@ -89,6 +90,7 @@ void Application::Run()
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
+		//Render layers----------------------------------------------------------------------------------
 		for (auto& layer : m_LayerStack)
 			layer->OnUIRender();
 
@@ -108,6 +110,7 @@ void Application::Run()
 
 		glfwSwapBuffers(m_WindowHandle);
 
+		//capture delta time----------------------------------------------------------
 		float time_secs = GetTime_seconds();
 		m_FrameTime_secs = time_secs - m_LastFrameTime_secs;
 		m_TimeStep_secs = glm::min<float>(m_FrameTime_secs, 0.0333f);
@@ -132,6 +135,7 @@ void Application::Close()
 	m_Running = false;
 }
 
+//wrong unit
 float Application::GetTime_seconds()
 {
 	return (float)glfwGetTime();

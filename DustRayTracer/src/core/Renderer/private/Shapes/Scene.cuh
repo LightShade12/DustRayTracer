@@ -3,6 +3,7 @@
 #include "core/Renderer/private/Shapes/Material.cuh"
 #include "core/Renderer/private/Shapes/Mesh.cuh"
 #include "core/Renderer/private/Kernel/RendererSettings.h"
+#include "core/Renderer/private/Kernel/Texture.cuh"
 
 #include <thrust/device_vector.h>
 
@@ -12,22 +13,6 @@ namespace tinygltf
 }
 
 class Node;
-
-class Texture
-{
-public:
-	Texture() = default;
-	Texture(const char* filepath);
-	Texture(unsigned char* data, size_t bytesize);
-	__device__ float3 getPixel(float2 UV) const;
-	__device__ float getAlpha(float2 UV) const;
-	void Cleanup();
-
-	int width, height = 0;
-	int componentCount = 0;
-private:
-	unsigned char* d_data;
-};
 
 //READ only; pass as const
 struct SceneData
@@ -53,6 +38,7 @@ struct Scene
 	thrust::device_vector<Mesh> m_Meshes;
 	thrust::device_vector<Material> m_Material;
 	thrust::device_vector<Texture>m_Textures;
+	thrust::device_vector<Triangle>m_PrimitivesBuffer;
 	Node* d_BVHTreeRoot = nullptr;
 	bool loadGLTFmodel(const char* filepath);
 

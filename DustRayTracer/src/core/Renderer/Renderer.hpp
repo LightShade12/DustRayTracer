@@ -9,7 +9,7 @@
 
 struct Scene;
 class Camera;
-struct FrameBufferWrapper;
+struct ThrustRGB32FBufferWrapper;
 
 class Renderer
 {
@@ -30,13 +30,13 @@ public:
 	RendererSettings m_RendererSettings;
 
 private:
-	uint32_t m_BufferWidth = 0, m_BufferHeight = 0;
-	GLuint m_RenderTarget_name = NULL;//null init val important for triggering init
+	uint32_t m_BufferWidth = 0, m_BufferHeight = 0;//specify as RenderBufferWidth/Height?
+	GLuint m_RenderTargetTexture_name = NULL;//null init val important for triggering init
 
 	cudaGraphicsResource_t m_viewCudaResource;
 	cudaEvent_t start, stop;
 
-	FrameBufferWrapper* m_AccumulationBuffer;
+	ThrustRGB32FBufferWrapper* m_AccumulationFrameBuffer;
 
 	uint32_t m_FrameIndex = 1;
 
