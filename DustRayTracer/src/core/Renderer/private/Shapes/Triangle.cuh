@@ -1,23 +1,6 @@
 #pragma once
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
-#include <float.h>
-
-struct Vertex
-{
-	Vertex() = default;
-	Vertex(float3 pos, float3 nrm, float2 uv) :position(pos), normal(nrm), UV(uv) {};
-	float3 position;
-	float3 normal;
-	float2 UV;
-};
-
-struct Bounds3f
-{
-	Bounds3f() = default;
-	Bounds3f(float3 min, float3 max) :pMin(min), pMax(max) {};
-	float3 pMin = { FLT_MAX,FLT_MAX, FLT_MAX };
-	float3 pMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
-};
+#include "Vertex.cuh"
 
 struct Triangle {
 	Triangle() = default;

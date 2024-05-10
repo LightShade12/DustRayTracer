@@ -158,10 +158,12 @@
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\RayGen.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Texture.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Shapes\Bounds.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Triangle.cuh" />
     <ClInclude Include="src\core\Renderer\private\Shapes\Scene.cuh" />
+    <ClInclude Include="src\core\Renderer\private\Shapes\Vertex.cuh" />
     <ClInclude Include="src\core\Renderer\Renderer.hpp" />
     <ClInclude Include="src\core\Renderer\private\Camera\Camera.cuh" />
     <ClInclude Include="src\core\Renderer\private\CudaMath\helper_math.cuh" />
@@ -192,6 +194,7 @@
     <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Shapes\Bounds.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Scene.cu" />

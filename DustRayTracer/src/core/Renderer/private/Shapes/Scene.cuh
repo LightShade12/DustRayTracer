@@ -6,13 +6,14 @@
 #include "core/Renderer/private/Kernel/Texture.cuh"
 
 #include <thrust/device_vector.h>
+#include <thrust/universal_vector.h>
 
 namespace tinygltf
 {
 	class Model;
 }
 
-class Node;
+class BVHNode;
 
 //READ only; pass as const
 struct SceneData
@@ -23,14 +24,16 @@ struct SceneData
 
 	const Texture* DeviceTextureBufferPtr = nullptr;
 	const Material* DeviceMaterialBufferPtr = nullptr;
+	const Triangle* DevicePrimitivesBuffer = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
-	const Node* DeviceBVHTreePtr = nullptr;
+	const BVHNode* DeviceBVHTreePtr = nullptr;
 
 	RendererSettings RenderSettings;
 
 	size_t DeviceTextureBufferSize = 0;//unused
 	size_t DeviceMaterialBufferSize = 0;//unused
 	size_t DeviceMeshBufferSize = 0;
+	size_t DevicePrimitivesBufferSize = 0;
 };
 
 struct Scene
@@ -38,8 +41,8 @@ struct Scene
 	thrust::device_vector<Mesh> m_Meshes;
 	thrust::device_vector<Material> m_Material;
 	thrust::device_vector<Texture>m_Textures;
-	thrust::device_vector<Triangle>m_PrimitivesBuffer;
-	Node* d_BVHTreeRoot = nullptr;
+	thrust::universal_vector<Triangle>m_PrimitivesBuffer;
+	BVHNode* d_BVHTreeRoot = nullptr;
 	bool loadGLTFmodel(const char* filepath);
 
 	~Scene();

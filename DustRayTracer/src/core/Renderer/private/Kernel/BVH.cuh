@@ -1,5 +1,6 @@
 #pragma once
 #include "core/Renderer/private/Shapes/Triangle.cuh"
+#include "core/Renderer/private/Shapes/Bounds.cuh"
 #include "core/Renderer/private/Shapes/Mesh.cuh"
 #include "core/Renderer/private/Kernel/Ray.cuh"
 

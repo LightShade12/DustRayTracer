@@ -8,7 +8,8 @@
 #include "core/Renderer/private/Shapes/Scene.cuh"//has thrust so editor needs to be compiled by nvcc
 #include "core/Renderer/private/Camera/Camera.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
-#include "core/Renderer/private/Kernel/BVH.cuh"
+#include "core/Renderer/private/Kernel/BVH/BVHNode.cuh"
+#include "core/Renderer/private/Kernel/BVH/BVHBuilder.cuh"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -42,6 +43,9 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	m_Scene->loadGLTFmodel("./src/models/multiMaterialMeshTest.glb");
+
+	//BVHBuilder bvhbuilder;
+	//m_Scene->d_BVHTreeRoot=bvhbuilder.Build(m_Scene->m_PrimitivesBuffer);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
@@ -293,7 +297,7 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 		{
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			
+
 			// Prevents camera from jumping on the first click
 			if (firstclick)
 			{
@@ -340,7 +344,7 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 			//TODO: Input::GetMouseDeltaDegrees?
 			glm::vec2 mousePos = Input::getMousePosition();
 			glfwSetCursorPos(window, (width / 2), (height / 2));
-			
+
 			// Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
 			// and then "transforms" them into degrees
 			float rotX = sensitivity * (float)(mousePos.y - (height / 2)) / height;

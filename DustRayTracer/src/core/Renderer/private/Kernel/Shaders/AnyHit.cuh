@@ -5,12 +5,12 @@
 #include "core/Renderer/private/Shapes/Mesh.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
-__device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const Mesh* mesh, const Triangle* triangle, float hit_distance)
+__device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const Triangle* triangle, float hit_distance)
 {
 	float alphaval = 1;
 	HitPayload payload;
 
-	const Material material = scenedata->DeviceMaterialBufferPtr[mesh->m_dev_triangles[0].MaterialIdx];
+	const Material material = scenedata->DeviceMaterialBufferPtr[triangle->MaterialIdx];
 	if (material.AlbedoTextureIndex < 0)
 		return true;
 	const Texture tex = scenedata->DeviceTextureBufferPtr[material.AlbedoTextureIndex];

@@ -5,7 +5,7 @@
 
 #include "core/Editor/Common/CudaCommon.cuh"
 
-#include "core/Renderer/private/Kernel/BVH.cuh"
+#include "core/Renderer/private/Kernel/BVH/BVHNode.cuh"
 
 #include <cuda_runtime.h>
 #include <thrust/host_vector.h>
@@ -176,8 +176,6 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	loadTextures(loadedmodel, isBinary);
 	loadMaterials(loadedmodel);
 
-	thrust::host_vector<Mesh> host_meshes;
-
 	//mesh looping
 	for (size_t nodeIdx = 0; nodeIdx < loadedmodel.nodes.size(); nodeIdx++)
 	{
@@ -187,10 +185,11 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		std::vector<int>loadedMeshPrimitiveMatIdx;
 
 		tinygltf::Node current_node = loadedmodel.nodes[nodeIdx];
-
 		tinygltf::Mesh current_mesh = loadedmodel.meshes[current_node.mesh];
 
 		//printf("processing node: %s with mesh: %s , mesh index= %d\n", current_node.name.c_str(), current_mesh.name.c_str(), current_node.mesh);
+		Mesh loadedMesh;
+		loadedMesh.m_primitives_offset = m_PrimitivesBuffer.size();
 
 		parseMesh(current_mesh, loadedmodel, loadedMeshPositions,
 			loadedMeshNormals, loadedMeshUVs, loadedMeshPrimitiveMatIdx);
@@ -256,55 +255,50 @@ bool Scene::loadGLTFmodel(const char* filepath)
 			//printf("positions-normals count mismatch!\n");
 		}
 
+		//Contruct Triangles
+		//Positions.size() and vertex_normals.size() must be equal!
+		for (size_t i = 0; i < loadedMeshPositions.size(); i += 3)
+		{
+			//surface normal construction
+			float3 p0 = loadedMeshPositions[i + 1] - loadedMeshPositions[i];
+			float3 p1 = loadedMeshPositions[i + 2] - loadedMeshPositions[i];
+			float3 faceNormal = cross(p0, p1);
+
+			float3 avgVertexNormal = (loadedMeshNormals[i] + loadedMeshNormals[i + 1] + loadedMeshNormals[i + 2]) / 3;
+			float ndot = dot(faceNormal, avgVertexNormal);
+
+			float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
+
+			////bounding box
+			//for (size_t j = i; j < i + 3; j++)
+			//{
+			//	if (Bounds.pMax.x < positions[j].x)Bounds.pMax.x = positions[j].x;
+			//	if (Bounds.pMax.y < positions[j].y)Bounds.pMax.y = positions[j].y;
+			//	if (Bounds.pMax.z < positions[j].z)Bounds.pMax.z = positions[j].z;
+
+			//	if (Bounds.pMin.x > positions[j].x)Bounds.pMin.x = positions[j].x;
+			//	if (Bounds.pMin.y > positions[j].y)Bounds.pMin.y = positions[j].y;
+			//	if (Bounds.pMin.z > positions[j].z)Bounds.pMin.z = positions[j].z;
+			//}
+
+			m_PrimitivesBuffer.push_back(Triangle(
+				Vertex(loadedMeshPositions[i], loadedMeshNormals[i], loadedMeshUVs[i]),
+				Vertex(loadedMeshPositions[i + 1], loadedMeshNormals[i + 1], loadedMeshUVs[i + 1]),
+				Vertex(loadedMeshPositions[i + 2], loadedMeshNormals[i + 2], loadedMeshUVs[i + 2]),
+				normalize(surface_normal),
+				loadedMeshPrimitiveMatIdx[i / 3]));
+		}
+
+		loadedMesh.m_trisCount = m_PrimitivesBuffer.size() - loadedMesh.m_primitives_offset;
+
 		//printf("constructing mesh\n");
-		Mesh loadedMesh(loadedMeshPositions, loadedMeshNormals, loadedMeshUVs, loadedMeshPrimitiveMatIdx);//TODO: does not support per primitive material so idx=0 for now
 		//printf("bbox max: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMax.x, loadedMesh.Bounds.pMax.y, loadedMesh.Bounds.pMax.z);
 		//printf("bbox min: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMin.x, loadedMesh.Bounds.pMin.y, loadedMesh.Bounds.pMin.z);
 		//printf("adding mesh\n");
 
-		host_meshes.push_back(loadedMesh);
+		m_Meshes.push_back(loadedMesh);
 		//printf("success\n\n");
 	}
-
-	m_Meshes = host_meshes;//implicit cudamemcpy
-	//bvh build
-	Node root;
-	thrust::device_vector<Node> childnodes;
-
-	for (int meshIdx = 0; meshIdx < m_Meshes.size(); meshIdx++)
-	{
-		Node node;
-		node.bounds = host_meshes[meshIdx].Bounds;
-		//no children yet; 2 level bvh
-		node.children;
-		node.d_Mesh = thrust::raw_pointer_cast(&(m_Meshes.data()[meshIdx]));
-		node.MeshIndex = meshIdx;//should correspond to deviceMeshBuffer
-
-		if (root.bounds.pMax.x < node.bounds.pMax.x) root.bounds.pMax.x = node.bounds.pMax.x;
-		if (root.bounds.pMax.y < node.bounds.pMax.y) root.bounds.pMax.y = node.bounds.pMax.y;
-		if (root.bounds.pMax.z < node.bounds.pMax.z) root.bounds.pMax.z = node.bounds.pMax.z;
-
-		if (root.bounds.pMin.x > node.bounds.pMin.x) root.bounds.pMin.x = node.bounds.pMin.x;
-		if (root.bounds.pMin.y > node.bounds.pMin.y) root.bounds.pMin.y = node.bounds.pMin.y;
-		if (root.bounds.pMin.z > node.bounds.pMin.z) root.bounds.pMin.z = node.bounds.pMin.z;
-
-		childnodes.push_back(node);
-	}
-
-	root.children = thrust::raw_pointer_cast(childnodes.data());
-	root.childrenCount = childnodes.size();
-
-	//size_t buffersize = sizeof(root) + size_t(root.childrenCount * sizeof(root.children[0]));
-	size_t buffersize = sizeof(root);
-
-	////printf("byte alloc: %zu \n", buffersize);
-
-	cudaDeviceSynchronize();
-	cudaMallocManaged((void**)&d_BVHTreeRoot, buffersize);
-	checkCudaErrors(cudaGetLastError());
-	if (cudaErrorInvalidValue == cudaMemcpy(d_BVHTreeRoot, &root, buffersize, cudaMemcpyHostToDevice))
-		printf("loss\n");//count is wrong?
-	checkCudaErrors(cudaGetLastError());
 
 	return true;
 };
@@ -312,13 +306,13 @@ bool Scene::loadGLTFmodel(const char* filepath)
 Scene::~Scene()
 {
 	cudaDeviceSynchronize();
+
+	if (d_BVHTreeRoot != nullptr)
+		d_BVHTreeRoot->Cleanup();
+
 	cudaFree(d_BVHTreeRoot);
 	checkCudaErrors(cudaGetLastError());
 
-	for (Mesh mesh : m_Meshes)
-	{
-		mesh.Cleanup();
-	}
 	for (Texture texture : m_Textures)
 	{
 		texture.Cleanup();

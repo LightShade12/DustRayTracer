@@ -41,7 +41,9 @@ void InvokeRenderKernel(
 	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
 	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
 	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Material.data());
+	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_PrimitivesBuffer.data());
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
+	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
 	scenedata.DeviceBVHTreePtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
 	//printf("pointer: %p\n", scenedata.DeviceMeshBufferPtr);

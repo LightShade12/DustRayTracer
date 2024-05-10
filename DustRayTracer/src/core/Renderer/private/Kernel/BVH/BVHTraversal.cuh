@@ -2,7 +2,6 @@
 #include "BVHBuilder.cuh"
 #include "core/Renderer/private/Kernel/Shaders/Intersection.cuh"
 
-
 __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 	HitPayload hitInfo;
 
@@ -27,19 +26,19 @@ __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 __device__ void find_closest_hit(const Ray& ray, BVHNode* node, HitPayload* closest_hitpayload)
 {
 	HitPayload hit = intersectAABB(ray, node->bbox);
-	if (hit.primitive == nullptr || hit.hit_distance > closest_hitpayload->hit_distance)
+	if (hit.primitiveptr == nullptr || hit.hit_distance > closest_hitpayload->hit_distance)
 		return;
 
 	if (node->leaf)
 	{
-		//TODO: primitives pointer looping
+		//TODO: dev_primitives_ptrs pointer looping
 		for (int primIdx = 0; primIdx < node->primitives_count; primIdx++)
 		{
-			const Triangle* prim = &(node->primitives[primIdx]);
+			const Triangle* prim = (node->dev_primitives_ptrs[primIdx]);
 			hit = Intersection(ray, prim);
-			if (hit.primitive != nullptr && hit.hit_distance < closest_hitpayload->hit_distance)
+			if (hit.primitiveptr != nullptr && hit.hit_distance < closest_hitpayload->hit_distance)
 			{
-				closest_hitpayload->primitive = hit.primitive;
+				closest_hitpayload->primitiveptr = hit.primitiveptr;
 				closest_hitpayload->hit_distance = hit.hit_distance;
 			}
 		}
@@ -47,11 +46,11 @@ __device__ void find_closest_hit(const Ray& ray, BVHNode* node, HitPayload* clos
 	else
 	{
 		//fron to back traversal
-		HitPayload hit1 = intersectAABB(ray, node->child1->bbox);
-		HitPayload hit2 = intersectAABB(ray, node->child2->bbox);
+		HitPayload hit1 = intersectAABB(ray, node->dev_child1->bbox);
+		HitPayload hit2 = intersectAABB(ray, node->dev_child2->bbox);
 
-		BVHNode* first = (hit1.hit_distance <= hit2.hit_distance) ? node->child1 : node->child2;
-		BVHNode* second = (hit1.hit_distance <= hit2.hit_distance) ? node->child2 : node->child1;
+		BVHNode* first = (hit1.hit_distance <= hit2.hit_distance) ? node->dev_child1 : node->dev_child2;
+		BVHNode* second = (hit1.hit_distance <= hit2.hit_distance) ? node->dev_child2 : node->dev_child1;
 
 		find_closest_hit(ray, first, closest_hitpayload);
 		if (closest_hitpayload->hit_distance > hit2.hit_distance)
