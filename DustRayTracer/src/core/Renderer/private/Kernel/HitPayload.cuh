@@ -10,7 +10,7 @@ struct HitPayload
 	float hit_distance = -1;
 	float3 world_normal;
 	float3 world_position;
-	uint32_t triangle_idx;
+	//uint32_t triangle_idx;
 	const Triangle* primitiveptr = nullptr;
 	float3 UVW;
 };

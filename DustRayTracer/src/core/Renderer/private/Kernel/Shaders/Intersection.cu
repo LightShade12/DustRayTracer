@@ -30,7 +30,7 @@ __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 	t = f * dot(edge2, q);
 	if (t > EPSILON) { // ray intersection
 		payload.hit_distance = t;
-		//payload.primitive = triangle;
+		payload.primitiveptr = triangle;
 		return payload;
 	}
 

@@ -1,9 +1,9 @@
 #pragma once
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
-__device__ HitPayload ClosestHit(const Ray& ray, float hit_distance,
-	const Triangle* primitives_buffer, int triangleIdx) {
-	const Triangle& triangle = primitives_buffer[triangleIdx];
+__device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Triangle* primitive) {
+	
+	const Triangle& triangle = *primitive;
 
 	HitPayload payload;
 
@@ -24,8 +24,8 @@ __device__ HitPayload ClosestHit(const Ray& ray, float hit_distance,
 	payload.UVW.z = (d00 * d21 - d01 * d20) / denom;
 	payload.UVW.x = 1.0f - payload.UVW.y - payload.UVW.z;
 
-	payload.triangle_idx = triangleIdx;
-	//payload.primitive = &triangle;
+	//payload.triangle_idx = triangleIdx;
+	payload.primitiveptr = primitive;
 	payload.hit_distance = hit_distance;
 	payload.world_position = ray.origin + ray.direction * hit_distance;//hit position
 	//payload.object_idx = obj_idx;

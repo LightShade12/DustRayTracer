@@ -13,9 +13,10 @@
 
 //traverse accel struct
 __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
-	int hitTriangleIdx = -1;
-	float hitDistance = FLT_MAX;
+	//int hitTriangleIdx = -1;
+	float hitDistance = FLT_MAX;//closesthit
 	HitPayload workingPayload;
+	const Triangle* hitprim = nullptr;
 
 	for (int triangleIdx = 0; triangleIdx < scenedata->DevicePrimitivesBufferSize; triangleIdx++)
 	{
@@ -27,17 +28,18 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 			if (!AnyHit(ray, scenedata,
 				triangle, workingPayload.hit_distance))continue;
 			hitDistance = workingPayload.hit_distance;
-			hitTriangleIdx = triangleIdx;
+			hitprim = workingPayload.primitiveptr;
+			//	hitTriangleIdx = triangleIdx;
 		}
 	}
 
 	//Have not hit
-	if (hitTriangleIdx < 0)
+	if (hitprim == nullptr)
 	{
 		return Miss(ray);
 	}
 
-	return ClosestHit(ray, hitDistance, scenedata->DevicePrimitivesBuffer, hitTriangleIdx);
+	return ClosestHit(ray, hitDistance, hitprim);
 }
 
 //does not support glass material; cuz no mat processing
