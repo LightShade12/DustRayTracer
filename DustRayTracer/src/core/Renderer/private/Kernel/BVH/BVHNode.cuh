@@ -15,15 +15,18 @@ struct BVHNode
 
 	bool leaf = false;
 	Bounds3f bbox;
-	BVHNode* dev_child1 = nullptr;
-	BVHNode* dev_child2 = nullptr;
-	const Triangle** dev_primitives_ptrs = nullptr;//buffer of ptrs to a another buffer's content; buffer of triangle ptrs
+	BVHNode* dev_child1 = nullptr;//left
+	BVHNode* dev_child2 = nullptr;//right
+	const Triangle** dev_primitive_ptrs_buffer = nullptr;//buffer of ptrs to a another buffer's content; buffer of triangle ptrs
 	int primitives_count = 0;
 	int rayint_cost = 2;
 	int trav_cost = 1;
 
 	float getArea()
 	{
+		if (primitives_count == 0)
+			return 0;
+
 		float planex = 2 * (bbox.pMax.z - bbox.pMin.z) * (bbox.pMax.y - bbox.pMin.y);
 		float planey = 2 * (bbox.pMax.z - bbox.pMin.z) * (bbox.pMax.x - bbox.pMin.x);
 		float planez = 2 * (bbox.pMax.x - bbox.pMin.x) * (bbox.pMax.y - bbox.pMin.y);
@@ -44,8 +47,9 @@ struct BVHNode
 			checkCudaErrors(cudaGetLastError());
 		}
 
-		cudaFree(dev_primitives_ptrs);
+		cudaFree(dev_primitive_ptrs_buffer);
 		checkCudaErrors(cudaGetLastError());
+		//printf("node killed\n");
 	}
 
 	//only use on built nodes

@@ -26,15 +26,17 @@ __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 __device__ void find_closest_hit(const Ray& ray, BVHNode* node, HitPayload* closest_hitpayload)
 {
 	HitPayload hit = intersectAABB(ray, node->bbox);
+
+	//miss
 	if (hit.primitiveptr == nullptr || hit.hit_distance > closest_hitpayload->hit_distance)
 		return;
 
 	if (node->leaf)
 	{
-		//TODO: dev_primitives_ptrs pointer looping
+		//TODO: dev_primitive_ptrs_buffer pointer looping
 		for (int primIdx = 0; primIdx < node->primitives_count; primIdx++)
 		{
-			const Triangle* prim = (node->dev_primitives_ptrs[primIdx]);
+			const Triangle* prim = (node->dev_primitive_ptrs_buffer[primIdx]);
 			hit = Intersection(ray, prim);
 			if (hit.primitiveptr != nullptr && hit.hit_distance < closest_hitpayload->hit_distance)
 			{

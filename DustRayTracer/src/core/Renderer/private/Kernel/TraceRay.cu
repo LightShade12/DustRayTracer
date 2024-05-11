@@ -13,7 +13,6 @@
 
 //traverse accel struct
 __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
-	//int hitTriangleIdx = -1;
 	float hitDistance = FLT_MAX;//closesthit
 	HitPayload workingPayload;
 	const Triangle* hitprim = nullptr;
@@ -29,7 +28,6 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 				triangle, workingPayload.hit_distance))continue;
 			hitDistance = workingPayload.hit_distance;
 			hitprim = workingPayload.primitiveptr;
-			//	hitTriangleIdx = triangleIdx;
 		}
 	}
 

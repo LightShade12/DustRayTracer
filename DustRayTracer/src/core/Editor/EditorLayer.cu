@@ -42,10 +42,10 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/multiMaterialMeshTest.glb");
+	m_Scene->loadGLTFmodel("./src/models/cube.glb");
 
-	//BVHBuilder bvhbuilder;
-	//m_Scene->d_BVHTreeRoot=bvhbuilder.Build(m_Scene->m_PrimitivesBuffer);
+	BVHBuilder bvhbuilder;
+	m_Scene->d_BVHTreeRoot=bvhbuilder.Build(m_Scene->m_PrimitivesBuffer);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 

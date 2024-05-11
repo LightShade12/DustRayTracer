@@ -3,14 +3,9 @@
 
 #include <thrust/universal_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 #include <vector>
-
-struct bvhPrimitive
-{
-	Triangle* primitive = nullptr;
-	Bounds3f bounds;
-};
 
 /*
 * bvh builder
@@ -36,26 +31,26 @@ public:
 	int bincount = 8;
 	int target_leaf_prim_count = 4;
 
-	float3 getExtent(const Triangle** primitives_ptr, size_t primitives_count, float3& min_extent)
+	float3 getExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
 	{
-		std::vector<Triangle>temptriangles;
+		std::vector<Triangle>tempDevtoHostTriangles;
 		for (size_t ptr_idx = 0; ptr_idx < primitives_count; ptr_idx++)
 		{
-			temptriangles.push_back(*(primitives_ptr[ptr_idx]));
+			tempDevtoHostTriangles.push_back(*(primitives_ptrs_buffer[ptr_idx]));
 		}
-		return getExtent(temptriangles.data(), primitives_count, min_extent);
+		return getExtent(tempDevtoHostTriangles.data(), primitives_count, min_extent);
 	};
 
 	//bounding box extents
-	float3 getExtent(const Triangle* primitives, size_t primitives_count, float3& min_extent) //abs
+	float3 getExtent(const Triangle* primitives_buffer, size_t primitives_count, float3& min_extent) //abs
 	{
 		float3 extent;
 		float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
 
 		for (int primIdx = 0; primIdx < primitives_count; primIdx++)
 		{
-			const Triangle* tri = &(primitives[primIdx]);
-			float3 positions[3] = { tri->vertex0.position, tri->vertex1.position,tri->vertex2.position };
+			const Triangle* tri = &(primitives_buffer[primIdx]);
+			float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
 			for (float3 pos : positions)
 			{
 				if (pos.x < min.x)min.x = pos.x;
@@ -82,9 +77,8 @@ public:
 	Evaluate cost, keep track of lowest cost partition
 	Recurse on lowest cost partition found (or make node a leaf if primcount is low enough)
 	*/
-	std::vector<bvhPrimitive>primitives_bounds;
-	std::vector<Triangle>orderedPrimitives;
 
+	//unused
 	Bounds3f getBounds(const Triangle& triangle)
 	{
 		float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
@@ -104,15 +98,17 @@ public:
 		return Bounds3f(min, max);
 	}
 
+	//unused
 	float3 getCentroid(Bounds3f bound)
 	{
 		return .5f * bound.pMin + .5f * bound.pMax;
 	}
 
+	//unused
 	void Preprocess(BVHNode* node) {
 		//for (int primIdx = 0; primIdx < node->primitives_count; primIdx++)
 		//{
-		//	Triangle& tri = node->dev_primitives_ptrs[primIdx];
+		//	Triangle& tri = node->dev_primitive_ptrs_buffer[primIdx];
 		//	Bounds3f bound = getBounds(tri);
 		//	primitives_bounds.push_back({ &tri, bound });
 		//}
@@ -126,48 +122,47 @@ public:
 	};
 
 	//bin is in world space
-	void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis,
-		const Triangle* primitives, size_t primitives_count)
+	void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count)
 	{
-		std::vector<const Triangle*>leftprim;
-		std::vector<const Triangle*>rightprim;
+		std::vector<const Triangle*>left_prim_ptrs;
+		std::vector<const Triangle*>right_prim_ptrs;
 
 		//sorting
 		for (size_t primidx = 0; primidx < primitives_count; primidx++)
 		{
-			const Triangle* triangle = &(primitives[primidx]);
+			const Triangle* triangle = (primitives_ptrs_buffer[primidx]);
 
 			switch (axis)
 			{
 			case BVHBuilder::PARTITION_AXIS::X_AXIS:
 				if (triangle->centroid.x < bin)
 				{
-					leftprim.push_back(triangle);
+					left_prim_ptrs.push_back(triangle);
 				}
 				else
 				{
-					rightprim.push_back(triangle);
+					right_prim_ptrs.push_back(triangle);
 				}
 				break;
 			case BVHBuilder::PARTITION_AXIS::Y_AXIS:
 
 				if (triangle->centroid.y < bin)
 				{
-					leftprim.push_back(triangle);
+					left_prim_ptrs.push_back(triangle);
 				}
 				else
 				{
-					rightprim.push_back(triangle);
+					right_prim_ptrs.push_back(triangle);
 				}
 				break;
 			case BVHBuilder::PARTITION_AXIS::Z_AXIS:
 				if (triangle->centroid.z < bin)
 				{
-					leftprim.push_back(triangle);
+					left_prim_ptrs.push_back(triangle);
 				}
 				else
 				{
-					rightprim.push_back(triangle);
+					right_prim_ptrs.push_back(triangle);
 				}
 				break;
 			default:
@@ -175,49 +170,41 @@ public:
 			}
 		}
 
-		left.primitives_count = leftprim.size();
-		size_t buffersize = sizeof(const Triangle*) * leftprim.size();
-		cudaMallocManaged(&(left.dev_primitives_ptrs), buffersize);
-		cudaMemcpy(left.dev_primitives_ptrs, leftprim.data(), buffersize, cudaMemcpyHostToDevice);
+		left.primitives_count = left_prim_ptrs.size();
+		size_t buffersize = sizeof(const Triangle*) * left_prim_ptrs.size();
+		cudaMallocManaged(&(left.dev_primitive_ptrs_buffer), buffersize);
+		cudaMemcpy(left.dev_primitive_ptrs_buffer, left_prim_ptrs.data(), buffersize, cudaMemcpyHostToDevice);
 		checkCudaErrors(cudaGetLastError());
 		float3 leftminextent;
-		float3 leftextent = getExtent(leftprim.data(), left.primitives_count, leftminextent);
+		float3 leftextent = getExtent(left_prim_ptrs.data(), left.primitives_count, leftminextent);
 		left.bbox = Bounds3f(leftminextent, leftminextent + leftextent);
 
-		right.primitives_count = rightprim.size();
-		buffersize = sizeof(const Triangle*) * rightprim.size();
-		cudaMallocManaged(&(right.dev_primitives_ptrs), buffersize);
-		cudaMemcpy(right.dev_primitives_ptrs, rightprim.data(), buffersize, cudaMemcpyHostToDevice);
+		right.primitives_count = right_prim_ptrs.size();
+		buffersize = sizeof(const Triangle*) * right_prim_ptrs.size();
+		cudaMallocManaged(&(right.dev_primitive_ptrs_buffer), buffersize);
+		cudaMemcpy(right.dev_primitive_ptrs_buffer, right_prim_ptrs.data(), buffersize, cudaMemcpyHostToDevice);
 		checkCudaErrors(cudaGetLastError());
 		float3 rightminextent;
-		float3 rightextent = getExtent(right.dev_primitives_ptrs, right.primitives_count, rightminextent);
+		float3 rightextent = getExtent(right.dev_primitive_ptrs_buffer, right.primitives_count, rightminextent);
 		right.bbox = Bounds3f(rightminextent, rightminextent + rightextent);
 	}
 
-	void makePartition(const Triangle** primitives_ptr, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode)
+	void makePartition(const Triangle** primitives_ptrs_buffer, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode)
 	{
-		std::vector<const Triangle*>temptris;
-		for (size_t ptridx = 0; ptridx < primitives_count; ptridx++)
-		{
-			temptris.push_back((primitives_ptr[ptridx]));
-		}
-		makePartition(temptris.data(), primitives_count, leftnode, rightnode);
-	}
-
-	void makePartition(const Triangle* primitives, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode)
-	{
+		printf("partition input prim count:%d\n", primitives_count);
 		float lowestcost_partition_pt = 0;//best bin
-		PARTITION_AXIS bestpartitionaxis;
+		PARTITION_AXIS bestpartitionaxis{};
 
 		int lowestcost = INT_MAX;
 
 		float3 minextent = { FLT_MAX,FLT_MAX,FLT_MAX };
-		float3 extent = getExtent(primitives, primitives_count, minextent);
+		float3 extent = getExtent(primitives_ptrs_buffer, primitives_count, minextent);
 		Bounds3f parentbbox(minextent, minextent + extent);
 
 		int traversal_cost = 1;
 
 		BVHNode left, right;
+
 		//for x
 		std::vector<float>bins;//world space
 		float deltapartition = extent.x / bincount;
@@ -227,11 +214,13 @@ public:
 		}
 		for (float bin : bins)
 		{
-			binToNodes(left, right, bin, PARTITION_AXIS::X_AXIS, primitives, primitives_count);
+			printf("proc x bin %.3f\n", bin);
+			binToNodes(left, right, bin, PARTITION_AXIS::X_AXIS, primitives_ptrs_buffer, primitives_count);
 			int cost = traversal_cost + ((left.getArea() / parentbbox.getArea()) * left.primitives_count * left.rayint_cost) +
 				((right.getArea() / parentbbox.getArea()) * right.primitives_count * right.rayint_cost);
 			if (cost < lowestcost)
 			{
+				lowestcost = cost;
 				bestpartitionaxis = PARTITION_AXIS::X_AXIS;
 				lowestcost_partition_pt = bin;
 			}
@@ -248,11 +237,13 @@ public:
 		}
 		for (float bin : bins)
 		{
-			binToNodes(left, right, bin, PARTITION_AXIS::Y_AXIS, primitives, primitives_count);
+			printf("proc y bin %.3f\n", bin);
+			binToNodes(left, right, bin, PARTITION_AXIS::Y_AXIS, primitives_ptrs_buffer, primitives_count);
 			int cost = traversal_cost + ((left.getArea() / parentbbox.getArea()) * left.primitives_count * left.rayint_cost) +
 				((right.getArea() / parentbbox.getArea()) * right.primitives_count * right.rayint_cost);
 			if (cost < lowestcost)
 			{
+				lowestcost = cost;
 				bestpartitionaxis = PARTITION_AXIS::Y_AXIS;
 				lowestcost_partition_pt = bin;
 			}
@@ -269,11 +260,13 @@ public:
 		}
 		for (float bin : bins)
 		{
-			binToNodes(left, right, bin, PARTITION_AXIS::Z_AXIS, primitives, primitives_count);
+			printf("proc z bin %.3f\n", bin);
+			binToNodes(left, right, bin, PARTITION_AXIS::Z_AXIS, primitives_ptrs_buffer, primitives_count);
 			int cost = traversal_cost + ((left.getArea() / parentbbox.getArea()) * left.primitives_count * left.rayint_cost) +
 				((right.getArea() / parentbbox.getArea()) * right.primitives_count * right.rayint_cost);
 			if (cost < lowestcost)
 			{
+				lowestcost = cost;
 				bestpartitionaxis = PARTITION_AXIS::Z_AXIS;
 				lowestcost_partition_pt = bin;
 			}
@@ -281,14 +274,18 @@ public:
 			right.Cleanup();
 		}
 
+		printf("made a partition, bin: %.3f, axis: %d, cost: %d\n", lowestcost_partition_pt, bestpartitionaxis, lowestcost);
 		binToNodes(leftnode, rightnode, lowestcost_partition_pt,
-			bestpartitionaxis, primitives, primitives_count);
+			bestpartitionaxis, primitives_ptrs_buffer, primitives_count);
+		printf("left node prim count:%d | right node prim count: %d\n", leftnode.primitives_count, rightnode.primitives_count);
 	}
 
 	void RecursiveBuild(BVHNode& node)
 	{
+		printf("recursive build, child node prim count: %d \n", node.primitives_count);
 		if (node.primitives_count <= target_leaf_prim_count)
 		{
+			printf("made a leaf node\n");
 			node.leaf = true; return;
 		}
 		else
@@ -296,7 +293,7 @@ public:
 			BVHNode* leftnode = new BVHNode();
 			BVHNode* rightnode = new BVHNode();
 
-			makePartition(node.dev_primitives_ptrs, node.primitives_count, *leftnode, *rightnode);
+			makePartition(node.dev_primitive_ptrs_buffer, node.primitives_count, *leftnode, *rightnode);
 
 			RecursiveBuild(*leftnode);
 			RecursiveBuild(*rightnode);
@@ -311,9 +308,11 @@ public:
 		}
 	}
 
-	BVHNode* Build(thrust::universal_vector<Triangle> primitives)
+	BVHNode* Build(const thrust::universal_vector<Triangle>& primitives)
 	{
 		BVHNode* hostBVHroot = new BVHNode();
+
+		printf("root prim count:%d \n", primitives.size());
 
 		float3 minextent;
 		float3 extent = getExtent(thrust::raw_pointer_cast(primitives.data()),
@@ -324,13 +323,13 @@ public:
 		if (primitives.size() <= target_leaf_prim_count)
 		{
 			hostBVHroot->leaf = true;
-			std::vector<const Triangle*>temptris;
+			std::vector<const Triangle*>DevToHostPrimitivePtrs;
 			for (size_t i = 0; i < primitives.size(); i++)
 			{
-				temptris.push_back(&(primitives[i]));
+				DevToHostPrimitivePtrs.push_back(&(primitives[i]));
 			}
-			cudaMallocManaged(&(hostBVHroot->dev_primitives_ptrs), sizeof(const Triangle*) * primitives.size());
-			cudaMemcpy(hostBVHroot->dev_primitives_ptrs, temptris.data(), sizeof(const Triangle*) * primitives.size(), cudaMemcpyHostToDevice);
+			cudaMallocManaged(&(hostBVHroot->dev_primitive_ptrs_buffer), sizeof(const Triangle*) * DevToHostPrimitivePtrs.size());
+			cudaMemcpy(hostBVHroot->dev_primitive_ptrs_buffer, DevToHostPrimitivePtrs.data(), sizeof(const Triangle*) * DevToHostPrimitivePtrs.size(), cudaMemcpyHostToDevice);
 
 			hostBVHroot->primitives_count = primitives.size();
 
@@ -345,7 +344,13 @@ public:
 		BVHNode* left = new BVHNode();
 		BVHNode* right = new BVHNode();
 
-		makePartition(thrust::raw_pointer_cast(primitives.data()),
+		thrust::host_vector<const Triangle*>dev_prim_ptrs;
+		for (size_t i = 0; i < primitives.size(); i++)
+		{
+			dev_prim_ptrs.push_back(&(primitives[i]));
+		}
+
+		makePartition(dev_prim_ptrs.data(),
 			primitives.size(), *(left), *(right));
 
 		RecursiveBuild(*left);

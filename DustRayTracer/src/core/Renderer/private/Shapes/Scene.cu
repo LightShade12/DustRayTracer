@@ -305,12 +305,15 @@ bool Scene::loadGLTFmodel(const char* filepath)
 
 Scene::~Scene()
 {
+	printf("freed scene\n");
 	cudaDeviceSynchronize();
 
 	if (d_BVHTreeRoot != nullptr)
+	{
 		d_BVHTreeRoot->Cleanup();
+		cudaFree(d_BVHTreeRoot);
+	}
 
-	cudaFree(d_BVHTreeRoot);
 	checkCudaErrors(cudaGetLastError());
 
 	for (Texture texture : m_Textures)
