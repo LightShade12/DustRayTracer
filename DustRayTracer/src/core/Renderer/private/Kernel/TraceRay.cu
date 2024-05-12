@@ -1,7 +1,7 @@
 #include "TraceRay.cuh"
 
 #include "core/Renderer/private/Shapes/Scene.cuh"
-#include "core/Renderer/private/Kernel/BVH.cuh"
+#include "core/Renderer/private/Kernel/BVH/BVHTraversal.cuh"
 
 #include "Shaders/ClosestHit.cuh"
 #include "Shaders/Miss.cuh"
@@ -13,23 +13,36 @@
 
 //traverse accel struct
 __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
-	float hitDistance = FLT_MAX;//closesthit
+	float closestHitDistance = FLT_MAX;//closesthit
 	HitPayload workingPayload;
 	const Triangle* hitprim = nullptr;
+	bool debug = false;
 
-	for (int triangleIdx = 0; triangleIdx < scenedata->DevicePrimitivesBufferSize; triangleIdx++)
-	{
-		const Triangle* triangle = &(scenedata->DevicePrimitivesBuffer[triangleIdx]);
-		workingPayload = Intersection(ray, triangle);
-
-		if (workingPayload.hit_distance < hitDistance && workingPayload.hit_distance>0)
+	if (true) {
+		//here working payload is being sent in as closest hit payload
+		workingPayload.hit_distance = FLT_MAX;
+		find_closest_hit(ray, scenedata->DeviceBVHTreeRootPtr, &workingPayload, debug);
+		closestHitDistance = workingPayload.hit_distance;
+		hitprim = workingPayload.primitiveptr;
+	}
+	else {
+		for (int triangleIdx = 0; triangleIdx < scenedata->DevicePrimitivesBufferSize; triangleIdx++)
 		{
-			if (!AnyHit(ray, scenedata,
-				triangle, workingPayload.hit_distance))continue;
-			hitDistance = workingPayload.hit_distance;
-			hitprim = workingPayload.primitiveptr;
+			const Triangle* triangle = &(scenedata->DevicePrimitivesBuffer[triangleIdx]);
+			workingPayload = Intersection(ray, triangle);
+
+			if (workingPayload.hit_distance < closestHitDistance && workingPayload.hit_distance>0)
+			{
+				if (!AnyHit(ray, scenedata,
+					triangle, workingPayload.hit_distance))continue;
+				closestHitDistance = workingPayload.hit_distance;
+				hitprim = workingPayload.primitiveptr;
+			}
 		}
 	}
+
+	if (debug)
+		return Debug();
 
 	//Have not hit
 	if (hitprim == nullptr)
@@ -37,7 +50,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 		return Miss(ray);
 	}
 
-	return ClosestHit(ray, hitDistance, hitprim);
+	return ClosestHit(ray, closestHitDistance, hitprim);
 }
 
 //does not support glass material; cuz no mat processing

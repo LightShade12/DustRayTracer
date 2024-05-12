@@ -4,6 +4,7 @@
 #include <thrust/universal_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <memory>
 
 #include <vector>
 
@@ -29,7 +30,7 @@ class BVHBuilder
 public:
 	BVHBuilder() = default;
 	int bincount = 8;
-	int target_leaf_prim_count = 4;
+	int target_leaf_prim_count = 6;
 
 	float3 getExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
 	{
@@ -290,8 +291,8 @@ public:
 		}
 		else
 		{
-			BVHNode* leftnode = new BVHNode();
-			BVHNode* rightnode = new BVHNode();
+			std::shared_ptr<BVHNode>leftnode = std::make_shared<BVHNode>();
+			std::shared_ptr<BVHNode>rightnode = std::make_shared<BVHNode>();
 
 			makePartition(node.dev_primitive_ptrs_buffer, node.primitives_count, *leftnode, *rightnode);
 
@@ -299,18 +300,16 @@ public:
 			RecursiveBuild(*rightnode);
 
 			cudaMallocManaged(&node.dev_child1, sizeof(BVHNode));
-			cudaMemcpy(node.dev_child1, leftnode, sizeof(BVHNode), cudaMemcpyHostToDevice);
-			delete leftnode;
+			cudaMemcpy(node.dev_child1, leftnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
 			cudaMallocManaged(&node.dev_child2, sizeof(BVHNode));
-			cudaMemcpy(node.dev_child2, rightnode, sizeof(BVHNode), cudaMemcpyHostToDevice);
-			delete rightnode;
+			cudaMemcpy(node.dev_child2, rightnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 		}
 	}
 
 	BVHNode* Build(const thrust::universal_vector<Triangle>& primitives)
 	{
-		BVHNode* hostBVHroot = new BVHNode();
+		std::shared_ptr<BVHNode>hostBVHroot = std::make_shared<BVHNode>();
 
 		printf("root prim count:%d \n", primitives.size());
 
@@ -335,14 +334,13 @@ public:
 
 			BVHNode* deviceBVHroot;
 			cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
-			cudaMemcpy(deviceBVHroot, hostBVHroot, sizeof(BVHNode), cudaMemcpyHostToDevice);
-			delete hostBVHroot;
+			cudaMemcpy(deviceBVHroot, hostBVHroot.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
 			return deviceBVHroot;
 		}
 
-		BVHNode* left = new BVHNode();
-		BVHNode* right = new BVHNode();
+		std::shared_ptr<BVHNode>left = std::make_shared<BVHNode>();
+		std::shared_ptr<BVHNode>right = std::make_shared<BVHNode>();
 
 		thrust::host_vector<const Triangle*>dev_prim_ptrs;
 		for (size_t i = 0; i < primitives.size(); i++)
@@ -357,17 +355,14 @@ public:
 		RecursiveBuild(*right);
 
 		cudaMallocManaged(&hostBVHroot->dev_child1, sizeof(BVHNode));
-		cudaMemcpy(hostBVHroot->dev_child1, left, sizeof(BVHNode), cudaMemcpyHostToDevice);
-		delete left;
+		cudaMemcpy(hostBVHroot->dev_child1, left.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
 		cudaMallocManaged(&hostBVHroot->dev_child2, sizeof(BVHNode));
-		cudaMemcpy(hostBVHroot->dev_child2, right, sizeof(BVHNode), cudaMemcpyHostToDevice);
-		delete right;
+		cudaMemcpy(hostBVHroot->dev_child2, right.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
 		BVHNode* deviceBVHroot;
 		cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
-		cudaMemcpy(deviceBVHroot, hostBVHroot, sizeof(BVHNode), cudaMemcpyHostToDevice);
-		delete hostBVHroot;
+		cudaMemcpy(deviceBVHroot, hostBVHroot.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
 		return deviceBVHroot;
 	}

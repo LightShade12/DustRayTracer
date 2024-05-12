@@ -26,7 +26,7 @@ struct SceneData
 	const Material* DeviceMaterialBufferPtr = nullptr;
 	const Triangle* DevicePrimitivesBuffer = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
-	const BVHNode* DeviceBVHTreePtr = nullptr;
+	const BVHNode* DeviceBVHTreeRootPtr = nullptr;
 
 	RendererSettings RenderSettings;
 

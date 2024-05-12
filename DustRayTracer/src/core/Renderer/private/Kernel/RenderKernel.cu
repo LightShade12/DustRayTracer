@@ -2,6 +2,7 @@
 
 #include "core/Renderer/private/Kernel/Ray.cuh"
 #include "core/Renderer/private/Kernel/HitPayload.cuh"
+#include "core/Renderer/private/Kernel/BVH/BVHNode.cuh"
 #include "core/Renderer/private/Shapes/Scene.cuh"
 #include "core/Renderer/private/Camera/Camera.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"//check if this requires definition activation
@@ -44,7 +45,7 @@ void InvokeRenderKernel(
 	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_PrimitivesBuffer.data());
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
-	scenedata.DeviceBVHTreePtr = scene.d_BVHTreeRoot;
+	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
 	//printf("pointer: %p\n", scenedata.DeviceMeshBufferPtr);
 	//printf("pointer: %p\n", scenedata.DeviceMaterialBufferPtr);

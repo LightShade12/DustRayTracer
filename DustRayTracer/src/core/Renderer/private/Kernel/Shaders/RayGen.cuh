@@ -41,7 +41,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		if (payload.debug)
 		{
-			return make_float3(1, 0, 0);
+			return make_float3(1, 0, 1);
 		}
 
 		//sky
