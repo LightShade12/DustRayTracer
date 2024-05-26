@@ -48,10 +48,10 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 	//Have not hit
 	if (hitprim == nullptr)
 	{
-		return Miss(ray);
+		return Miss(ray, workingPayload.color);
 	}
 
-	return ClosestHit(ray, closestHitDistance, hitprim);
+	return ClosestHit(ray, closestHitDistance, hitprim, workingPayload.color);
 }
 
 //does not support glass material; cuz no mat processing

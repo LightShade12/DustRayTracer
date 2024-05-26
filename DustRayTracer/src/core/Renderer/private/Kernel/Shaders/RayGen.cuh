@@ -52,6 +52,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
 			light += fcol * contribution;
+			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
+			{
+				light = {0,0,0};
+				light += payload.color;
+			}
 			break;
 		}
 
@@ -118,6 +123,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				light = payload.UVW;//debug barycentric coords
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::UVS_DEBUG)
 				light = { uv.x,uv.y,0 };//debug UV
+			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG)
+			{
+				light = {0,0.1,0.1};
+				light += payload.color;
+			}
 		}
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)break;
 	}

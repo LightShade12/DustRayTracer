@@ -33,7 +33,7 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera(make_float3(0, 0, 5));
+	m_device_Camera = new Camera(make_float3(0, 3, 9));
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");

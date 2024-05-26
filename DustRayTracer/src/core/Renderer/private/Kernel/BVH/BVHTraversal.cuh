@@ -53,6 +53,7 @@ __device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, 
 			continue;
 		}
 
+		closest_hitpayload->color += make_float3(1)*0.05f;
 		if (currentNode->leaf) {
 			for (int primIdx = 0; primIdx < currentNode->primitives_count; primIdx++) {
 				const Triangle* prim = currentNode->dev_primitive_ptrs_buffer[primIdx];

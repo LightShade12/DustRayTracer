@@ -1,8 +1,7 @@
 #pragma once
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
-__device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Triangle* primitive) {
-	
+__device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Triangle* primitive, float3 bvh_debug_color) {
 	const Triangle& triangle = *primitive;
 
 	HitPayload payload;
@@ -35,5 +34,6 @@ __device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Trian
 	else
 		payload.world_normal = triangle.face_normal;
 
+	payload.color = bvh_debug_color;
 	return payload;
 };

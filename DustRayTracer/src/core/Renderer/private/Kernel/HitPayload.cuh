@@ -13,5 +13,6 @@ struct HitPayload
 	float3 world_position;
 	//int triangle_idx;
 	const Triangle* primitiveptr = nullptr;//default: nullptr
+	float3 color = { 0,0,0 };
 	float3 UVW;
 };
