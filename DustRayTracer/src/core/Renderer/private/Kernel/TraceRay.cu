@@ -22,7 +22,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 	if (useBVH) {
 		//here working payload is being sent in as closest hit payload
 		workingPayload.hit_distance = FLT_MAX;
-		find_closest_hit(ray, scenedata->DeviceBVHTreeRootPtr, &workingPayload, debug);
+		find_closest_hit_iterative(ray, scenedata->DeviceBVHTreeRootPtr, &workingPayload, debug, scenedata);
 		closestHitDistance = workingPayload.hit_distance;
 		hitprim = workingPayload.primitiveptr;
 	}
@@ -59,10 +59,9 @@ __device__ bool RayTest(const Ray& ray, const SceneData* scenedata)
 {
 	bool useBVH = true;
 	HitPayload workingPayload;
-	bool debug;
+	bool debug = false;
 	if (useBVH) {
-		find_closest_hit(ray, scenedata->DeviceBVHTreeRootPtr, &workingPayload, debug);
-		if (workingPayload.primitiveptr == nullptr)return false; else return true;
+		return RayTest_bvh(ray, scenedata->DeviceBVHTreeRootPtr, scenedata);
 	}
 	else
 	{

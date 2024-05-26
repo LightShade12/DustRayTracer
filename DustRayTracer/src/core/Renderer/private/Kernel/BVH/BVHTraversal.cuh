@@ -1,6 +1,7 @@
 #pragma once
 #include "BVHBuilder.cuh"
 #include "core/Renderer/private/Kernel/Shaders/Intersection.cuh"
+#include "core/Renderer/private/Kernel/Shaders/Anyhit.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
@@ -30,41 +31,106 @@ __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 }
 
 //Traversal
-__device__ void find_closest_hit(const Ray& ray, const BVHNode* dev_node, HitPayload* closest_hitpayload, bool& debug)
-{
-    if (dev_node == nullptr) return;
+__device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, HitPayload* closest_hitpayload, bool& debug, const SceneData* scenedata) {
+	if (root == nullptr) return;
 
-    HitPayload workinghitpayload = intersectAABB(ray, dev_node->bbox);
-    if (workinghitpayload.hit_distance < 0) {
-        return;
-    }
+	// Explicit stack for iterative traversal
+	const int maxStackSize = 64; // Adjust based on expected max depth
+	const BVHNode* nodeStack[maxStackSize];
+	int stackPtr = 0;
 
-    if (closest_hitpayload->primitiveptr != nullptr && workinghitpayload.hit_distance > closest_hitpayload->hit_distance) {
-        return;
-    }
+	nodeStack[stackPtr++] = root;
 
-    if (dev_node->leaf) {
-        for (int primIdx = 0; primIdx < dev_node->primitives_count; primIdx++) {
-            const Triangle* prim = dev_node->dev_primitive_ptrs_buffer[primIdx];
-            workinghitpayload = Intersection(ray, prim);
+	while (stackPtr > 0) {
+		const BVHNode* currentNode = nodeStack[--stackPtr];
 
-            if (workinghitpayload.primitiveptr != nullptr && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {
-                closest_hitpayload->hit_distance = workinghitpayload.hit_distance;
-                closest_hitpayload->primitiveptr = workinghitpayload.primitiveptr;
-            }
-        }
-    }
-    else {
-        // First traverse child nodes based on proximity
-        HitPayload hit1 = intersectAABB(ray, dev_node->dev_child1->bbox);
-        HitPayload hit2 = intersectAABB(ray, dev_node->dev_child2->bbox);
+		HitPayload workinghitpayload = intersectAABB(ray, currentNode->bbox);
+		if (workinghitpayload.hit_distance < 0) {
+			continue;
+		}
 
-        const BVHNode* first = (hit1.hit_distance <= hit2.hit_distance) ? dev_node->dev_child1 : dev_node->dev_child2;
-        const BVHNode* second = (hit1.hit_distance <= hit2.hit_distance) ? dev_node->dev_child2 : dev_node->dev_child1;
+		if (closest_hitpayload->primitiveptr != nullptr && workinghitpayload.hit_distance > closest_hitpayload->hit_distance) {
+			continue;
+		}
 
-        find_closest_hit(ray, first, closest_hitpayload, debug);
-        if (closest_hitpayload->hit_distance > hit2.hit_distance) {
-            find_closest_hit(ray, second, closest_hitpayload, debug);
-        }
-    }
+		if (currentNode->leaf) {
+			for (int primIdx = 0; primIdx < currentNode->primitives_count; primIdx++) {
+				const Triangle* prim = currentNode->dev_primitive_ptrs_buffer[primIdx];
+				workinghitpayload = Intersection(ray, prim);
+
+				if (workinghitpayload.primitiveptr != nullptr && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {
+					if (!AnyHit(ray, scenedata, 
+						prim, workinghitpayload.hit_distance))continue;
+					closest_hitpayload->hit_distance = workinghitpayload.hit_distance;
+					closest_hitpayload->primitiveptr = workinghitpayload.primitiveptr;
+				}
+			}
+		}
+		else {
+			// Compute distances for child nodes
+			HitPayload hit1 = intersectAABB(ray, currentNode->dev_child1->bbox);
+			HitPayload hit2 = intersectAABB(ray, currentNode->dev_child2->bbox);
+
+			// Push child nodes to the stack in order based on hit distance
+			if (hit1.hit_distance > hit2.hit_distance) {
+				if (hit1.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child1;
+				if (hit2.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child2;
+			}
+			else {
+				if (hit2.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child2;
+				if (hit1.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child1;
+			}
+		}
+	}
+}
+
+__device__ bool RayTest_bvh(const Ray& ray, const BVHNode* root, const SceneData* scenedata) {
+	if (root == nullptr) return false;
+
+	// Explicit stack for iterative traversal
+	const int maxStackSize = 64; // Adjust based on expected max depth
+	const BVHNode* nodeStack[maxStackSize];
+	int stackPtr = 0;
+
+	nodeStack[stackPtr++] = root;
+
+	while (stackPtr > 0) {
+		const BVHNode* currentNode = nodeStack[--stackPtr];
+
+		HitPayload workinghitpayload = intersectAABB(ray, currentNode->bbox);
+		if (workinghitpayload.hit_distance < 0) {
+			continue;
+		}
+
+		if (currentNode->leaf) {
+			for (int primIdx = 0; primIdx < currentNode->primitives_count; primIdx++) {
+				const Triangle* prim = currentNode->dev_primitive_ptrs_buffer[primIdx];
+				workinghitpayload = Intersection(ray, prim);
+
+				if (workinghitpayload.primitiveptr != nullptr) {
+					if (AnyHit(ray, scenedata, prim, workinghitpayload.hit_distance)) {
+						return true; // Intersection found, return true immediately
+					}
+				}
+			}
+		}
+		else {
+			// Compute distances for child nodes
+			HitPayload hit1 = intersectAABB(ray, currentNode->dev_child1->bbox);
+			HitPayload hit2 = intersectAABB(ray, currentNode->dev_child2->bbox);
+
+			// Push child nodes to the stack in order based on hit distance
+			if (hit1.hit_distance > hit2.hit_distance) {
+				if (hit1.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child1;
+				if (hit2.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child2;
+			}
+			else {
+				if (hit2.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child2;
+				if (hit1.hit_distance >= 0) nodeStack[stackPtr++] = currentNode->dev_child1;
+			}
+		}
+	}
+
+	// No intersection found, return false
+	return false;
 }
