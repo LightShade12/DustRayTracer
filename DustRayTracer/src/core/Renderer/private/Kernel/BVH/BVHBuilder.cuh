@@ -30,7 +30,7 @@ class BVHBuilder
 public:
 	BVHBuilder() = default;
 	int bincount = 8;
-	int target_leaf_prim_count = 512;
+	int target_leaf_prim_count = 64;
 
 	float3 getExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
 	{
@@ -54,13 +54,13 @@ public:
 			float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
 			for (float3 pos : positions)
 			{
-				if (pos.x < min.x)min.x = pos.x;
-				if (pos.y < min.y)min.y = pos.y;
-				if (pos.z < min.z)min.z = pos.z;
+				min.x = fminf(min.x, pos.x);
+				min.y = fminf(min.y, pos.y);
+				min.z = fminf(min.z, pos.z);
 
-				if (pos.x > max.x)max.x = pos.x;
-				if (pos.y > max.y)max.y = pos.y;
-				if (pos.z > max.z)max.z = pos.z;
+				max.x = fmaxf(max.x, pos.x);
+				max.y = fmaxf(max.y, pos.y);
+				max.z = fmaxf(max.z, pos.z);
 			}
 		}
 		min_extent = min;
