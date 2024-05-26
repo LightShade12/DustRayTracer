@@ -101,6 +101,6 @@ __device__ float3 Camera::GetRayDir(float2 _uv, float width, float height) const
 
 __host__ __device__ float Camera::deg2rad(float degree)
 {
-	float const PI = 3.14159265359;
+	float const PI = 3.14159265359f;
 	return (degree * (PI / 180));
 }

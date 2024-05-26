@@ -1,6 +1,7 @@
 #pragma once
 #include "BVHBuilder.cuh"
 #include "core/Renderer/private/Kernel/Shaders/Intersection.cuh"
+#include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 	HitPayload hitInfo;
@@ -25,15 +26,27 @@ __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 //Traversal
 __device__ void find_closest_hit(const Ray& ray, const BVHNode* dev_node, HitPayload* closest_hitpayload, bool& debug)
 {
-	HitPayload workinghitpayload = intersectAABB(ray, dev_node->bbox);
-
+	HitPayload workinghitpayload;
 	//miss
 	//if not intersects
-	if (workinghitpayload.hit_distance < 0)
+	bool rayInbbox =
+		(dev_node->bbox.pMin.x <= ray.origin.x &&
+			dev_node->bbox.pMin.y <= ray.origin.y &&
+			dev_node->bbox.pMin.z <= ray.origin.z &&
+			dev_node->bbox.pMax.x >= ray.origin.x &&
+			dev_node->bbox.pMax.y >= ray.origin.y &&
+			dev_node->bbox.pMax.z >= ray.origin.z
+			);
+
+	if (!rayInbbox)
 	{
-		return;
+		workinghitpayload = intersectAABB(ray, dev_node->bbox);
+		if (workinghitpayload.hit_distance < 0)
+		{
+			return;
+		}
 	}
-	//if (workinghitpayload.hit_distance > closest_hitpayload->hit_distance)
+
 	//if bbox dist > closest triangle hit dist
 	if (closest_hitpayload->primitiveptr != nullptr && workinghitpayload.hit_distance > closest_hitpayload->hit_distance) { return; }
 
@@ -58,14 +71,22 @@ __device__ void find_closest_hit(const Ray& ray, const BVHNode* dev_node, HitPay
 	else
 	{
 		//front to back traversal
-		HitPayload hit1 = intersectAABB(ray, dev_node->dev_child1->bbox);
-		HitPayload hit2 = intersectAABB(ray, dev_node->dev_child2->bbox);
+		if (false)
+		{
+			HitPayload hit1 = intersectAABB(ray, dev_node->dev_child1->bbox);
+			HitPayload hit2 = intersectAABB(ray, dev_node->dev_child2->bbox);
 
-		const BVHNode* first = (hit1.hit_distance <= hit2.hit_distance) ? dev_node->dev_child1 : dev_node->dev_child2;
-		const BVHNode* second = (hit1.hit_distance <= hit2.hit_distance) ? dev_node->dev_child2 : dev_node->dev_child1;
+			const BVHNode* first = (hit1.hit_distance <= hit2.hit_distance) ? dev_node->dev_child1 : dev_node->dev_child2;
+			const BVHNode* second = (hit1.hit_distance <= hit2.hit_distance) ? dev_node->dev_child2 : dev_node->dev_child1;
 
-		find_closest_hit(ray, first, closest_hitpayload, debug);
-		if (closest_hitpayload->hit_distance > hit2.hit_distance)
-			find_closest_hit(ray, second, closest_hitpayload, debug);
+			find_closest_hit(ray, first, closest_hitpayload, debug);
+			if (closest_hitpayload->hit_distance > hit2.hit_distance)
+				find_closest_hit(ray, second, closest_hitpayload, debug);
+		}
+		else
+		{
+			find_closest_hit(ray, dev_node->dev_child1, closest_hitpayload, debug);
+			find_closest_hit(ray, dev_node->dev_child2, closest_hitpayload, debug);
+		}
 	}
 }

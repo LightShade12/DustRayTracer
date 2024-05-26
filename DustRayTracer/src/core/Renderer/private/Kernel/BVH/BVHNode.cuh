@@ -9,8 +9,9 @@
 /// Will reside on gpu memory.
 /// Create ptr values FOR GPU, variables will be COPIED from cpu
 /// </summary>
-struct BVHNode
+class BVHNode
 {
+public:
 	BVHNode() = default;
 
 	bool leaf = false;
@@ -59,8 +60,8 @@ struct BVHNode
 			return primitives_count * rayint_cost;
 		else
 		{
-			int p1 = dev_child1->getArea() / getArea(), p2 = dev_child2->getArea() / getArea();//SAH
-			int cost = trav_cost + (p1 * (dev_child1->getCost())) + (p2 * (dev_child2->getCost()));
+			float p1 = dev_child1->getArea() / getArea(), p2 = dev_child2->getArea() / getArea();//SAH
+			float cost = trav_cost + (p1 * (dev_child1->getCost())) + (p2 * (dev_child2->getCost()));
 			return cost;
 		}
 	}

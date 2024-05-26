@@ -42,16 +42,12 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/cornell_box.glb");
+	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest.glb");
+
 
 	BVHBuilder bvhbuilder;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.Build(m_Scene->m_PrimitivesBuffer);
 
-	for (size_t i = 0; i < m_Scene->d_BVHTreeRoot->primitives_count; i++)
-	{
-		auto tri = m_Scene->d_BVHTreeRoot->dev_primitive_ptrs_buffer[i];
-		printf("tri norm: x: %.3f y: %.3f z: %.3f\n", tri->face_normal.x, tri->face_normal.y, tri->face_normal.z);
-	}
 	printf("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
