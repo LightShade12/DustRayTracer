@@ -4,46 +4,37 @@
 #include <thrust/universal_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+
 #include <memory>
-
 #include <vector>
-
-/*
-* bvh builder
-*
-* prerequisites:
-* -triangle list(primitive lists)
-* -triangle centroid
-* -aabb intersection with t retval
-*	tmin-tmax=0 then missed
-*
-* -preprocess
-*	-cost function
-* leaf nodes:
-*	contain small list of triangles: 4-6
-*	bvhs may overlap but not share a triangle
-*
-*/
 
 class BVHBuilder
 {
 public:
 	BVHBuilder() = default;
-	int bincount = 8;
-	int target_leaf_prim_count = 6;
+	int m_BinCount = 8;
+	int m_TargetLeafPrimitivesCount = 6;
 
-	float3 getExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
+private:
+	enum class PARTITION_AXIS
+	{
+		X_AXIS = 0,
+		Y_AXIS,
+		Z_AXIS
+	};
+	//TODO: change to getExtents
+	float3 getAbsoluteExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
 	{
 		std::vector<Triangle>tempDevtoHostTriangles;
 		for (size_t ptr_idx = 0; ptr_idx < primitives_count; ptr_idx++)
 		{
 			tempDevtoHostTriangles.push_back(*(primitives_ptrs_buffer[ptr_idx]));
 		}
-		return getExtent(tempDevtoHostTriangles.data(), primitives_count, min_extent);
+		return getAbsoluteExtent(tempDevtoHostTriangles.data(), primitives_count, min_extent);
 	};
 
 	//bounding box extents
-	float3 getExtent(const Triangle* primitives_buffer, size_t primitives_count, float3& min_extent) //abs
+	float3 getAbsoluteExtent(const Triangle* primitives_buffer, size_t primitives_count, float3& min_extent) //abs
 	{
 		float3 extent;
 		float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
@@ -67,17 +58,6 @@ public:
 		extent = { max.x - min.x,max.y - min.y,max.z - min.z };
 		return extent;
 	};
-	/*
-	For each axis x,y,z:
-	initialize buckets
-	For each primitive p in node:
-	b = compute_bucket (p.centroid)
-	b. bbox.union(p.bbox) ;
-	b.prim count++;
-	For each of the B-1 possible partitioning planes
-	Evaluate cost, keep track of lowest cost partition
-	Recurse on lowest cost partition found (or make node a leaf if primcount is low enough)
-	*/
 
 	//unused
 	Bounds3f getBounds(const Triangle& triangle)
@@ -98,29 +78,6 @@ public:
 
 		return Bounds3f(min, max);
 	}
-
-	//unused
-	float3 getCentroid(Bounds3f bound)
-	{
-		return .5f * bound.pMin + .5f * bound.pMax;
-	}
-
-	//unused
-	void Preprocess(BVHNode* node) {
-		//for (int primIdx = 0; primIdx < node->primitives_count; primIdx++)
-		//{
-		//	Triangle& tri = node->dev_primitive_ptrs_buffer[primIdx];
-		//	Bounds3f bound = getBounds(tri);
-		//	primitives_bounds.push_back({ &tri, bound });
-		//}
-	}
-
-	enum class PARTITION_AXIS
-	{
-		X_AXIS = 0,
-		Y_AXIS,
-		Z_AXIS
-	};
 
 	//bin is in world space
 	void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count)
@@ -177,8 +134,8 @@ public:
 		cudaMemcpy(left.dev_primitive_ptrs_buffer, left_prim_ptrs.data(), buffersize, cudaMemcpyHostToDevice);
 		checkCudaErrors(cudaGetLastError());
 		float3 leftminextent;
-		float3 leftextent = getExtent(left_prim_ptrs.data(), left.primitives_count, leftminextent);
-		left.bbox = Bounds3f(leftminextent, leftminextent + leftextent);
+		float3 leftextent = getAbsoluteExtent(left_prim_ptrs.data(), left.primitives_count, leftminextent);
+		left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
 		right.primitives_count = right_prim_ptrs.size();
 		buffersize = sizeof(const Triangle*) * right_prim_ptrs.size();
@@ -186,8 +143,8 @@ public:
 		cudaMemcpy(right.dev_primitive_ptrs_buffer, right_prim_ptrs.data(), buffersize, cudaMemcpyHostToDevice);
 		checkCudaErrors(cudaGetLastError());
 		float3 rightminextent;
-		float3 rightextent = getExtent(right.dev_primitive_ptrs_buffer, right.primitives_count, rightminextent);
-		right.bbox = Bounds3f(rightminextent, rightminextent + rightextent);
+		float3 rightextent = getAbsoluteExtent(right.dev_primitive_ptrs_buffer, right.primitives_count, rightminextent);
+		right.m_BoundingBox = Bounds3f(rightminextent, rightminextent + rightextent);
 	}
 
 	void makePartition(const Triangle** primitives_ptrs_buffer, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode)
@@ -199,7 +156,7 @@ public:
 		int lowestcost = INT_MAX;
 
 		float3 minextent = { FLT_MAX,FLT_MAX,FLT_MAX };
-		float3 extent = getExtent(primitives_ptrs_buffer, primitives_count, minextent);
+		float3 extent = getAbsoluteExtent(primitives_ptrs_buffer, primitives_count, minextent);
 		Bounds3f parentbbox(minextent, minextent + extent);
 
 		int traversal_cost = 1;
@@ -208,8 +165,8 @@ public:
 
 		//for x
 		std::vector<float>bins;//world space
-		float deltapartition = extent.x / bincount;
-		for (int i = 1; i < bincount; i++)
+		float deltapartition = extent.x / m_BinCount;
+		for (int i = 1; i < m_BinCount; i++)
 		{
 			bins.push_back(minextent.x + (i * deltapartition));
 		}
@@ -217,8 +174,8 @@ public:
 		{
 			//printf("proc x bin %.3f\n", bin);
 			binToNodes(left, right, bin, PARTITION_AXIS::X_AXIS, primitives_ptrs_buffer, primitives_count);
-			int cost = traversal_cost + ((left.getArea() / parentbbox.getArea()) * left.primitives_count * left.rayint_cost) +
-				((right.getArea() / parentbbox.getArea()) * right.primitives_count * right.rayint_cost);
+			int cost = traversal_cost + ((left.getSurfaceArea() / parentbbox.getSurfaceArea()) * left.primitives_count * left.rayint_cost) +
+				((right.getSurfaceArea() / parentbbox.getSurfaceArea()) * right.primitives_count * right.rayint_cost);
 			if (cost < lowestcost)
 			{
 				lowestcost = cost;
@@ -231,8 +188,8 @@ public:
 
 		//for y
 		bins.clear();
-		deltapartition = extent.y / bincount;
-		for (int i = 1; i < bincount; i++)
+		deltapartition = extent.y / m_BinCount;
+		for (int i = 1; i < m_BinCount; i++)
 		{
 			bins.push_back(minextent.y + (i * deltapartition));
 		}
@@ -240,8 +197,8 @@ public:
 		{
 			//printf("proc y bin %.3f\n", bin);
 			binToNodes(left, right, bin, PARTITION_AXIS::Y_AXIS, primitives_ptrs_buffer, primitives_count);
-			int cost = traversal_cost + ((left.getArea() / parentbbox.getArea()) * left.primitives_count * left.rayint_cost) +
-				((right.getArea() / parentbbox.getArea()) * right.primitives_count * right.rayint_cost);
+			int cost = traversal_cost + ((left.getSurfaceArea() / parentbbox.getSurfaceArea()) * left.primitives_count * left.rayint_cost) +
+				((right.getSurfaceArea() / parentbbox.getSurfaceArea()) * right.primitives_count * right.rayint_cost);
 			if (cost < lowestcost)
 			{
 				lowestcost = cost;
@@ -254,8 +211,8 @@ public:
 
 		//for z
 		bins.clear();
-		deltapartition = extent.z / bincount;
-		for (int i = 1; i < bincount; i++)
+		deltapartition = extent.z / m_BinCount;
+		for (int i = 1; i < m_BinCount; i++)
 		{
 			bins.push_back(minextent.z + (i * deltapartition));
 		}
@@ -263,8 +220,8 @@ public:
 		{
 			//printf("proc z bin %.3f\n", bin);
 			binToNodes(left, right, bin, PARTITION_AXIS::Z_AXIS, primitives_ptrs_buffer, primitives_count);
-			int cost = traversal_cost + ((left.getArea() / parentbbox.getArea()) * left.primitives_count * left.rayint_cost) +
-				((right.getArea() / parentbbox.getArea()) * right.primitives_count * right.rayint_cost);
+			int cost = traversal_cost + ((left.getSurfaceArea() / parentbbox.getSurfaceArea()) * left.primitives_count * left.rayint_cost) +
+				((right.getSurfaceArea() / parentbbox.getSurfaceArea()) * right.primitives_count * right.rayint_cost);
 			if (cost < lowestcost)
 			{
 				lowestcost = cost;
@@ -284,10 +241,10 @@ public:
 	void RecursiveBuild(BVHNode& node)
 	{
 		printf("recursive build, child node prim count: %d \n", node.primitives_count);
-		if (node.primitives_count <= target_leaf_prim_count)
+		if (node.primitives_count <= m_TargetLeafPrimitivesCount)
 		{
 			printf("made a leaf node with %d prims---------------\n", node.primitives_count);
-			node.leaf = true; return;
+			node.m_IsLeaf = true; return;
 		}
 		else
 		{
@@ -307,6 +264,7 @@ public:
 		}
 	}
 
+public:
 	BVHNode* Build(const thrust::universal_vector<Triangle>& primitives)
 	{
 		std::shared_ptr<BVHNode>hostBVHroot = std::make_shared<BVHNode>();
@@ -314,16 +272,16 @@ public:
 		printf("root prim count:%zu \n", primitives.size());
 
 		float3 minextent;
-		float3 extent = getExtent(thrust::raw_pointer_cast(primitives.data()),
+		float3 extent = getAbsoluteExtent(thrust::raw_pointer_cast(primitives.data()),
 			primitives.size(), minextent);//error prone
-		hostBVHroot->bbox = Bounds3f(minextent, minextent + extent);
+		hostBVHroot->m_BoundingBox = Bounds3f(minextent, minextent + extent);
 
 		hostBVHroot->primitives_count = primitives.size();
 
 		//if leaf candidate
-		if (primitives.size() <= target_leaf_prim_count)
+		if (primitives.size() <= m_TargetLeafPrimitivesCount)
 		{
-			hostBVHroot->leaf = true;
+			hostBVHroot->m_IsLeaf = true;
 			std::vector<const Triangle*>DevToHostPrimitivePtrs;
 			for (size_t i = 0; i < primitives.size(); i++)
 			{

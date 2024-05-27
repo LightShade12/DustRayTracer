@@ -44,7 +44,7 @@ __device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, 
 	while (stackPtr > 0) {
 		const BVHNode* currentNode = nodeStack[--stackPtr];
 
-		HitPayload workinghitpayload = intersectAABB(ray, currentNode->bbox);
+		HitPayload workinghitpayload = intersectAABB(ray, currentNode->m_BoundingBox);
 		if (workinghitpayload.hit_distance < 0) {
 			continue;
 		}
@@ -54,7 +54,7 @@ __device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, 
 		}
 
 		closest_hitpayload->color += make_float3(1)*0.05f;
-		if (currentNode->leaf) {
+		if (currentNode->m_IsLeaf) {
 			for (int primIdx = 0; primIdx < currentNode->primitives_count; primIdx++) {
 				const Triangle* prim = currentNode->dev_primitive_ptrs_buffer[primIdx];
 				workinghitpayload = Intersection(ray, prim);
@@ -69,8 +69,8 @@ __device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, 
 		}
 		else {
 			// Compute distances for child nodes
-			HitPayload hit1 = intersectAABB(ray, currentNode->dev_child1->bbox);
-			HitPayload hit2 = intersectAABB(ray, currentNode->dev_child2->bbox);
+			HitPayload hit1 = intersectAABB(ray, currentNode->dev_child1->m_BoundingBox);
+			HitPayload hit2 = intersectAABB(ray, currentNode->dev_child2->m_BoundingBox);
 
 			// Push child nodes to the stack in order based on hit distance
 			if (hit1.hit_distance > hit2.hit_distance) {
@@ -98,12 +98,12 @@ __device__ bool RayTest_bvh(const Ray& ray, const BVHNode* root, const SceneData
 	while (stackPtr > 0) {
 		const BVHNode* currentNode = nodeStack[--stackPtr];
 
-		HitPayload workinghitpayload = intersectAABB(ray, currentNode->bbox);
+		HitPayload workinghitpayload = intersectAABB(ray, currentNode->m_BoundingBox);
 		if (workinghitpayload.hit_distance < 0) {
 			continue;
 		}
 
-		if (currentNode->leaf) {
+		if (currentNode->m_IsLeaf) {
 			for (int primIdx = 0; primIdx < currentNode->primitives_count; primIdx++) {
 				const Triangle* prim = currentNode->dev_primitive_ptrs_buffer[primIdx];
 				workinghitpayload = Intersection(ray, prim);
@@ -117,8 +117,8 @@ __device__ bool RayTest_bvh(const Ray& ray, const BVHNode* root, const SceneData
 		}
 		else {
 			// Compute distances for child nodes
-			HitPayload hit1 = intersectAABB(ray, currentNode->dev_child1->bbox);
-			HitPayload hit2 = intersectAABB(ray, currentNode->dev_child2->bbox);
+			HitPayload hit1 = intersectAABB(ray, currentNode->dev_child1->m_BoundingBox);
+			HitPayload hit2 = intersectAABB(ray, currentNode->dev_child2->m_BoundingBox);
 
 			// Push child nodes to the stack in order based on hit distance
 			if (hit1.hit_distance > hit2.hit_distance) {

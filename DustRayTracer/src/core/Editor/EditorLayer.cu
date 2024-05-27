@@ -42,10 +42,11 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/mcTransparencyTest.glb");
+	m_Scene->loadGLTFmodel("./src/models/suzanne_plane.glb");
 
 
 	BVHBuilder bvhbuilder;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 6;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.Build(m_Scene->m_PrimitivesBuffer);
 
 	printf("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);

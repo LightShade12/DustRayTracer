@@ -95,7 +95,6 @@
     <ClInclude Include="src\core\Application\private\Input.hpp" />
     <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\BVH.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Debug.cuh" />
     <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
     <ClInclude Include="src\core\Renderer\private\Kernel\RendererSettings.h" />
@@ -136,7 +135,6 @@
     <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Scene.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
     <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />

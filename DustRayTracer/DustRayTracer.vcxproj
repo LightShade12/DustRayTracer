@@ -147,7 +147,6 @@
     <ClInclude Include="src\core\Common\physical_units.hpp" />
     <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
     <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\BVH.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
     <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
@@ -190,7 +189,6 @@
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
     <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
     <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Kernel\BVH.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
