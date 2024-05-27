@@ -139,6 +139,7 @@
     <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
     <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />
     <CudaCompile Include="src\core\Renderer\private\Shapes\Bounds.cu" />
+    <CudaCompile Include="src\core\Renderer\private\Kernel\BVH\BVHBuilder.cu" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="dev_docs.txt" />

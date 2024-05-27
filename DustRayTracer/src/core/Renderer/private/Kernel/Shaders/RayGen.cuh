@@ -54,7 +54,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			light += fcol * contribution;
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
 			{
-				light = {0,0,0};
+				light = { 0,0,0 };
 				light += payload.color;
 			}
 			break;
@@ -62,7 +62,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
-		Material material = scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->MaterialIdx];
+		Material material = scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->materialIdx];
 
 		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
 
@@ -85,16 +85,17 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
-			if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
-				&scenedata))
-			{
-				if (material.AlbedoTextureIndex < 0)
-					light += (material.Albedo * suncol);
-				else
+			if (i < 2)
+				if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
+					&scenedata))
 				{
-					light += scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv) * suncol;
+					if (material.AlbedoTextureIndex < 0)
+						light += (material.Albedo * suncol);
+					else
+					{
+						light += scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv) * suncol;
+					}
 				}
-			}
 
 		ray.origin = newRayOrigin;
 		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
@@ -125,7 +126,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				light = { uv.x,uv.y,0 };//debug UV
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG)
 			{
-				light = {0,0.1,0.1};
+				light = { 0,0.1,0.1 };
 				light += payload.color;
 			}
 		}

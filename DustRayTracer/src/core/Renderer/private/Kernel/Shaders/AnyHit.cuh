@@ -10,7 +10,7 @@ __device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const Triangl
 	float alphaval = 1;
 	HitPayload payload;
 
-	const Material material = scenedata->DeviceMaterialBufferPtr[triangle->MaterialIdx];
+	const Material material = scenedata->DeviceMaterialBufferPtr[triangle->materialIdx];
 	if (material.AlbedoTextureIndex < 0)
 		return true;
 	const Texture tex = scenedata->DeviceTextureBufferPtr[material.AlbedoTextureIndex];

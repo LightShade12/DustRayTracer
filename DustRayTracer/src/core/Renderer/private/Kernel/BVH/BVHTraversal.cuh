@@ -1,11 +1,11 @@
 #pragma once
-#include "BVHBuilder.cuh"
+#include "BVHNode.cuh"
 #include "core/Renderer/private/Kernel/Shaders/Intersection.cuh"
 #include "core/Renderer/private/Kernel/Shaders/Anyhit.cuh"
 #include "core/Renderer/private/CudaMath/helper_math.cuh"
 
 __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
-	HitPayload hitInfo;
+	HitPayload payload;
 
 	float3 invDir = 1.0f / ray.direction;
 	float3 t0 = (bbox.pMin - ray.origin) * invDir;
@@ -23,15 +23,15 @@ __device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
 	}
 
 	if (tenter > texit || texit < 0) {
-		return hitInfo; // No intersection
+		return payload; // No intersection
 	}
 
-	hitInfo.hit_distance = tenter;
-	return hitInfo;
+	payload.hit_distance = tenter;
+	return payload;
 }
 
 //Traversal
-__device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, HitPayload* closest_hitpayload, bool& debug, const SceneData* scenedata) {
+__device__ void traverseBVH(const Ray& ray, const BVHNode* root, HitPayload* closest_hitpayload, bool& debug, const SceneData* scenedata) {
 	if (root == nullptr) return;
 
 	// Explicit stack for iterative traversal
@@ -85,7 +85,7 @@ __device__ void find_closest_hit_iterative(const Ray& ray, const BVHNode* root, 
 	}
 }
 
-__device__ bool RayTest_bvh(const Ray& ray, const BVHNode* root, const SceneData* scenedata) {
+__device__ bool traverseBVH_raytest(const Ray& ray, const BVHNode* root, const SceneData* scenedata) {
 	if (root == nullptr) return false;
 
 	// Explicit stack for iterative traversal
