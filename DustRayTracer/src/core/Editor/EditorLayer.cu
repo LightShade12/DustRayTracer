@@ -42,7 +42,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/dense_monkey.glb");
+	m_Scene->loadGLTFmodel("./src/models/hl_ichthyosaur.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 6;

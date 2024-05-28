@@ -133,10 +133,9 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)break;
 	}
 
-	if (scenedata.RenderSettings.gamma_correction && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
+	if (scenedata.RenderSettings.gamma_correction &&
+		(scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE || scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG))
 		light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
-
-
 
 	return light;
 };

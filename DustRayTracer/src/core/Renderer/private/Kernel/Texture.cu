@@ -4,6 +4,8 @@
 
 #include "core/Editor/Common/CudaCommon.cuh"
 
+#include <cmath>
+
 //8 bit img only
 Texture::Texture(const char* filepath)
 {
@@ -27,12 +29,14 @@ Texture::Texture(unsigned char* data, size_t bytesize)
 	stbi_image_free(imgdata);
 }
 
+//returns pink if numcolch < 3 or > 4
 __device__ float3 Texture::getPixel(float2 UV) const
 {
 	int x = UV.x * width;
 	int y = UV.y * height;
 
 	uchar4 fcol = { 255,0,255,255 };
+
 	if (componentCount == 3)
 	{
 		uchar3* coldata = (uchar3*)d_data;
@@ -49,7 +53,7 @@ __device__ float3 Texture::getPixel(float2 UV) const
 
 	float3 fltcol = make_float3(fcol.x / (float)255, fcol.y / (float)255, fcol.z / (float)255);
 	//printf("r: %.3f g: %.3f b: %.3f ||", fltcol.x, fltcol.y, fltcol.z);
-
+	fltcol = { std::powf(fltcol.x,2), std::powf(fltcol.y,2), std::powf(fltcol.z,2) };
 	return fltcol;
 }
 
@@ -66,7 +70,7 @@ __device__ float Texture::getAlpha(float2 UV) const
 
 	float alpha = fcol / (float)255;
 
-	return alpha;
+	return alpha;//normalized
 }
 
 void Texture::Cleanup()

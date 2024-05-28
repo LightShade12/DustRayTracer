@@ -63,7 +63,7 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	{
 		tinygltf::Material mat = model.materials[matIdx];
 		Material drt_mat;
-
+		//printf("material name: %s\n", mat.name.c_str());
 		std::vector<double> color = mat.pbrMetallicRoughness.baseColorFactor;
 		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
 
@@ -81,10 +81,11 @@ bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 {
 	const char* imgdir = "./src/models/";
 	//printf("Images count in file: %d\n", model.images.size());
-
+	printf("total images: %zu\n", model.images.size());
 	for (size_t textureIdx = 0; textureIdx < model.images.size(); textureIdx++)
 	{
 		tinygltf::Image current_img = model.images[textureIdx];
+		printf("image: %s\n", current_img.name.c_str());
 		Texture tex;
 		if (is_binary)
 		{
@@ -113,7 +114,7 @@ bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& 
 {
 	for (size_t primIdx = 0; primIdx < mesh.primitives.size(); primIdx++)
 	{
-		printf("prim idx:%zu \n", primIdx);
+		//printf("prim idx:%zu \n", primIdx);
 		tinygltf::Primitive primitive = mesh.primitives[primIdx];
 
 		int pos_attrib_accesorIdx = primitive.attributes["POSITION"];
@@ -159,7 +160,7 @@ bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& 
 			normals.push_back(normals_buffer[indicesbuffer[i]]);
 			UVs.push_back(UVs_buffer[indicesbuffer[i]]);
 		}
-		for (size_t i = 0; i < positions.size() / 3; i++)
+		for (size_t i = 0; i < indices_accesor.count / 3; i++)//no of triangles per primitive
 		{
 			prim_mat_idx.push_back(primitive.material);
 		}
@@ -252,7 +253,7 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		}
 		else
 		{
-			//printf("positions-normals count mismatch!\n");
+			printf("positions-normals count mismatch!\n");
 		}
 
 		//Contruct Triangles
