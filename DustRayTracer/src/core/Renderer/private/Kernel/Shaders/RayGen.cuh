@@ -33,7 +33,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	float3 contribution = { 1,1,1 };
 	int bounces = scenedata.RenderSettings.ray_bounce_limit;
 
-	for (int i = 0; i < bounces; i++)
+	for (int i = 0; i <= bounces; i++)
 	{
 		float2 uv = { 0,1 };//DEBUG
 		HitPayload payload = TraceRay(ray, &scenedata);
@@ -135,6 +135,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 	if (scenedata.RenderSettings.gamma_correction && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		light = { sqrtf(light.x),sqrtf(light.y) ,sqrtf(light.z) };//uses 1/gamma=2 not 2.2
+
+
 
 	return light;
 };

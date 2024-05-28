@@ -141,7 +141,7 @@ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_
 	cudaMemcpy(left.dev_primitive_ptrs_buffer, left_prim_ptrs.data(), buffersize, cudaMemcpyHostToDevice);
 	checkCudaErrors(cudaGetLastError());
 	float3 leftminextent;
-	float3 leftextent = getAbsoluteExtent(left_prim_ptrs.data(), left.primitives_count, leftminextent);
+	float3 leftextent = getAbsoluteExtent(left_prim_ptrs.data(), left.primitives_count, leftminextent);//diff args good for error checking
 	left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
 	right.primitives_count = right_prim_ptrs.size();

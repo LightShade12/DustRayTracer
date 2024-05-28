@@ -35,12 +35,27 @@ private:
 	//TODO: change to getExtents
 	float3 getAbsoluteExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
 	{
-		std::vector<Triangle>tempDevtoHostTriangles;
-		for (size_t ptr_idx = 0; ptr_idx < primitives_count; ptr_idx++)
+		float3 extent;
+		float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
+
+		for (int primIdx = 0; primIdx < primitives_count; primIdx++)
 		{
-			tempDevtoHostTriangles.push_back(*(primitives_ptrs_buffer[ptr_idx]));
+			const Triangle* tri = (primitives_ptrs_buffer[primIdx]);
+			float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
+			for (float3 pos : positions)
+			{
+				min.x = fminf(min.x, pos.x);
+				min.y = fminf(min.y, pos.y);
+				min.z = fminf(min.z, pos.z);
+
+				max.x = fmaxf(max.x, pos.x);
+				max.y = fmaxf(max.y, pos.y);
+				max.z = fmaxf(max.z, pos.z);
+			}
 		}
-		return getAbsoluteExtent(tempDevtoHostTriangles.data(), primitives_count, min_extent);
+		min_extent = min;
+		extent = { max.x - min.x,max.y - min.y,max.z - min.z };
+		return extent;
 	};
 
 	//bounding box extents
