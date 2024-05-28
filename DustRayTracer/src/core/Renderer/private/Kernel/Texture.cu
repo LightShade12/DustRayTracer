@@ -32,10 +32,10 @@ Texture::Texture(unsigned char* data, size_t bytesize)
 //returns pink if numcolch < 3 or > 4
 __device__ float3 Texture::getPixel(float2 UV) const
 {
-	int x = UV.x * width;
-	int y = UV.y * height;
+	int x = (UV.x - floorf(UV.x)) * width;
+	int y = (UV.y - floorf(UV.y)) * height;
 
-	uchar4 fcol = { 255,0,255,255 };
+	uchar4 fcol = { 0,0,255,255 };
 
 	if (componentCount == 3)
 	{

@@ -63,13 +63,13 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	{
 		tinygltf::Material mat = model.materials[matIdx];
 		Material drt_mat;
-		//printf("material name: %s\n", mat.name.c_str());
+		printf("material name: %s\n", mat.name.c_str());
 		std::vector<double> color = mat.pbrMetallicRoughness.baseColorFactor;
 		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
 
 		drt_mat.Albedo = albedo;
 		drt_mat.AlbedoTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;//should be -1 when empty
-		//printf("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
+		printf("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
 		m_Material.push_back(drt_mat);
 	}
 	//printf("loaded materials count: %d \n\n", m_Material.size());//should be 36 for cube
@@ -81,11 +81,11 @@ bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 {
 	const char* imgdir = "./src/models/";
 	//printf("Images count in file: %d\n", model.images.size());
-	printf("total images: %zu\n", model.images.size());
+	//printf("total images: %zu\n", model.images.size());
 	for (size_t textureIdx = 0; textureIdx < model.images.size(); textureIdx++)
 	{
 		tinygltf::Image current_img = model.images[textureIdx];
-		printf("image: %s\n", current_img.name.c_str());
+		//printf("image: %s\n", current_img.name.c_str());
 		Texture tex;
 		if (is_binary)
 		{
@@ -112,6 +112,7 @@ bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
 bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals,
 	std::vector<float2>& UVs, std::vector<int>& prim_mat_idx)
 {
+	//printf("total primitives: %zu\n", mesh.primitives.size());
 	for (size_t primIdx = 0; primIdx < mesh.primitives.size(); primIdx++)
 	{
 		//printf("prim idx:%zu \n", primIdx);
