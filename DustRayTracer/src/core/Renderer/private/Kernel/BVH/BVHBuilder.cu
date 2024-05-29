@@ -1,4 +1,87 @@
 #include "BVHBuilder.cuh"
+#include <stack>
+
+// The build function initializes the root and uses a stack for iterative processing
+BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& primitives)
+{
+	// Define the maximum stack size. This value should be large enough to handle the expected depth of the BVH tree.
+	const int MAX_STACK_SIZE = 1024; // Adjust this value as needed
+	BVHNode* nodeStack[MAX_STACK_SIZE];
+	int stackIndex = 0;
+
+	BVHNode* hostBVHroot = new BVHNode();
+
+	printf("root prim count:%zu \n", primitives.size());
+
+	float3 minextent;
+	float3 extent = getAbsoluteExtent(thrust::raw_pointer_cast(primitives.data()), primitives.size(), minextent);
+	hostBVHroot->m_BoundingBox = Bounds3f(minextent, minextent + extent);
+	hostBVHroot->primitives_count = primitives.size();
+	std::vector<const Triangle*> DevToHostPrimitivePtrs;
+	for (size_t i = 0; i < primitives.size(); i++)
+	{
+		DevToHostPrimitivePtrs.push_back(&(primitives[i]));
+	}
+	cudaMallocManaged(&(hostBVHroot->dev_primitive_ptrs_buffer), sizeof(const Triangle*) * DevToHostPrimitivePtrs.size());
+	cudaMemcpy(hostBVHroot->dev_primitive_ptrs_buffer, DevToHostPrimitivePtrs.data(), sizeof(const Triangle*) * DevToHostPrimitivePtrs.size(), cudaMemcpyHostToDevice);
+
+	// If leaf candidate
+	if (primitives.size() <= m_TargetLeafPrimitivesCount)
+	{
+		hostBVHroot->m_IsLeaf = true;
+
+		BVHNode* deviceBVHroot;
+		cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
+		cudaMemcpy(deviceBVHroot, hostBVHroot, sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+		printf("made root leaf with %d prims\n", hostBVHroot->primitives_count);
+		return deviceBVHroot;
+	}
+
+	// Static stack for iterative BVH construction
+	nodeStack[stackIndex++] = hostBVHroot;
+
+	while (stackIndex > 0)
+	{
+		BVHNode* currentNode = nodeStack[--stackIndex];
+
+		// If the current node is a leaf candidate
+		if (currentNode->primitives_count <= m_TargetLeafPrimitivesCount)
+		{
+			printf("made a leaf node with %d prims---------------\n", currentNode->primitives_count);
+			currentNode->m_IsLeaf = true;
+			continue;
+		}
+
+		// Partition the current node
+		BVHNode* leftNode = new BVHNode();
+		BVHNode* rightNode = new BVHNode();
+
+		makePartition(currentNode->dev_primitive_ptrs_buffer, currentNode->primitives_count, *leftNode, *rightNode);
+
+		cudaFree(currentNode->dev_primitive_ptrs_buffer);
+		currentNode->dev_primitive_ptrs_buffer = nullptr;
+
+		cudaMallocManaged(&currentNode->dev_child1, sizeof(BVHNode));
+		cudaMemcpy(currentNode->dev_child1, leftNode, sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+		cudaMallocManaged(&currentNode->dev_child2, sizeof(BVHNode));
+		cudaMemcpy(currentNode->dev_child2, rightNode, sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+		delete leftNode;
+		delete rightNode;
+
+		// Push the child nodes onto the stack
+		nodeStack[stackIndex++] = currentNode->dev_child1;
+		nodeStack[stackIndex++] = currentNode->dev_child2;
+	}
+
+	BVHNode* deviceBVHroot;
+	cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
+	cudaMemcpy(deviceBVHroot, hostBVHroot, sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+	return deviceBVHroot;
+}
 
 BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives)
 {

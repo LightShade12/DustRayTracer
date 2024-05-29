@@ -16,6 +16,7 @@ public:
 	int m_TargetLeafPrimitivesCount = 6;
 
 	BVHNode* build(const thrust::universal_vector<Triangle>& primitives);
+	BVHNode* buildIterative(const thrust::universal_vector<Triangle>& primitives);
 
 private:
 	enum class PARTITION_AXIS
@@ -30,7 +31,6 @@ private:
 	//bin is in world space
 	void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);
 	void binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);
-
 
 	void makePartition(const Triangle** primitives_ptrs_buffer, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode);
 
