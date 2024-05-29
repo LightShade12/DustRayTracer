@@ -45,31 +45,31 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\core\Application\Application.hpp">
+    <ClInclude Include="src\Application\Application.hpp">
       <Filter>src\core\Application</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Application\private\Layer.hpp">
+    <ClInclude Include="src\Application\private\Layer.hpp">
       <Filter>src\core\Application\private</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Editor\Common\Managed.cuh">
+    <ClInclude Include="src\Editor\Common\Managed.cuh">
       <Filter>src\core\Common</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Common\Timer.hpp">
+    <ClInclude Include="src\Common\Timer.hpp">
       <Filter>src\core\Common</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Editor\EditorLayer.hpp">
+    <ClInclude Include="src\Editor\EditorLayer.hpp">
       <Filter>src\core\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Renderer\Renderer.hpp">
+    <ClInclude Include="src\Core\Renderer.hpp">
       <Filter>src\core\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Renderer\private\Camera\Camera.cuh">
+    <ClInclude Include="src\Core\Scene\Camera.cuh">
       <Filter>src\core\Renderer\private\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Renderer\private\CudaMath\helper_math.cuh">
+    <ClInclude Include="src\Core\CudaMath\helper_math.cuh">
       <Filter>src\core\Renderer\private\CudaMath</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Renderer\private\Kernel\RenderKernel.cuh">
+    <ClInclude Include="src\Core\Kernel\RenderKernel.cuh">
       <Filter>src\core\Renderer\private\Kernel</Filter>
     </ClInclude>
     <ClInclude Include="thirdparty\stb_image\stb_image.h">
@@ -78,39 +78,39 @@
     <ClInclude Include="thirdparty\stb_image\stb_image_write.h">
       <Filter>thirdparty\stb_image</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Renderer\private\Shapes\Scene.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Ray.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\HitPayload.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Shapes\Triangle.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\ClosestHit.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Miss.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\RayGen.cuh" />
-    <ClInclude Include="src\core\Renderer\private\CudaMath\Random.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\TraceRay.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Shapes\Material.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Shapes\Mesh.cuh" />
-    <ClInclude Include="src\core\Editor\Common\CudaCommon.cuh" />
-    <ClInclude Include="src\core\Editor\Theme\EditorTheme.hpp" />
-    <ClInclude Include="src\core\Application\private\Input.hpp" />
-    <ClInclude Include="src\core\Common\physical_units.hpp" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\AnyHit.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Shaders\Debug.cuh" />
-    <ClInclude Include="src\core\Application\private\KeyCodes.hpp" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\RendererSettings.h" />
+    <ClInclude Include="src\Core\Scene\Scene.cuh" />
+    <ClInclude Include="src\Core\Ray.cuh" />
+    <ClInclude Include="src\Core\HitPayload.cuh" />
+    <ClInclude Include="src\Core\Scene\Triangle.cuh" />
+    <ClInclude Include="src\Core\Kernel\Shaders\Intersection.cuh" />
+    <ClInclude Include="src\Core\Kernel\Shaders\ClosestHit.cuh" />
+    <ClInclude Include="src\Core\Kernel\Shaders\Miss.cuh" />
+    <ClInclude Include="src\Core\Kernel\Shaders\RayGen.cuh" />
+    <ClInclude Include="src\Core\CudaMath\Random.cuh" />
+    <ClInclude Include="src\Core\Kernel\TraceRay.cuh" />
+    <ClInclude Include="src\Core\Scene\Material.cuh" />
+    <ClInclude Include="src\Core\Scene\Mesh.cuh" />
+    <ClInclude Include="src\Editor\Common\CudaCommon.cuh" />
+    <ClInclude Include="src\Editor\Theme\EditorTheme.hpp" />
+    <ClInclude Include="src\Application\private\Input.hpp" />
+    <ClInclude Include="src\Common\physical_units.hpp" />
+    <ClInclude Include="src\Core\Kernel\Shaders\AnyHit.cuh" />
+    <ClInclude Include="src\Core\Kernel\Shaders\Debug.cuh" />
+    <ClInclude Include="src\Application\private\KeyCodes.hpp" />
+    <ClInclude Include="src\Core\Scene\RendererSettings.h" />
     <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHBuilder.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHTraversal.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\Texture.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Kernel\BVH\BVHNode.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Shapes\Bounds.cuh" />
-    <ClInclude Include="src\core\Renderer\private\Shapes\Vertex.cuh" />
+    <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
+    <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
+    <ClInclude Include="src\Core\Scene\Texture.cuh" />
+    <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
+    <ClInclude Include="src\Core\Bounds.cuh" />
+    <ClInclude Include="src\Core\Scene\Vertex.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\core\Application\private\Application.cpp">
+    <ClCompile Include="src\Application\private\Application.cpp">
       <Filter>src\core\Application\private</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\Main\main.cpp">
+    <ClCompile Include="src\Main\main.cpp">
       <Filter>src\core\Main</Filter>
     </ClCompile>
     <ClCompile Include="thirdparty\stb_image\stb_image.cpp">
@@ -119,27 +119,27 @@
     <ClCompile Include="thirdparty\stb_image\stb_image_write.cpp">
       <Filter>thirdparty\stb_image</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\Common\Timer.cpp" />
-    <ClCompile Include="src\core\Editor\Theme\EditorTheme.cpp" />
+    <ClCompile Include="src\Common\Timer.cpp" />
+    <ClCompile Include="src\Editor\Theme\EditorTheme.cpp" />
     <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
-    <ClCompile Include="src\core\Application\private\Input.cpp" />
-    <ClCompile Include="src\core\Renderer\private\Kernel\RendererSettings.cpp" />
+    <ClCompile Include="src\Application\private\Input.cpp" />
+    <ClCompile Include="src\Core\Scene\RendererSettings.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Editor\EditorLayer.cu" />
-    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Renderer.cu" />
-    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Camera\Camera.cu" />
-    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\core\Renderer\private\Kernel\RenderKernel.cu" />
-    <CudaCompile Include="D:\dev0\projects\DustRayTracer\DustRayTracer\src\reference\Cuda\kernel.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Kernel\TraceRay.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Shapes\Mesh.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Shapes\Scene.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Shapes\Material.cu" />
-    <CudaCompile Include="src\core\Editor\Common\CudaCommon.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Kernel\Shaders\Intersection.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Kernel\Texture.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Shapes\Bounds.cu" />
-    <CudaCompile Include="src\core\Renderer\private\Kernel\BVH\BVHBuilder.cu" />
+    <CudaCompile Include="src\Editor\EditorLayer.cpp" />
+    <CudaCompile Include="src\Core\Renderer.cu" />
+    <CudaCompile Include="src\Core\Scene\Camera.cu" />
+    <CudaCompile Include="src\Core\Kernel\RenderKernel.cu" />
+    <CudaCompile Include="reference\Cuda\kernel.cu" />
+    <CudaCompile Include="src\Core\Kernel\TraceRay.cu" />
+    <CudaCompile Include="src\Core\Scene\Mesh.cu" />
+    <CudaCompile Include="src\Core\Scene\Scene.cu" />
+    <CudaCompile Include="src\Core\Scene\Material.cu" />
+    <CudaCompile Include="src\Editor\Common\CudaCommon.cu" />
+    <CudaCompile Include="src\Core\Kernel\Shaders\Intersection.cu" />
+    <CudaCompile Include="src\Core\Scene\Texture.cu" />
+    <CudaCompile Include="src\Core\Bounds.cu" />
+    <CudaCompile Include="src\Core\BVH\BVHBuilder.cu" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="dev_docs.txt" />
