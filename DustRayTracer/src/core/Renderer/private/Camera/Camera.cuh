@@ -20,8 +20,11 @@ public:
 private:
 	__host__ __device__ float deg2rad(float degree);
 public:
-	float vfov_deg = deg2rad(60);
-	float m_movement_speed = 5;
+	float vfov_deg = deg2rad(60);//y_fov
+	float zfar = 0;
+	float znear = 0;
+	float m_AspectRatio=0;
+	float m_movement_speed = 10;
 	float3 m_Position = { 0,2,5 };
 	float3 m_Forward_dir = { 0,0,-1 };
 	float3 m_Up_dir = { 0,1,0 };

@@ -42,7 +42,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("./src/models/cs16_dust_2.glb");
+	m_Scene->loadGLTFmodel("./src/models/cs16_airstrip.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 12;
