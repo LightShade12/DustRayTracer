@@ -2,6 +2,8 @@
 #include "Core/CudaMath/helper_math.cuh"
 #include "Vertex.cuh"
 
+//this doensnt exist in opengl; triangle is a way of interpreting data(line, fan, strip, points etc) rather than an object
+
 struct Triangle {
 	Triangle() = default;
 	Triangle(Vertex v0, Vertex v1, Vertex v2, float3 nrm, int mtlidx) :
@@ -12,5 +14,6 @@ struct Triangle {
 	float3 centroid;
 	Vertex vertex0, vertex1, vertex2;
 	float3 face_normal;
+	//float3 face_tangent;
 	int materialIdx = 0;
 };

@@ -41,8 +41,10 @@ struct Scene
 	thrust::device_vector<Mesh> m_Meshes;
 	thrust::device_vector<Material> m_Material;
 	thrust::device_vector<Texture>m_Textures;
+	//lights vector
 	thrust::universal_vector<Triangle>m_PrimitivesBuffer;
 	BVHNode* d_BVHTreeRoot = nullptr;
+	//contiguos array of nodes
 	bool loadGLTFmodel(const char* filepath);
 
 	~Scene();

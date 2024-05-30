@@ -11,8 +11,10 @@ public:
 	__device__ float getAlpha(float2 UV) const;
 	void Cleanup();
 
+	std::string name;
 	int width, height = 0;
 	int componentCount = 0;
+	//bool isfloatingPoint=false;
 private:
 	unsigned char* d_data = nullptr;
 };

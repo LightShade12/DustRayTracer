@@ -7,5 +7,6 @@ struct Vertex
 	Vertex(float3 pos, float3 nrm, float2 uv) :position(pos), normal(nrm), UV(uv) {};
 	float3 position;
 	float3 normal;
+	//float3 tangent;
 	float2 UV;
 };
