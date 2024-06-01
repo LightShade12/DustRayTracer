@@ -89,6 +89,9 @@
     </CudaCompile>
     <CudaLink>
       <AdditionalOptions>-g</AdditionalOptions>
+      <PerformDeviceLinkTimeOptimization>false</PerformDeviceLinkTimeOptimization>
+      <Optimization>InheritFromProject</Optimization>
+      <PerformDeviceLink>false</PerformDeviceLink>
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

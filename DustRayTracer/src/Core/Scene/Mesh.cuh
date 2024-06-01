@@ -10,7 +10,7 @@ class Mesh
 public:
 	Mesh() = default;
 
-	std::string name;
+	const char* name[128];
 	//int MaterialsIdx[16];
 	//int MaterialCount = 0;
 	int m_primitives_offset = -1;

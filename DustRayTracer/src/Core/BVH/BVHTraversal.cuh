@@ -54,6 +54,7 @@ __device__ void traverseBVH(const Ray& ray, const BVHNode* root, HitPayload* clo
 		}
 
 		closest_hitpayload->color += make_float3(1)*0.05f;
+
 		if (currentNode->m_IsLeaf) {
 			for (int primIdx = 0; primIdx < currentNode->primitives_count; primIdx++) {
 				const Triangle* prim = currentNode->dev_primitive_ptrs_buffer[primIdx];
