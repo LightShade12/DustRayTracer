@@ -3,6 +3,7 @@
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "Common/dbg_macros.hpp"
 #include "Editor/Common/CudaCommon.cuh"
 
 #include "Core/BVH/BVHNode.cuh"
@@ -63,13 +64,13 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	{
 		tinygltf::Material mat = model.materials[matIdx];
 		Material drt_mat;
-		printf("material name: %s\n", mat.name.c_str());
+		printToConsole("material name: %s\n", mat.name.c_str());
 		std::vector<double> color = mat.pbrMetallicRoughness.baseColorFactor;
 		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
 
 		drt_mat.Albedo = albedo;
 		drt_mat.AlbedoTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;//should be -1 when empty
-		printf("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
+		printToConsole("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
 		m_Material.push_back(drt_mat);
 	}
 	//printf("loaded materials count: %d \n\n", m_Material.size());//should be 36 for cube

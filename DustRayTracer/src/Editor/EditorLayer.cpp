@@ -1,6 +1,7 @@
 #include "EditorLayer.hpp"
 
 #include "Application/private/Input.hpp"
+#include "Common/dbg_macros.hpp"
 
 #include "Theme/EditorTheme.hpp"
 #include "Application/Application.hpp"
@@ -48,7 +49,7 @@ void EditorLayer::OnAttach()
 	bvhbuilder.m_TargetLeafPrimitivesCount = 12;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.build(m_Scene->m_PrimitivesBuffer);
 
-	printf("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
+	printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
 
 	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 

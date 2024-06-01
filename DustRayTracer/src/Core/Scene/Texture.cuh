@@ -11,7 +11,7 @@ public:
 	__device__ float getAlpha(float2 UV) const;
 	void Cleanup();
 
-	const char* name[128];
+	const char* name;
 	int width, height = 0;
 	int componentCount = 0;
 	//bool isfloatingPoint=false;

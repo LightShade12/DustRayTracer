@@ -1,3 +1,9 @@
 #pragma once
 
-//#define printToConsole(msg, ...) std::printf(msg, __VA__ARGS__ );
+#ifdef DEBUG
+	#define printToConsole(format, ...) printf(format, __VA_ARGS__);
+#else
+	#define printToConsole
+#endif // DEBUG
+
+

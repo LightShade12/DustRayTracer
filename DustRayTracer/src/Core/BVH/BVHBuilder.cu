@@ -1,4 +1,5 @@
 #include "BVHBuilder.cuh"
+#include "Common/dbg_macros.hpp"
 #include <stack>
 
 // The build function initializes the root and uses a stack for iterative processing
@@ -11,7 +12,7 @@ BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& pr
 
 	BVHNode* hostBVHroot = new BVHNode();
 
-	printf("root prim count:%zu \n", primitives.size());
+	printToConsole("root prim count:%zu \n", primitives.size());
 
 	float3 minextent;
 	float3 extent = getAbsoluteExtent(thrust::raw_pointer_cast(primitives.data()), primitives.size(), minextent);
@@ -34,7 +35,7 @@ BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& pr
 		cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
 		cudaMemcpy(deviceBVHroot, hostBVHroot, sizeof(BVHNode), cudaMemcpyHostToDevice);
 
-		printf("made root leaf with %d prims\n", hostBVHroot->primitives_count);
+		printToConsole("made root leaf with %d prims\n", hostBVHroot->primitives_count);
 		return deviceBVHroot;
 	}
 
@@ -48,7 +49,7 @@ BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& pr
 		// If the current node is a leaf candidate
 		if (currentNode->primitives_count <= m_TargetLeafPrimitivesCount)
 		{
-			printf("made a leaf node with %d prims---------------\n", currentNode->primitives_count);
+			printToConsole("made a leaf node with %d prims---------------\n", currentNode->primitives_count);
 			currentNode->m_IsLeaf = true;
 			continue;
 		}
@@ -87,7 +88,7 @@ BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives)
 {
 	std::shared_ptr<BVHNode>hostBVHroot = std::make_shared<BVHNode>();
 
-	printf("root prim count:%zu \n", primitives.size());
+	printToConsole("root prim count:%zu \n", primitives.size());
 
 	float3 minextent;
 	float3 extent = getAbsoluteExtent(thrust::raw_pointer_cast(primitives.data()),
@@ -112,7 +113,7 @@ BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives)
 		cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
 		cudaMemcpy(deviceBVHroot, hostBVHroot.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
-		printf("made root leaf with %d prims\n", hostBVHroot->primitives_count);
+		printToConsole("made root leaf with %d prims\n", hostBVHroot->primitives_count);
 		return deviceBVHroot;
 	}
 
@@ -148,10 +149,10 @@ BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives)
 
 void BVHBuilder::recursiveBuild(BVHNode& node)
 {
-	printf("recursive build, child node prim count: %d \n", node.primitives_count);
+	printToConsole("recursive build, child node prim count: %d \n", node.primitives_count);
 	if (node.primitives_count <= m_TargetLeafPrimitivesCount)
 	{
-		printf("made a leaf node with %d prims---------------\n", node.primitives_count);
+		printToConsole("made a leaf node with %d prims---------------\n", node.primitives_count);
 		node.m_IsLeaf = true; return;
 	}
 	else
@@ -267,7 +268,7 @@ void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PAR
 
 void BVHBuilder::makePartition(const Triangle** primitives_ptrs_buffer, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode)
 {
-	printf("partition input prim count:%zu \n", primitives_count);
+	printToConsole("partition input prim count:%zu \n", primitives_count);
 	float lowestcost_partition_pt = 0;//best bin
 	PARTITION_AXIS bestpartitionaxis{};
 
@@ -349,8 +350,8 @@ void BVHBuilder::makePartition(const Triangle** primitives_ptrs_buffer, size_t p
 		right.Cleanup();
 	}
 
-	printf("made a partition, bin: %.3f, axis: %d, cost: %d\n", lowestcost_partition_pt, bestpartitionaxis, lowestcost);
+	printToConsole("made a partition, bin: %.3f, axis: %d, cost: %d\n", lowestcost_partition_pt, bestpartitionaxis, lowestcost);
 	binToNodes(leftnode, rightnode, lowestcost_partition_pt,
 		bestpartitionaxis, primitives_ptrs_buffer, primitives_count);
-	printf("left node prim count:%d | right node prim count: %d\n", leftnode.primitives_count, rightnode.primitives_count);
+	printToConsole("left node prim count:%d | right node prim count: %d\n", leftnode.primitives_count, rightnode.primitives_count);
 }
