@@ -51,7 +51,7 @@ __host__ void Camera::OnUpdate(float3 velocity, float delta)
 
 	glm::vec3 vel = { velocity.x,velocity.y, velocity.z };
 	glm::vec3 transformedVel = cameramodelmatrix * vel;
-	float3 finalvel = { transformedVel.x, transformedVel.y,transformedVel.z };
+	float3 finalvel = { transformedVel.x, transformedVel.y,transformedVel.z };//not vel but movedir
 
 	m_Position += m_movement_speed * finalvel * delta;
 }

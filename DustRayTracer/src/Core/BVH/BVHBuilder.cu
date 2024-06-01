@@ -84,7 +84,7 @@ BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& pr
 	return deviceBVHroot;
 }
 
-BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives)
+BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes)
 {
 	std::shared_ptr<BVHNode>hostBVHroot = std::make_shared<BVHNode>();
 
@@ -131,23 +131,32 @@ BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives)
 	makePartition(dev_prim_ptrs.data(),
 		primitives.size(), *(left), *(right));
 
-	recursiveBuild(*left);
-	recursiveBuild(*right);
+	recursiveBuild(*left, bvh_nodes);
+	recursiveBuild(*right, bvh_nodes);
 
-	cudaMallocManaged(&hostBVHroot->dev_child1, sizeof(BVHNode));
-	cudaMemcpy(hostBVHroot->dev_child1, left.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+	bvh_nodes.push_back(*left);
+	hostBVHroot->dev_child1 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
 
-	cudaMallocManaged(&hostBVHroot->dev_child2, sizeof(BVHNode));
-	cudaMemcpy(hostBVHroot->dev_child2, right.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+	bvh_nodes.push_back(*right);
+	hostBVHroot->dev_child2 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
 
-	BVHNode* deviceBVHroot;
-	cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
-	cudaMemcpy(deviceBVHroot, hostBVHroot.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+	//cudaMallocManaged(&hostBVHroot->dev_child1, sizeof(BVHNode));
+	//cudaMemcpy(hostBVHroot->dev_child1, left.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 
-	return deviceBVHroot;
+	//cudaMallocManaged(&hostBVHroot->dev_child2, sizeof(BVHNode));
+	//cudaMemcpy(hostBVHroot->dev_child2, right.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+	bvh_nodes.push_back(*hostBVHroot);
+
+	//BVHNode* deviceBVHroot;
+	//cudaMallocManaged(&deviceBVHroot, sizeof(BVHNode));
+	//cudaMemcpy(deviceBVHroot, hostBVHroot.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+	//return deviceBVHroot;
+	return thrust::raw_pointer_cast(&(bvh_nodes.back()));
 }
 
-void BVHBuilder::recursiveBuild(BVHNode& node)
+void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes)
 {
 	printToConsole("recursive build, child node prim count: %d \n", node.primitives_count);
 	if (node.primitives_count <= m_TargetLeafPrimitivesCount)
@@ -157,7 +166,7 @@ void BVHBuilder::recursiveBuild(BVHNode& node)
 	}
 	else
 	{
-		std::shared_ptr<BVHNode>leftnode = std::make_shared<BVHNode>();
+		std::shared_ptr<BVHNode>leftnode = std::make_shared<BVHNode>();//TODO: candidate for raw ptr
 		std::shared_ptr<BVHNode>rightnode = std::make_shared<BVHNode>();
 
 		makePartition(node.dev_primitive_ptrs_buffer, node.primitives_count, *leftnode, *rightnode);
@@ -165,14 +174,20 @@ void BVHBuilder::recursiveBuild(BVHNode& node)
 		//checkCudaErrors(cudaGetLastError());
 		node.dev_primitive_ptrs_buffer = nullptr;
 
-		recursiveBuild(*leftnode);
-		recursiveBuild(*rightnode);
+		recursiveBuild(*leftnode, bvh_nodes);
+		recursiveBuild(*rightnode, bvh_nodes);
 
-		cudaMallocManaged(&node.dev_child1, sizeof(BVHNode));
-		cudaMemcpy(node.dev_child1, leftnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+		bvh_nodes.push_back(*leftnode);
+		node.dev_child1 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
 
-		cudaMallocManaged(&node.dev_child2, sizeof(BVHNode));
-		cudaMemcpy(node.dev_child2, rightnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+		bvh_nodes.push_back(*rightnode);
+		node.dev_child2 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
+
+		//cudaMallocManaged(&node.dev_child1, sizeof(BVHNode));
+		//cudaMemcpy(node.dev_child1, leftnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+		//cudaMallocManaged(&node.dev_child2, sizeof(BVHNode));
+		//cudaMemcpy(node.dev_child2, rightnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
 	}
 }
 

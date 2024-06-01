@@ -113,7 +113,8 @@ void Application::Run()
 		//capture delta time----------------------------------------------------------
 		float time_secs = GetTime_seconds();
 		m_FrameTime_secs = time_secs - m_LastFrameTime_secs;
-		m_TimeStep_secs = glm::min<float>(m_FrameTime_secs, 0.0333f);
+		//m_TimeStep_secs = glm::min<float>(m_FrameTime_secs, 0.0333f);
+		m_TimeStep_secs = m_FrameTime_secs;
 		m_LastFrameTime_secs = time_secs;
 	}
 }

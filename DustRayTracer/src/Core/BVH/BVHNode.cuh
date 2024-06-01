@@ -5,6 +5,8 @@
 
 #include "Editor/Common/CudaCommon.cuh"
 
+#include <stdio.h>
+
 /// <summary>
 /// Will reside on gpu memory.
 /// Create ptr values FOR GPU, variables will be COPIED from cpu
@@ -31,8 +33,10 @@ public:
 		return m_BoundingBox.getSurfaceArea();
 	}
 
+
 	void Cleanup()
 	{
+		/*
 		if (dev_child1 != nullptr) {
 			dev_child1->Cleanup();
 			cudaFree(dev_child1);
@@ -44,6 +48,7 @@ public:
 			cudaFree(dev_child2);
 			checkCudaErrors(cudaGetLastError());
 		}
+		*/
 
 		if (dev_primitive_ptrs_buffer != nullptr)
 			cudaFree(dev_primitive_ptrs_buffer);

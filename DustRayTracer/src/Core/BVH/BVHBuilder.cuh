@@ -15,8 +15,10 @@ public:
 	int m_BinCount = 8;
 	int m_TargetLeafPrimitivesCount = 6;
 
-	BVHNode* build(const thrust::universal_vector<Triangle>& primitives);
+	//BVHNode* build(const thrust::universal_vector<Triangle>& primitives);
 	BVHNode* buildIterative(const thrust::universal_vector<Triangle>& primitives);
+
+	BVHNode* build(const thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes);
 
 private:
 	enum class PARTITION_AXIS
@@ -26,7 +28,7 @@ private:
 		Z_AXIS
 	};
 
-	void recursiveBuild(BVHNode& node);
+	void recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes);
 
 	//bin is in world space
 	void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);

@@ -8,7 +8,7 @@
 
 #include "Core/BVH/BVHNode.cuh"
 
-#include <cuda_runtime.h>
+//#include <cuda_runtime.h>
 #include <thrust/host_vector.h>
 
 #include <tiny_gltf.h>
@@ -308,14 +308,18 @@ bool Scene::loadGLTFmodel(const char* filepath)
 
 Scene::~Scene()
 {
-	printf("freed scene\n");
 	cudaDeviceSynchronize();
 
-	if (d_BVHTreeRoot != nullptr)
-	{
-		d_BVHTreeRoot->Cleanup();
-		cudaFree(d_BVHTreeRoot);
+	thrust::host_vector<BVHNode>nodes = m_BVHNodes;
+
+	for (BVHNode node : nodes) {
+		node.Cleanup();
 	}
+	//if (d_BVHTreeRoot != nullptr)
+	//{
+	//	d_BVHTreeRoot->Cleanup();
+	//	cudaFree(d_BVHTreeRoot);
+	//}
 
 	checkCudaErrors(cudaGetLastError());
 
@@ -323,4 +327,7 @@ Scene::~Scene()
 	{
 		texture.Cleanup();
 	}
+	checkCudaErrors(cudaGetLastError());
+
+	printf("freed scene\n");
 }
