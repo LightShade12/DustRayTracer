@@ -39,12 +39,14 @@ void InvokeRenderKernel(
 	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
 {
 	SceneData scenedata;
+	scenedata.DeviceBVHNodesBuffer = thrust::raw_pointer_cast(scene.m_BVHNodes.data());
 	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
 	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
 	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Material.data());
 	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_PrimitivesBuffer.data());
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
+	scenedata.DeviceBVHNodesBufferSize = scene.m_BVHNodes.size();
 	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
 	//printf("pointer: %p\n", scenedata.DeviceMeshBufferPtr);

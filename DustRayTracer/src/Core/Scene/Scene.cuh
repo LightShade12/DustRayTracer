@@ -27,9 +27,11 @@ struct SceneData
 	const Triangle* DevicePrimitivesBuffer = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
 	const BVHNode* DeviceBVHTreeRootPtr = nullptr;
+	const BVHNode* DeviceBVHNodesBuffer = nullptr;
 
 	RendererSettings RenderSettings;
 
+	size_t DeviceBVHNodesBufferSize = 0;
 	size_t DeviceTextureBufferSize = 0;//unused
 	size_t DeviceMaterialBufferSize = 0;//unused
 	size_t DeviceMeshBufferSize = 0;

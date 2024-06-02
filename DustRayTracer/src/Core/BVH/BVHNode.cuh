@@ -18,8 +18,8 @@ public:
 
 	bool m_IsLeaf = false;
 	Bounds3f m_BoundingBox;
-	BVHNode* dev_child1 = nullptr;//left
-	BVHNode* dev_child2 = nullptr;//right
+	int dev_child1_idx = -1;//left
+	int dev_child2_idx = -1;//right
 	const Triangle** dev_primitive_ptrs_buffer = nullptr;//buffer of ptrs to a another buffer's content; buffer of triangle ptrs
 	int primitives_count = 0;
 	static const int rayint_cost = 2;
@@ -32,7 +32,6 @@ public:
 
 		return m_BoundingBox.getSurfaceArea();
 	}
-
 
 	void Cleanup()
 	{

@@ -2,6 +2,8 @@
 #include "Common/dbg_macros.hpp"
 #include <stack>
 
+//UNSABLE---------------------------------
+// FIX BEFORE USING----------------------------------
 // The build function initializes the root and uses a stack for iterative processing
 BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& primitives)
 {
@@ -63,18 +65,18 @@ BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& pr
 		cudaFree(currentNode->dev_primitive_ptrs_buffer);
 		currentNode->dev_primitive_ptrs_buffer = nullptr;
 
-		cudaMallocManaged(&currentNode->dev_child1, sizeof(BVHNode));
-		cudaMemcpy(currentNode->dev_child1, leftNode, sizeof(BVHNode), cudaMemcpyHostToDevice);
+		//cudaMallocManaged(&currentNode->dev_child1, sizeof(BVHNode));
+		//cudaMemcpy(currentNode->dev_child1, leftNode, sizeof(BVHNode), cudaMemcpyHostToDevice);
 
-		cudaMallocManaged(&currentNode->dev_child2, sizeof(BVHNode));
-		cudaMemcpy(currentNode->dev_child2, rightNode, sizeof(BVHNode), cudaMemcpyHostToDevice);
+		//cudaMallocManaged(&currentNode->dev_child2, sizeof(BVHNode));
+		//cudaMemcpy(currentNode->dev_child2, rightNode, sizeof(BVHNode), cudaMemcpyHostToDevice);
 
 		delete leftNode;
 		delete rightNode;
 
 		// Push the child nodes onto the stack
-		nodeStack[stackIndex++] = currentNode->dev_child1;
-		nodeStack[stackIndex++] = currentNode->dev_child2;
+		//nodeStack[stackIndex++] = currentNode->dev_child1;
+		//nodeStack[stackIndex++] = currentNode->dev_child2;
 	}
 
 	BVHNode* deviceBVHroot;
@@ -135,10 +137,10 @@ BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives,
 	recursiveBuild(*right, bvh_nodes);
 
 	bvh_nodes.push_back(*left);
-	hostBVHroot->dev_child1 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
+	hostBVHroot->dev_child1_idx = bvh_nodes.size() - 1;
 
 	bvh_nodes.push_back(*right);
-	hostBVHroot->dev_child2 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
+	hostBVHroot->dev_child2_idx = bvh_nodes.size() - 1;
 
 	//cudaMallocManaged(&hostBVHroot->dev_child1, sizeof(BVHNode));
 	//cudaMemcpy(hostBVHroot->dev_child1, left.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);
@@ -162,6 +164,7 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 	if (node.primitives_count <= m_TargetLeafPrimitivesCount)
 	{
 		printToConsole("made a leaf node with %d prims---------------\n", node.primitives_count);
+		node.dev_child1_idx, node.dev_child2_idx = -1, -1;//redundant
 		node.m_IsLeaf = true; return;
 	}
 	else
@@ -178,10 +181,10 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 		recursiveBuild(*rightnode, bvh_nodes);
 
 		bvh_nodes.push_back(*leftnode);
-		node.dev_child1 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
+		node.dev_child1_idx = bvh_nodes.size() - 1;
 
 		bvh_nodes.push_back(*rightnode);
-		node.dev_child2 = thrust::raw_pointer_cast(&(bvh_nodes.back()));
+		node.dev_child2_idx = bvh_nodes.size() - 1;
 
 		//cudaMallocManaged(&node.dev_child1, sizeof(BVHNode));
 		//cudaMemcpy(node.dev_child1, leftnode.get(), sizeof(BVHNode), cudaMemcpyHostToDevice);

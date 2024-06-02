@@ -313,6 +313,7 @@ Scene::~Scene()
 	thrust::host_vector<BVHNode>nodes = m_BVHNodes;
 
 	for (BVHNode node : nodes) {
+		//printf("node freed\n");
 		node.Cleanup();
 	}
 	//if (d_BVHTreeRoot != nullptr)

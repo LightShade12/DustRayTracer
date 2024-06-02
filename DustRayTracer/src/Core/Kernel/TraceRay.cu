@@ -20,7 +20,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 
 	//here working payload is being sent in as closest hit payload
 	workingPayload.hit_distance = FLT_MAX;
-	traverseBVH(ray, scenedata->DeviceBVHTreeRootPtr, &workingPayload, debug, scenedata);
+	traverseBVH(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, &workingPayload, debug, scenedata);
 	closestHitDistance = workingPayload.hit_distance;
 	hitprim = workingPayload.primitiveptr;
 
@@ -39,5 +39,5 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 //does not support glass material; cuz no mat processing
 __device__ bool RayTest(const Ray& ray, const SceneData* scenedata)
 {
-	return traverseBVH_raytest(ray, scenedata->DeviceBVHTreeRootPtr, scenedata);
+	return traverseBVH_raytest(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, scenedata);
 }

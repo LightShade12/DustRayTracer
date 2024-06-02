@@ -46,7 +46,7 @@ void EditorLayer::OnAttach()
 	m_Scene->loadGLTFmodel("../models/cs16_dust.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 4;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 6;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.build(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
 	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
@@ -362,7 +362,7 @@ bool processInput(GLFWwindow* window, Camera* cam, float delta)
 
 			float4 mousedeltadegrees = { sin_x, cos_x, sin_y, cos_y };
 
-			printf("delta: %.5f\n", delta);
+			//printf("delta: %.5f\n", delta);
 
 			cam->OnUpdate(velocity, delta);
 			cam->Rotate(mousedeltadegrees);
