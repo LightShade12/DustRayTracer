@@ -38,15 +38,17 @@ __device__ void traverseBVH(const Ray& ray, const int root_idx, HitPayload* clos
 	const int maxStackSize = 64; // Adjust based on expected max depth
 	int nodeStack[maxStackSize];
 	int stackPtr = 0;
-	int topOfStack;
+	int topOfStack;//dont put int in reg; put node
 
 	nodeStack[stackPtr++] = root_idx;
 
 	while (stackPtr > 0) {
 		topOfStack = nodeStack[--stackPtr];
+
 		const BVHNode* currentNode = &(scenedata->DeviceBVHNodesBuffer[topOfStack]);
 
-		HitPayload workinghitpayload = intersectAABB(ray, currentNode->m_BoundingBox);
+		HitPayload workinghitpayload = intersectAABB(ray, currentNode->m_BoundingBox);//can be potentially ommited
+
 		if (workinghitpayload.hit_distance < 0) {
 			continue;
 		}
@@ -89,12 +91,13 @@ __device__ void traverseBVH(const Ray& ray, const int root_idx, HitPayload* clos
 }
 
 __device__ bool traverseBVH_raytest(const Ray& ray, const int root_idx, const SceneData* scenedata) {
-	if (root_idx == -1) return;
+	if (root_idx == -1) return false;
 
 	// Explicit stack for iterative traversal
 	const int maxStackSize = 64; // Adjust based on expected max depth
 	int nodeStack[maxStackSize];
 	int stackPtr = 0;
+
 	int topOfStack;
 
 	nodeStack[stackPtr++] = root_idx;

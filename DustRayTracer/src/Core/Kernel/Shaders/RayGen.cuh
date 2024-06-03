@@ -63,7 +63,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float lightIntensity = max(dot(payload.world_normal, sunpos), 0.0f); // == cos(angle)
 
 		Material material = scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->materialIdx];
-
+		//TODO: reuse a lot of vars in payload; like world_position
 		//printf("kernel texture idx eval: %d ", material.AlbedoTextureIndex);
 
 		if (material.AlbedoTextureIndex < 0)
