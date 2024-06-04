@@ -114,7 +114,7 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 	float nodeHitDistStack[maxStackSize];
 	uint8_t stackPtr = 0;
 
-	float nodeHitDist = FLT_MAX;
+	float nodeHitDist = FLT_MAX;//redundant?
 	const BVHNode* stackTopNode = nullptr;
 
 	nodeHitDistStack[stackPtr] = FLT_MAX;

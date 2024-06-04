@@ -25,12 +25,13 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	Ray ray;
 	ray.origin = cam->m_Position;
 	ray.setDir(cam->GetRayDir(uv, max_x, max_y));
+
 	float3 light = { 0,0,0 };
 
 	uint32_t seed = x + y * max_x;
 	seed *= frameidx;
 
-	float3 contribution = { 1,1,1 };
+	float3 throughput = { 1,1,1 };
 	int bounces = scenedata.RenderSettings.ray_bounce_limit;
 
 	for (int i = 0; i <= bounces; i++)
@@ -51,7 +52,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float3 col1 = scenedata.RenderSettings.sky_color * scenedata.RenderSettings.sky_intensity;
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
-			light += fcol * contribution;
+			light += fcol * throughput;
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
 			{
 				light = { 0,0,0 };
@@ -68,7 +69,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		if (material.AlbedoTextureIndex < 0)
 		{
-			contribution *= material.Albedo;
+			throughput *= material.Albedo;
 		}
 		else
 		{
@@ -78,27 +79,22 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
 				  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
 			};
-			contribution *= scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+			throughput *= scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
 		}
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
 
 		//shadow ray for sunlight
+			//if (i < 2)
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
-			if (i < 2)
-				if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
-					&scenedata))
-				{
-					if (material.AlbedoTextureIndex < 0)
-						light += (material.Albedo * suncol);
-					else
-					{
-						light += scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv) * suncol;
-					}
-				}
+			if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
+				&scenedata))
+			{
+				light += suncol * throughput;
+			}
 
 		ray.origin = newRayOrigin;
-		ray.setDir(payload.world_normal + (normalize(randomUnitSphereVec3(seed))));
+		ray.setDir(payload.world_normal + (normalize(randomUnitSphereVec3(seed))));//diffuse scattering
 
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
 		{
@@ -129,8 +125,9 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				light = { 0,0.1,0.1 };
 				light += payload.color;
 			}
+			//break;
 		}
-		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)break;
+		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)break;//break inside the 1st check?
 	}
 
 	if (scenedata.RenderSettings.gamma_correction &&
