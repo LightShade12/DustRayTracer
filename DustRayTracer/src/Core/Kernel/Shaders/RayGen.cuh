@@ -24,7 +24,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 	Ray ray;
 	ray.origin = cam->m_Position;
-	ray.direction = cam->GetRayDir(uv, max_x, max_y);
+	ray.setDir(cam->GetRayDir(uv, max_x, max_y));
 	float3 light = { 0,0,0 };
 
 	uint32_t seed = x + y * max_x;
@@ -98,7 +98,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				}
 
 		ray.origin = newRayOrigin;
-		ray.direction = payload.world_normal + (normalize(randomUnitSphereVec3(seed)));
+		ray.setDir(payload.world_normal + (normalize(randomUnitSphereVec3(seed))));
 
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
 		{

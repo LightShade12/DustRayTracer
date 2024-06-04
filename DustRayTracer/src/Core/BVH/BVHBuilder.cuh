@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+//TODO: spatial splits for 20% more improvement
 class BVHBuilder
 {
 public:
