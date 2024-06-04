@@ -33,6 +33,9 @@ private:
 	std::string test_window_text = "Hello World";
 
 private:
+	bool skip = true;
+	float renderfreqmin = FLT_MAX, renderfreqmax = 0, renderfreqavg = 0, renderfreq = 0, rendercumulation=0;
+	int framecounter = 0;
 	DevMetrics m_DevMetrics;
 	Renderer m_Renderer;
 	Scene* m_Scene = nullptr;

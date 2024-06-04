@@ -20,10 +20,10 @@ struct RendererSettings
 	};
 
 	bool gamma_correction = true;
-	bool enableSunlight = false;
-	int max_samples = 6;
+	bool enableSunlight = true;
+	int max_samples = 500;
 	int ray_bounce_limit = 2;
-	RenderModes RenderMode = RenderModes::DEBUGMODE;
+	RenderModes RenderMode = RenderModes::NORMALMODE;
 	DebugModes DebugMode = DebugModes::ALBEDO_DEBUG;
 	float2 sunlight_dir = { 0.83f,0.41f };
 	float3 sunlight_color = { 1.000f,0.944f,0.917f };

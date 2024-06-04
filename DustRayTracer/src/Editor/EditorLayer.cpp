@@ -34,7 +34,7 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera(make_float3(0, 3, 9));
+	m_device_Camera = new Camera(make_float3(6, 2.5, -36));
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -127,13 +127,34 @@ void EditorLayer::OnUIRender()
 		ImGui::TableSetColumnIndex(2);
 		ImGui::Text("%d hz", int(1000 / (m_LastFrameTime_ms - m_LastRenderTime_ms)));
 
+		//if moving/rendering
+		if (m_Renderer.getSampleCount() < m_Renderer.m_RendererSettings.max_samples)
+		{
+			//if first frame/moving after render complete
+			if (skip) { skip = false; renderfreqavg = 0; framecounter = 0; rendercumulation = 0; }
+			else
+			{
+				framecounter++;
+				renderfreq = 1000 / m_LastRenderTime_ms;
+				renderfreqmin = fminf(renderfreq, renderfreqmin);
+				rendercumulation += renderfreq;
+				renderfreqavg = rendercumulation / framecounter;
+				renderfreqmax = fmaxf(renderfreq, renderfreqmax);
+			}
+		}
+		else if (m_Renderer.getSampleCount() == 0) { skip = true; printf("sample 0"); }
+		else
+		{//render complete/not moving; stationary display
+			skip = true;
+		}
+
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("GPU Kernel time");
 		ImGui::TableSetColumnIndex(1);
 		ImGui::Text("%.3fms", m_LastRenderTime_ms);
 		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1000 / m_LastRenderTime_ms));
+		ImGui::Text("%.3f hz | (%.1f|%.1f|%.1f)", renderfreq, renderfreqmin, renderfreqavg, renderfreqmax);
 
 		ImGui::EndTable();
 
@@ -252,7 +273,9 @@ void EditorLayer::OnUIRender()
 		ImGui::End();
 	}
 
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(100, 100));
+	//ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(100, 100));
+
+	ImGui::SetNextWindowSize(ImVec2(860 + 16, 480 + 47));
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
 
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
@@ -270,7 +293,7 @@ void EditorLayer::OnUIRender()
 	ImGui::Text(" | RGBA32F");
 	ImGui::EndChild();
 	ImGui::End();
-	ImGui::PopStyleVar(1);
+	//	ImGui::PopStyleVar(1);
 
 	ImGui::Begin("Console window");
 	for (const char* log : ConsoleLogs)
