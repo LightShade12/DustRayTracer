@@ -8,6 +8,16 @@
 #include "Core/HitPayload.cuh"
 #include "Core/Scene/Scene.cuh"
 
+/*
+TODO: List of things:
+-DLSS 3.5 like features
+-make DRT a separate project
+-reuse pipelin data
+-make floating vars into class
+-cleanup camera code
+-add pbrt objects
+*/
+
 __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, uint32_t frameidx, const SceneData scenedata) {
 	float2 uv = { (float(x) / max_x) ,(float(y) / max_y) };
