@@ -139,6 +139,7 @@
     <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
     <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
+    <ClInclude Include="src\Core\Sampler.cuh" />
     <ClInclude Include="src\Core\Scene\RendererSettings.h" />
     <ClInclude Include="src\Application\Application.hpp" />
     <ClInclude Include="src\Application\private\Input.hpp" />

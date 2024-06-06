@@ -34,8 +34,8 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	//m_device_Camera = new Camera(make_float3(6, 2.5, -36));
-	m_device_Camera = new Camera(make_float3(0,1, 3));
+	m_device_Camera = new Camera(make_float3(6, 2.5, -36));
+	//m_device_Camera = new Camera(make_float3(0, 1, 3));
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -44,7 +44,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
+	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
@@ -208,10 +208,17 @@ void EditorLayer::OnUIRender()
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Viewer position");
+		ImGui::Text("View position");
 		ImGui::TableSetColumnIndex(1);
 		float3 pos = m_device_Camera->GetPosition();
 		ImGui::Text("x: %.3f y: %.3f z: %.3f", pos.x, pos.y, pos.z);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::Text("View direction");
+		ImGui::TableSetColumnIndex(1);
+		float3 fdir = m_device_Camera->m_Forward_dir;
+		ImGui::Text("x: %.3f y: %.3f z: %.3f", fdir.x, fdir.y, fdir.z);
 
 		ImGui::EndTable();
 

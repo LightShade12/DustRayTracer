@@ -105,6 +105,7 @@
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
     <ClInclude Include="src\Core\Bounds.cuh" />
     <ClInclude Include="src\Core\Scene\Vertex.cuh" />
+    <ClInclude Include="src\Core\Sampler.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\private\Application.cpp">

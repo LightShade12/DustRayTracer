@@ -10,32 +10,6 @@
 //use grouped float structs instead of separate floats when possible
 //look for more early outs in traversal
 
-__device__ HitPayload intersectAABB(const Ray& ray, const Bounds3f& bbox) {
-	HitPayload payload;
-
-	//float3 invDir = 1.0f / ray.direction;
-	float3 t0 = (bbox.pMin - ray.origin) * ray.invDir;
-	float3 t1 = (bbox.pMax - ray.origin) * ray.invDir;
-
-	float3 tmin = fminf(t0, t1);
-	float3 tmax = fmaxf(t1, t0);//switched order of t to guard NaNs
-
-	//min max componenet
-	float tenter = fmaxf(fmaxf(tmin.x, tmin.y), tmin.z);
-	float texit = fminf(fminf(tmax.x, tmax.y), tmax.z);
-
-	// Adjust tenter if the ray starts inside the AABB
-	if (tenter < 0.0f) {
-		tenter = 0.0f;
-	}
-
-	if (tenter > texit || texit < 0) {
-		return payload; // No intersection
-	}
-
-	payload.hit_distance = tenter;
-	return payload;
-}
 //Traversal
 __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload* closest_hitpayload, bool& debug, const SceneData* scenedata) {
 	if (root_node_idx < 0) return;//empty scene
@@ -59,7 +33,7 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 
 		//if root node
 		if (nodeIdxStack[stackPtr] == root_node_idx) {
-			workinghitpayload = intersectAABB(ray, stackTopNode->m_BoundingBox);
+			workinghitpayload = stackTopNode->m_BoundingBox.intersect(ray);
 
 			//miss
 			if (workinghitpayload.hit_distance < 0) {
@@ -89,8 +63,8 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 			}
 		}
 		else {
-			HitPayload hit1 = intersectAABB(ray, (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox);
-			HitPayload hit2 = intersectAABB(ray, (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child2_idx]).m_BoundingBox);
+			HitPayload hit1 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox.intersect(ray);
+			HitPayload hit2 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child2_idx]).m_BoundingBox.intersect(ray);
 
 			if (hit1.hit_distance > hit2.hit_distance) {
 				if (hit1.hit_distance >= 0) { nodeHitDistStack[stackPtr] = hit1.hit_distance; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
@@ -127,7 +101,7 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 
 		//if root node
 		if (nodeIdxStack[stackPtr] == root_node_idx) {
-			workinghitpayload = intersectAABB(ray, stackTopNode->m_BoundingBox);
+			workinghitpayload = stackTopNode->m_BoundingBox.intersect(ray);
 
 			if (workinghitpayload.hit_distance < 0) {
 				continue;
@@ -149,8 +123,8 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 			}
 		}
 		else {
-			HitPayload hit1 = intersectAABB(ray, (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox);
-			HitPayload hit2 = intersectAABB(ray, (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child2_idx]).m_BoundingBox);
+			HitPayload hit1 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox.intersect(ray);
+			HitPayload hit2 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child2_idx]).m_BoundingBox.intersect(ray);
 
 			if (hit1.hit_distance > hit2.hit_distance) {
 				if (hit1.hit_distance >= 0) { nodeHitDistStack[stackPtr] = hit1.hit_distance; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
