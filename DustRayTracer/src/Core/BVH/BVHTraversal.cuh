@@ -106,7 +106,6 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 
 //apparently do not bother sorting nodes for shadow rays and do an early out
 __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
-	
 	if (root_node_idx < 0) return false;//empty scene
 
 	const uint8_t maxStackSize = 64; // Adjust based on expected max depth
