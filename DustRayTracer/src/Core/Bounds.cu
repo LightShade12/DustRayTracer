@@ -19,8 +19,8 @@ __device__ HitPayload Bounds3f::intersect(const Ray& ray) const
 	HitPayload payload;
 
 	//float3 invDir = 1.0f / ray.direction;
-	float3 t0 = (pMin - ray.origin) * ray.invDir;
-	float3 t1 = (pMax - ray.origin) * ray.invDir;
+	float3 t0 = (pMin - ray.getOrigin()) * ray.getInvDir();
+	float3 t1 = (pMax - ray.getOrigin()) * ray.getInvDir();
 
 	float3 tmin = fminf(t0, t1);
 	float3 tmax = fmaxf(t1, t0);//switched order of t to guard NaNs

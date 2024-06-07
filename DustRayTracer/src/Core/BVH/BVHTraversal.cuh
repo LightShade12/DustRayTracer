@@ -43,6 +43,8 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 			nodeHitDist = workinghitpayload.hit_distance;
 		}
 
+		if (!(ray.interval.surrounds(nodeHitDist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
+
 		if (closest_hitpayload->primitiveptr != nullptr && closest_hitpayload->hit_distance < nodeHitDist) {
 			continue;
 		}

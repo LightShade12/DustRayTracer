@@ -19,7 +19,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 	bool debug = false;
 
 	//here working payload is being sent in as closest hit payload
-	workingPayload.hit_distance = FLT_MAX;
+	workingPayload.hit_distance = ray.interval.max;
 	traverseBVH(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, &workingPayload, debug, scenedata);
 	closestHitDistance = workingPayload.hit_distance;
 	hitprim = workingPayload.primitiveptr;

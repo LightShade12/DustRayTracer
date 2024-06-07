@@ -139,6 +139,7 @@
     <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
     <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
+    <ClInclude Include="src\Core\Interval.cuh" />
     <ClInclude Include="src\Core\Sampler.cuh" />
     <ClInclude Include="src\Core\Scene\RendererSettings.h" />
     <ClInclude Include="src\Application\Application.hpp" />
@@ -188,6 +189,8 @@
     <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\Core\CudaMath\Random.cu" />
+    <CudaCompile Include="src\Core\Interval.cu" />
     <CudaCompile Include="src\Editor\EditorLayer.cpp" />
     <CudaCompile Include="src\Core\Renderer.cu" />
     <CudaCompile Include="src\Core\Scene\Camera.cu" />

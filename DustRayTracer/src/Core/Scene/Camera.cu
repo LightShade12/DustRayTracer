@@ -1,13 +1,13 @@
 #include "Camera.cuh"
-
+#include "Core/Ray.cuh"
+#include "Core/CudaMath/Random.cuh"
 #include <glm/glm.hpp>
 #include <glm/mat3x3.hpp>
-
 /*
 camera(float vfov, glm::vec3 lookfrom, glm::vec3 lookdir, glm::vec3 vup, float aperture, float focus_dist) {
 	auto theta = degrees_to_radians(vfov);
-	auto h = tan(theta / 2);
-	float viewport_height = 2.0 * h;
+	auto fov_factor = tan(theta / 2);
+	float viewport_height = 2.0 * fov_factor;
 	float viewport_width = viewport_height;
 
 	auto focal_length = 1.0;
@@ -40,6 +40,7 @@ public:
 	glm::vec3 vertical;
 */
 
+//TODO: wdym OnUpdate hadles this??
 __host__ void Camera::OnUpdate(float3 velocity, float delta)
 {
 	glm::mat3 cameramodelmatrix =
@@ -56,6 +57,7 @@ __host__ void Camera::OnUpdate(float3 velocity, float delta)
 	m_Position += m_movement_speed * finalvel * delta;
 }
 
+//TODO: esoteric...
 __host__ void Camera::Rotate(float4 delta_degrees)
 {
 	float sin_x = delta_degrees.x;
@@ -77,26 +79,45 @@ __host__ void Camera::Rotate(float4 delta_degrees)
 	m_Right_dir = cross(m_Forward_dir, m_Up_dir);
 }
 
-__device__ float3 Camera::GetRayDir(float2 _uv, float width, float height) const
+__device__ Ray Camera::GetRay(float2 _uv, float width, float height, uint32_t& seed) const
 {
 	//float theta = deg2rad(vfov_deg);
 	float theta = vfov_deg / 2;
-	auto h = tan(theta / 2);
-	float viewport_height = 2.0 * h;
-	float viewport_width = viewport_height * (width / height);//aspect ratio
+	float fov_factor = tan(theta / 2);//wrong name
+
+	float focal_length = 1;//is the z component of forward dir
+	float world_image_plane_height = 2.0 * fov_factor * focal_length;
+	float world_image_plane_width = world_image_plane_height * (width / height);//could just use aspect ratio; but see RTWKND
 	//float viewport_width = viewport_height;
 
-	float3 w = normalize(m_Forward_dir);//front
-	float3 u = normalize(cross(w, make_float3(0, 1, 0)));//right
-	float3 v = cross(u, w);//up
+	float3 forward_dir = normalize(m_Forward_dir);//front
+	float3 right_dir = normalize(cross(forward_dir, make_float3(0, 1, 0)));//right
+	float3 up_dir = cross(right_dir, forward_dir);//up
 
-	float3 horizontal = viewport_width * u;
-	float3 vertical = viewport_height * v;
+	float3 world_image_plane_horizontal_vector = world_image_plane_width * right_dir;
+	float3 world_image_plane_vertical_vector = world_image_plane_height * up_dir;
 
-	float3 lower_left_corner = m_Position - horizontal / 2.0f - vertical / 2.0f + w;
+	float3 world_pixel_delta_u_vector = world_image_plane_horizontal_vector / width;
+	float3 world_pixel_delta_v_vector = world_image_plane_vertical_vector / height;
+
+	float3 world_upper_left_corner_vector = m_Position - forward_dir - (world_image_plane_horizontal_vector / 2.0f) - (world_image_plane_vertical_vector / 2.0f);
 
 	//return float3(lower_left_corner + _uv.x * horizontal + _uv.y * vertical - m_Position);
-	return float3((m_Position + w) + _uv.x * horizontal + _uv.y * vertical - m_Position);
+
+	float3 pixel00loc = world_upper_left_corner_vector + 0.5 * (world_pixel_delta_u_vector + world_pixel_delta_v_vector);
+
+	//float2 offset = { randomFloat(seed) * 0, randomFloat(seed) * 0 };
+	float2 offset = { 0,0 };
+
+	float3 pixel_sample = pixel00loc
+		+ (_uv.x * world_pixel_delta_u_vector)
+		+ (_uv.y * world_pixel_delta_v_vector);
+
+	//return float3(pixel_sample - m_Position);
+
+	return Ray(m_Position,
+	(forward_dir + ((_uv.x) * world_image_plane_horizontal_vector) + ((_uv.y) * world_image_plane_vertical_vector)));
+	//return Ray(m_Position, pixel_sample);
 }
 
 __host__ __device__ float Camera::deg2rad(float degree)

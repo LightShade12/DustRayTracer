@@ -7,6 +7,7 @@
 #include "Core/Ray.cuh"
 #include "Core/HitPayload.cuh"
 #include "Core/Scene/Scene.cuh"
+#include "Core/Scene/Camera.cuh"
 
 /*
 TODO: List of things:
@@ -32,14 +33,12 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	//uv.y = uv.y * 2.f - 1.f;
 	uv = uv * 2 - 1;
 
-	Ray ray;
-	ray.origin = cam->m_Position;
-	ray.setDir(cam->GetRayDir(uv, max_x, max_y));
-
-	float3 light = { 0,0,0 };
-
 	uint32_t seed = x + y * max_x;
 	seed *= frameidx;
+
+	Ray ray = cam->GetRay(uv, max_x, max_y, seed);
+	ray.interval = Interval(-1, 100);
+	float3 light = { 0,0,0 };
 
 	float3 throughput = { 1,1,1 };
 	int bounces = scenedata.RenderSettings.ray_bounce_limit;
@@ -58,7 +57,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//sky
 		if (payload.hit_distance < 0)
 		{
-			float a = 0.5 * (1 + (normalize(ray.direction)).y);
+			float a = 0.5 * (1 + (normalize(ray.getDirection())).y);//clamps to range 0-1
 			float3 col1 = scenedata.RenderSettings.sky_color * scenedata.RenderSettings.sky_intensity;
 			float3 col2 = { 1,1,1 };
 			float3 fcol = (float(1 - a) * col2) + (a * col1);
@@ -103,7 +102,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				light += suncol * throughput;
 			}
 
-		ray.origin = newRayOrigin;
+		//bounce
+		ray.setOrig(newRayOrigin);
 		ray.setDir(payload.world_normal + (normalize(randomUnitSphereVec3(seed))));//diffuse scattering
 
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)

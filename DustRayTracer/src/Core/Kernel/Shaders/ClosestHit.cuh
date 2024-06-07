@@ -6,7 +6,7 @@ __device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Trian
 
 	HitPayload payload;
 
-	float3 hitpoint = ray.origin + ray.direction * hit_distance;
+	float3 hitpoint = ray.getOrigin() + ray.getDirection() * hit_distance;
 
 	float3 v0v1 = triangle.vertex1.position - triangle.vertex0.position;
 	float3 v0v2 = triangle.vertex2.position - triangle.vertex0.position;
@@ -26,10 +26,10 @@ __device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Trian
 	//payload.triangle_idx = triangleIdx;
 	payload.primitiveptr = primitive;
 	payload.hit_distance = hit_distance;
-	payload.world_position = ray.origin + ray.direction * hit_distance;//hit position
+	payload.world_position = ray.getOrigin() + ray.getDirection() * hit_distance;
 	//payload.object_idx = obj_idx;
 
-	if (dot(triangle.face_normal, ray.direction) > 0)
+	if (dot(triangle.face_normal, ray.getDirection()) > 0)
 		payload.world_normal = -float3(triangle.face_normal);
 	else
 		payload.world_normal = triangle.face_normal;

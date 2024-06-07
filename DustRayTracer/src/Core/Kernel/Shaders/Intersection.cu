@@ -11,19 +11,19 @@ __device__ HitPayload Intersection(const Ray& ray, const Triangle* triangle)
 	edge1 = triangle->vertex1.position - triangle->vertex0.position;
 	edge2 = triangle->vertex2.position - triangle->vertex0.position;
 
-	h = cross(ray.direction, edge2);
+	h = cross(ray.getDirection(), edge2);
 	a = dot(edge1, h);
 	if (a > -EPSILON && a < EPSILON)
 		return payload; // This ray is parallel to this triangle.
 
 	f = 1.0 / a;
-	s = ray.origin - triangle->vertex0.position;
+	s = ray.getOrigin() - triangle->vertex0.position;
 	u = f * dot(s, h);
 	if (u < 0.0 || u > 1.0)
 		return payload;
 
 	q = cross(s, edge1);
-	v = f * dot(ray.direction, q);
+	v = f * dot(ray.getDirection(), q);
 	if (v < 0.0 || u + v > 1.0)
 		return payload;
 
