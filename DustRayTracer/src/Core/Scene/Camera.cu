@@ -81,14 +81,11 @@ __host__ void Camera::Rotate(float4 delta_degrees)
 
 __device__ Ray Camera::GetRay(float2 _uv, float width, float height, uint32_t& seed) const
 {
-	//float theta = deg2rad(vfov_deg);
 	float theta = vfov_deg / 2;
 	float fov_factor = tan(theta / 2);//wrong name
 
-	float focal_length = 1;//is the z component of forward dir
-	float world_image_plane_height = 2.0 * fov_factor * focal_length;
+	float world_image_plane_height = 2.0 * fov_factor;
 	float world_image_plane_width = world_image_plane_height * (width / height);//could just use aspect ratio; but see RTWKND
-	//float viewport_width = viewport_height;
 
 	float3 forward_dir = normalize(m_Forward_dir);//front
 	float3 right_dir = normalize(cross(forward_dir, make_float3(0, 1, 0)));//right
@@ -97,27 +94,13 @@ __device__ Ray Camera::GetRay(float2 _uv, float width, float height, uint32_t& s
 	float3 world_image_plane_horizontal_vector = world_image_plane_width * right_dir;
 	float3 world_image_plane_vertical_vector = world_image_plane_height * up_dir;
 
-	float3 world_pixel_delta_u_vector = world_image_plane_horizontal_vector / width;
-	float3 world_pixel_delta_v_vector = world_image_plane_vertical_vector / height;
+	//TODO: make a proper SSAA algo
+	float2 offset = { randomFloat(seed) - .5, randomFloat(seed) - .5 };
 
-	float3 world_upper_left_corner_vector = m_Position - forward_dir - (world_image_plane_horizontal_vector / 2.0f) - (world_image_plane_vertical_vector / 2.0f);
-
-	//return float3(lower_left_corner + _uv.x * horizontal + _uv.y * vertical - m_Position);
-
-	float3 pixel00loc = world_upper_left_corner_vector + 0.5 * (world_pixel_delta_u_vector + world_pixel_delta_v_vector);
-
-	//float2 offset = { randomFloat(seed) * 0, randomFloat(seed) * 0 };
-	float2 offset = { 0,0 };
-
-	float3 pixel_sample = pixel00loc
-		+ (_uv.x * world_pixel_delta_u_vector)
-		+ (_uv.y * world_pixel_delta_v_vector);
-
-	//return float3(pixel_sample - m_Position);
+	offset *= 0.0035;
 
 	return Ray(m_Position,
-	(forward_dir + ((_uv.x) * world_image_plane_horizontal_vector) + ((_uv.y) * world_image_plane_vertical_vector)));
-	//return Ray(m_Position, pixel_sample);
+		(forward_dir + ((_uv.x + offset.x) * world_image_plane_horizontal_vector) + ((_uv.y + offset.y) * world_image_plane_vertical_vector)));
 }
 
 __host__ __device__ float Camera::deg2rad(float degree)
