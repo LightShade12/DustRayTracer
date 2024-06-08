@@ -7,6 +7,7 @@ struct Triangle;
 
 struct HitPayload
 {
+	bool front_face = true;
 	bool debug = false;
 	float hit_distance = -1;//default: -1
 	float3 world_normal;

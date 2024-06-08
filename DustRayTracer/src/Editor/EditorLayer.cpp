@@ -44,7 +44,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
+	m_Scene->loadGLTFmodel("../models/cube_plane.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;

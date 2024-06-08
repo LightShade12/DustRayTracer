@@ -20,7 +20,7 @@ struct RendererSettings
 	};
 
 	bool gamma_correction = true;
-	bool enableSunlight = true;
+	bool enableSunlight = false;
 	int max_samples = 500;
 	int ray_bounce_limit = 2;
 	RenderModes RenderMode = RenderModes::NORMALMODE;
@@ -28,6 +28,6 @@ struct RendererSettings
 	float2 sunlight_dir = { 0.83f,0.41f };
 	float3 sunlight_color = { 1.000f,0.944f,0.917f };
 	float sunlight_intensity = 1;
-	float3 sky_color = { 0.122f,0.341f,1.0f };
+	float3 sky_color = { 0.322f,0.541f,0.80f };
 	float sky_intensity = 1.5;
 };
