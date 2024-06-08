@@ -111,11 +111,25 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.setOrig(newRayOrigin);
 		if (material.Transmission) {
 			float ri = (payload.front_face) ? (1.f / material.refractive_index) : material.refractive_index;
-			ray.setDir(refract(normalize(ray.getDirection()), normalize(payload.world_normal), ri));
+
+			float3 unit_direction = normalize(ray.getDirection());
+			float cos_theta = fmin(dot(-unit_direction, normalize(payload.world_normal)), 1.0f);
+			float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
+
+			bool cannot_refract = ri * sin_theta > 1.0f;
+			float3 direction;
+
+			if (cannot_refract || reflectance(cos_theta, ri) > randomFloat(seed))
+				direction = reflect(unit_direction, normalize(payload.world_normal));
+			else
+				direction = refract(unit_direction, normalize(payload.world_normal), ri);
+
+			ray.setDir(direction);
+
 			float3 newpoint = payload.world_position - (normalize(payload.world_normal) * 0.0001f);
 			ray.setOrig(newpoint);
 		}
-		else if (material.Metallic) { ray.setDir(normalize(reflect(ray.getDirection(), payload.world_normal)) + (randomUnitSphereVec3(seed) * 0.025)); }
+		else if (material.Metallic) { ray.setDir(normalize(reflect(ray.getDirection(), payload.world_normal)) + (randomUnitSphereVec3(seed) * material.Roughness * 1.f)); }
 		else
 		{
 			ray.setDir(payload.world_normal + (normalize(randomUnitSphereVec3(seed))));

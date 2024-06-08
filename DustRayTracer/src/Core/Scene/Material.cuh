@@ -16,7 +16,7 @@ struct Material
 	//int RoughnessTextureIndex = -1;
 	//int EmissionTextureIndex = -1;
 
-	//float Roughness = 0.8f;
+	float Roughness = .4f;
 	bool Transmission = false;
 	float refractive_index = 1.45f;
 	bool Metallic = false;

@@ -29,13 +29,15 @@ __device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Trian
 	payload.world_position = ray.getOrigin() + ray.getDirection() * hit_distance;
 	//payload.object_idx = obj_idx;
 
-	if (dot(triangle.face_normal, ray.getDirection()) > 0)
+	if (dot(normalize(triangle.face_normal), normalize(ray.getDirection())) > 0.f)
 	{
 		payload.front_face = false;
-		payload.world_normal = -float3(triangle.face_normal);
+		payload.world_normal = -1.f * triangle.face_normal;
 	}
-	else
+	else {
 		payload.world_normal = triangle.face_normal;
+		payload.front_face = true;
+	}
 
 	payload.color = bvh_debug_color;
 	return payload;

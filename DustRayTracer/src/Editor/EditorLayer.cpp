@@ -128,6 +128,7 @@ void EditorLayer::OnUIRender()
 		ImGui::TableSetColumnIndex(2);
 		ImGui::Text("%d hz", int(1000 / (m_LastFrameTime_ms - m_LastRenderTime_ms)));
 
+		//TODO: this is quite "regarded"
 		//if moving/rendering
 		if (m_Renderer.getSampleCount() < m_Renderer.m_RendererSettings.max_samples)
 		{

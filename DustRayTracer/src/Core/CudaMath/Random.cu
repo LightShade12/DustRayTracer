@@ -31,6 +31,14 @@ __device__ float3 refract(const float3& uv, const float3& n, float etai_over_eta
 	return r_out_perp + r_out_parallel;
 }
 
+__device__ float reflectance(float cosine, float refraction_index)
+{
+	// Use Schlick's approximation for reflectance.
+	float r0 = (1 - refraction_index) / (1 + refraction_index);
+	r0 = r0 * r0;
+	return r0 + (1 - r0) * pow((1 - cosine), 5.f);
+}
+
 __device__ float3 randomUnitVec3(uint32_t& seed)
 {
 	return normalize(make_float3(
