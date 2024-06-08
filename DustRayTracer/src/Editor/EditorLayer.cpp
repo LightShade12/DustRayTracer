@@ -36,6 +36,7 @@ void EditorLayer::OnAttach()
 {
 	//m_device_Camera = new Camera(make_float3(6, 2.5, -36));
 	m_device_Camera = new Camera(make_float3(0, 1, 3));
+	m_device_Camera->m_movement_speed = 1.0;
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -44,7 +45,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/cube_plane.glb");
+	m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;

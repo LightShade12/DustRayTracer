@@ -78,17 +78,27 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		if (material.AlbedoTextureIndex < 0)
 		{
-			throughput *= material.Albedo;
+			if (material.Transmission)
+				throughput *= make_float3(.9f);
+			else
+			{
+				throughput *= material.Albedo;
+			}
 		}
 		else
 		{
-			//Triangle tri = closestMesh.m_dev_triangles[payload.triangle_idx];
-			const Triangle tri = *(payload.primitiveptr);
-			uv = {
-				 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
-				  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
-			};
-			throughput *= scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+			if (material.Transmission)
+				throughput *= make_float3(.9f);
+			else
+			{
+				//Triangle tri = closestMesh.m_dev_triangles[payload.triangle_idx];
+				const Triangle tri = *(payload.primitiveptr);
+				uv = {
+					 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
+					  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
+				};
+				throughput *= scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(uv);
+			}
 		}
 
 		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
@@ -110,6 +120,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//bounce
 		ray.setOrig(newRayOrigin);
 		if (material.Transmission) {
+			//TODO: blue light specular should precede over the albedo at grazing angles
+			//internal multi refraction shouldn't darken light; should stay constant throughout medium
 			float ri = (payload.front_face) ? (1.f / material.refractive_index) : material.refractive_index;
 
 			float3 unit_direction = normalize(ray.getDirection());
@@ -119,14 +131,14 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			bool cannot_refract = ri * sin_theta > 1.0f;
 			float3 direction;
 
-			if (cannot_refract || reflectance(cos_theta, ri) > randomFloat(seed))
+			if (cannot_refract || reflectance(cos_theta, ri) > randomFloat(seed) * 0.35)
 				direction = reflect(unit_direction, normalize(payload.world_normal));
 			else
 				direction = refract(unit_direction, normalize(payload.world_normal), ri);
 
 			ray.setDir(direction);
 
-			float3 newpoint = payload.world_position - (normalize(payload.world_normal) * 0.0001f);
+			float3 newpoint = payload.world_position;
 			ray.setOrig(newpoint);
 		}
 		else if (material.Metallic) { ray.setDir(normalize(reflect(ray.getDirection(), payload.world_normal)) + (randomUnitSphereVec3(seed) * material.Roughness * 1.f)); }
