@@ -97,6 +97,12 @@ __device__ Ray Camera::GetRay(float2 _uv, float width, float height, uint32_t& s
 	//TODO: make a proper SSAA algo
 	float2 offset = { randomFloat(seed) - .5, randomFloat(seed) - .5 };
 
+	/*idea:
+	* offset={rand*2-1, rand*2-1} //-1 to 1
+	* samplepoint_on_pix=pix_delta_uv*offset
+	* ((_uv.x + samplepoint_on_pix.x) * world_image_plane_horizontal_vector)???
+	*/
+
 	offset *= 0.0035;
 
 	return Ray(m_Position,
