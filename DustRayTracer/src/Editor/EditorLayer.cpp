@@ -35,8 +35,10 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 void EditorLayer::OnAttach()
 {
 	//m_device_Camera = new Camera(make_float3(6, 2.5, -36));
-	m_device_Camera = new Camera(make_float3(0, 1, 3));
-	m_device_Camera->m_movement_speed = 1.0;
+	m_device_Camera = new Camera(make_float3(0, 0.25, 3));
+	m_device_Camera->m_movement_speed = 10.0;
+	m_device_Camera->defocus_angle = 0.2f;
+	m_device_Camera->focus_dist = 10.f;
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -45,7 +47,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
+	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
@@ -262,7 +264,9 @@ void EditorLayer::OnUIRender()
 			}
 			if (ImGui::BeginTabItem("Camera"))
 			{
-				if (ImGui::SliderAngle("FOV", &(m_device_Camera->vfov_deg), 5, 120))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderAngle("FOV", &(m_device_Camera->vfov_rad), 5, 120))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("focus dist ", &(m_device_Camera->focus_dist), 0, 50))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("defocus angle ", &(m_device_Camera->defocus_angle), 0, 2))m_Renderer.resetAccumulationBuffer();
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem("Scene"))

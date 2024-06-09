@@ -69,7 +69,7 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
 
 		//drt_mat.Metallic = (matIdx % 2 == 0);
-		drt_mat.Transmission = !(matIdx % 2 == 0);
+		//drt_mat.Transmission = !(matIdx % 2 == 0);
 		//drt_mat.Metallic = false;
 		//drt_mat.Albedo = (matIdx % 2 == 0) ? make_float3(1, 0.25, 0.25) : albedo;
 		

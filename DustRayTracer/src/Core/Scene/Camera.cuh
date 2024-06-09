@@ -9,6 +9,8 @@ add aspect ratio
 
 struct Ray;
 
+__host__ __device__ float deg2rad(float degree);
+
 class Camera : public Managed
 {
 public:
@@ -24,16 +26,19 @@ public:
 	__host__ float3 GetPosition() const { return m_Position; };
 
 	void setMovementSpeed(float speed) { m_movement_speed = speed; };
-private:
-	__host__ __device__ float deg2rad(float degree);
+
 public:
 	//std::string name;
-	float vfov_deg = deg2rad(60);//y_fov
+	float vfov_rad = deg2rad(60);//y_fov
 	float zfar = 0;
 	float znear = 0;
-	float m_AspectRatio=0;
+	float m_AspectRatio = 0;
+	float defocus_angle = 0;  // Variation angle of rays through each pixel
+	float focus_dist = 10;
 
 	float m_movement_speed = 10;
+
+	//private:
 	float3 m_Position = { 0,2,5 };
 	float3 m_Forward_dir = { 0,0,-1 };
 	float3 m_Up_dir = { 0,1,0 };

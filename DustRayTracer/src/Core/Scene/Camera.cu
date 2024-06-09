@@ -81,36 +81,49 @@ __host__ void Camera::Rotate(float4 delta_degrees)
 
 __device__ Ray Camera::GetRay(float2 _uv, float width, float height, uint32_t& seed) const
 {
-	float theta = vfov_deg / 2;
-	float fov_factor = tan(theta / 2);//wrong name
+	float theta = vfov_rad / 2;
+	float fov_factor = tan(theta / 2.0f);
 
-	float world_image_plane_height = 2.0 * fov_factor;
-	float world_image_plane_width = world_image_plane_height * (width / height);//could just use aspect ratio; but see RTWKND
+	float aspect_ratio = width / height;
+	float world_image_plane_height = 2.0f * fov_factor * focus_dist;
+	float world_image_plane_width = world_image_plane_height * aspect_ratio;
 
-	float3 forward_dir = normalize(m_Forward_dir);//front
-	float3 right_dir = normalize(cross(forward_dir, make_float3(0, 1, 0)));//right
-	float3 up_dir = cross(right_dir, forward_dir);//up
+	float3 forward_dir = normalize(m_Forward_dir);
+	float3 right_dir = normalize(cross(forward_dir, make_float3(0, 1, 0)));
+	float3 up_dir = cross(right_dir, forward_dir);
 
 	float3 world_image_plane_horizontal_vector = world_image_plane_width * right_dir;
 	float3 world_image_plane_vertical_vector = world_image_plane_height * up_dir;
 
-	//TODO: make a proper SSAA algo
-	float2 offset = { randomFloat(seed) - .5, randomFloat(seed) - .5 };
+	float2 offset = { randomFloat(seed) - 0.5f, randomFloat(seed) - 0.5f };
+	offset *= 0.0035f; // Adjust scale as needed for anti-aliasing
 
-	/*idea:
-	* offset={rand*2-1, rand*2-1} //-1 to 1
-	* samplepoint_on_pix=pix_delta_uv*offset
-	* ((_uv.x + samplepoint_on_pix.x) * world_image_plane_horizontal_vector)???
-	*/
+	float defocus_radius = focus_dist * tan(deg2rad(defocus_angle) / 2.0f);
+	float3 defocus_disk_u = defocus_radius * right_dir;
+	float3 defocus_disk_v = defocus_radius * up_dir;
 
-	offset *= 0.0035;
+	float3 rorig;
 
-	return Ray(m_Position,
-		(forward_dir + ((_uv.x + offset.x) * world_image_plane_horizontal_vector) + ((_uv.y + offset.y) * world_image_plane_vertical_vector)));
+	if (defocus_angle <= 0)
+	{
+		rorig = m_Position;
+	}
+	else
+	{
+		float2 p = random_in_unit_disk(seed);
+		rorig = m_Position + (p.x * defocus_disk_u) + (p.y * defocus_disk_v);
+	}
+
+	float3 ray_direction = normalize((forward_dir * focus_dist) +
+		((_uv.x + offset.x) * world_image_plane_horizontal_vector) +
+		((_uv.y + offset.y) * world_image_plane_vertical_vector) -
+		rorig + m_Position);
+
+	return Ray(rorig, ray_direction);
 }
 
-__host__ __device__ float Camera::deg2rad(float degree)
+__host__ __device__ float deg2rad(float degree)
 {
 	float const PI = 3.14159265359f;
-	return (degree * (PI / 180));
+	return (degree * (PI / 180.f));
 }

@@ -37,7 +37,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	seed *= frameidx;
 
 	Ray ray = cam->GetRay(uv, max_x, max_y, seed);
-	ray.interval = Interval(-1, 100);
+	ray.interval = Interval(-1, FLT_MAX);
 	float3 light = { 0,0,0 };
 
 	float3 throughput = { 1,1,1 };

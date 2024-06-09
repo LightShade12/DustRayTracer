@@ -56,3 +56,11 @@ __device__ float3 randomUnitSphereVec3(uint32_t& seed)
 			return p;
 	}
 }
+
+__device__ float2 random_in_unit_disk(uint32_t& seed) {
+	while (true) {
+		float2 p = make_float2(randomFloat(seed) * 2 - 1, randomFloat(seed) * 2 - 1);
+		if (dot(p, p) < 1.0f)
+			return p;
+	}
+}
