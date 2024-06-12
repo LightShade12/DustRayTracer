@@ -127,7 +127,10 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			{
 				//TODO: Bug: Emissive material comtrib on diffuse isn't visisble when tonemapper is used
 				throughput *= material.Albedo;
-				light += material.EmmisiveFactor * 1000;
+				if (!(material.EmmisiveFactor.x == 0 && material.EmmisiveFactor.y == 0 && material.EmmisiveFactor.z == 0)) {
+					light += throughput * material.EmmisiveFactor * 1000;
+					break;
+				}
 			}
 		}
 		else

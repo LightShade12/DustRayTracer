@@ -49,7 +49,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
+	m_Scene->loadGLTFmodel("../models/source/cs16_dustive.glb");
 	//m_Scene->loadGLTFmodel("../models/test/EmissiveTest.glb");
 
 	BVHBuilder bvhbuilder;
