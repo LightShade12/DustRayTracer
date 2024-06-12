@@ -70,9 +70,11 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 
 		//drt_mat.Metallic = (matIdx % 2 == 0);
 		//drt_mat.Transmission = !(matIdx % 2 == 0);
-		//drt_mat.Metallic = false;
+		drt_mat.Metallic = (mat.pbrMetallicRoughness.metallicFactor > 0);
+		drt_mat.Roughness = mat.pbrMetallicRoughness.roughnessFactor;
+		drt_mat.EmmisiveFactor = { (float)mat.emissiveFactor[0],(float)mat.emissiveFactor[1] ,(float)mat.emissiveFactor[2] };
 		//drt_mat.Albedo = (matIdx % 2 == 0) ? make_float3(1, 0.25, 0.25) : albedo;
-		
+
 		drt_mat.Albedo = albedo;
 		drt_mat.AlbedoTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;//should be -1 when empty
 		printToConsole("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);

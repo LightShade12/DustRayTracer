@@ -36,9 +36,11 @@ void EditorLayer::OnAttach()
 {
 	//m_device_Camera = new Camera(make_float3(6, 2.5, -36));
 	m_device_Camera = new Camera(make_float3(0, 2, 5));
+	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
-	m_device_Camera->defocus_angle = 0.2f;
+	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
+	//m_device_Camera->m_Forward_dir = { -1,0,0 };
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
@@ -47,11 +49,12 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
 	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
+	//m_Scene->loadGLTFmodel("../models/test/EmissiveTest.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 6;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 20;
+	bvhbuilder.m_BinCount = 8;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.build(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
 	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
@@ -260,18 +263,12 @@ void EditorLayer::OnUIRender()
 						m_Renderer.m_RendererSettings.DebugMode = (RendererSettings::DebugModes)debug_view; m_Renderer.resetAccumulationBuffer();
 					}
 				}
+				ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_Leaf);
+				if (ImGui::SliderAngle("Field-Of-View(Degrees)", &(m_device_Camera->vfov_rad), 5, 120))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("Focus Distance", &(m_device_Camera->focus_dist), 0, 50))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("Defocus Angle(Cone)", &(m_device_Camera->defocus_angle), 0, 2))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("Exposure", &(m_device_Camera->exposure), 0, 10))m_Renderer.resetAccumulationBuffer();
 
-				ImGui::EndTabItem();
-			}
-			if (ImGui::BeginTabItem("Camera"))
-			{
-				if (ImGui::SliderAngle("FOV", &(m_device_Camera->vfov_rad), 5, 120))m_Renderer.resetAccumulationBuffer();
-				if (ImGui::SliderFloat("focus dist ", &(m_device_Camera->focus_dist), 0, 50))m_Renderer.resetAccumulationBuffer();
-				if (ImGui::SliderFloat("defocus angle ", &(m_device_Camera->defocus_angle), 0, 2))m_Renderer.resetAccumulationBuffer();
-				ImGui::EndTabItem();
-			}
-			if (ImGui::BeginTabItem("Scene"))
-			{
 				ImGui::CollapsingHeader("Sun light", ImGuiTreeNodeFlags_Leaf);
 				if (ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color)))m_Renderer.resetAccumulationBuffer();
 				if (ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10))m_Renderer.resetAccumulationBuffer();

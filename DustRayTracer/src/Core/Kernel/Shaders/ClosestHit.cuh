@@ -29,7 +29,7 @@ __device__ HitPayload ClosestHit(const Ray& ray, float hit_distance, const Trian
 	payload.world_position = ray.getOrigin() + ray.getDirection() * hit_distance;
 	//payload.object_idx = obj_idx;
 
-	if (dot(normalize(triangle.face_normal), normalize(ray.getDirection())) > 0.f)
+	if (dot(triangle.face_normal, normalize(ray.getDirection())) > 0.f)
 	{
 		payload.front_face = false;
 		payload.world_normal = -1.f * triangle.face_normal;

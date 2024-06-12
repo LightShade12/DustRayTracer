@@ -158,7 +158,7 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 	if (node.primitives_count <= m_TargetLeafPrimitivesCount)
 	{
 		printToConsole("made a leaf node with %d prims---------------\n", node.primitives_count);
-		node.dev_child1_idx=-1, node.dev_child2_idx = -1;//redundant
+		node.dev_child1_idx = -1, node.dev_child2_idx = -1;//redundant
 		node.m_IsLeaf = true; return;
 	}
 	else

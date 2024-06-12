@@ -25,9 +25,10 @@ struct RendererSettings
 	int ray_bounce_limit = 2;
 	RenderModes RenderMode = RenderModes::NORMALMODE;
 	DebugModes DebugMode = DebugModes::ALBEDO_DEBUG;
-	float2 sunlight_dir = { 0.83f,0.41f };
+	float2 sunlight_dir = { -0.803f,0.681f };
 	float3 sunlight_color = { 1.000f,0.944f,0.917f };
-	float sunlight_intensity = 1;
-	float3 sky_color = { 0.322f,0.541f,0.80f };
-	float sky_intensity = 1.5;
+	float sunlight_intensity = 30;
+	float3 sky_color = { 0.25f ,0.498f,0.80f };
+	//float3 sky_color = { 0.609,0.695,1.000 }; //apparently physically based?
+	float sky_intensity = 20;
 };
