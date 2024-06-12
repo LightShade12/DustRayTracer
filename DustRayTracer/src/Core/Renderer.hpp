@@ -40,8 +40,8 @@ private:
 
 	uint32_t m_FrameIndex = 1;
 
-	int ty = 8;
 	int tx = 8;
+	int ty = 8;
 	dim3 blocks;
 	dim3 threads;
 };

@@ -86,6 +86,11 @@ BVHNode* BVHBuilder::buildIterative(const thrust::universal_vector<Triangle>& pr
 	return deviceBVHroot;
 }
 
+/*
+TODO: sort triangle scene array into contiguous bvh leaf tri groups
+Union of bbox in SAH bin computing
+*/
+
 BVHNode* BVHBuilder::build(const thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes)
 {
 	std::shared_ptr<BVHNode>hostBVHroot = std::make_shared<BVHNode>();

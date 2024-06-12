@@ -101,14 +101,14 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			}
 		}
 
-		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.0001f);
+		float3 newRayOrigin = payload.world_position + (payload.world_normal * 0.001f);
 
 		//shadow ray for sunlight
 			//if (i < 2)
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
 			if (!material.Metallic || !material.Transmission) {
-				if (!RayTest(Ray(newRayOrigin, (sunpos - newRayOrigin) + randomUnitVec3(seed) * 2),
+				if (!RayTest(Ray((newRayOrigin), (sunpos - newRayOrigin) + randomUnitVec3(seed) * 1.5),
 					&scenedata))
 				{
 					light += suncol * throughput;
