@@ -34,8 +34,8 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	//m_device_Camera = new Camera(make_float3(6, 2.5, -36));
-	m_device_Camera = new Camera(make_float3(0, 2, 5));
+	m_device_Camera = new Camera(make_float3(6, 2.5, -36));
+	//m_device_Camera = new Camera(make_float3(0, 2, 5));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
@@ -49,11 +49,11 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/source/cs16_dustive.glb");
+	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
 	//m_Scene->loadGLTFmodel("../models/test/EmissiveTest.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 20;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 6;
 	bvhbuilder.m_BinCount = 8;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.build(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
@@ -287,7 +287,7 @@ void EditorLayer::OnUIRender()
 
 	//ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(100, 100));
 
-	ImGui::SetNextWindowSize(ImVec2(768 + 16, 480 + 47));
+	ImGui::SetNextWindowSize(ImVec2(860 + 16, 480 + 47));
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
 
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();

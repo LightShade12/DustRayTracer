@@ -7,18 +7,17 @@
 
 __device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const Triangle* triangle, float hit_distance)
 {
-	float alphaval = 1;
-	HitPayload payload;
-
-	const Material material = scenedata->DeviceMaterialBufferPtr[triangle->materialIdx];
-	if (material.AlbedoTextureIndex < 0)
+	const Material* material = &(scenedata->DeviceMaterialBufferPtr[triangle->materialIdx]);
+	if (material->AlbedoTextureIndex < 0)
 		return true;
-	const Texture tex = scenedata->DeviceTextureBufferPtr[material.AlbedoTextureIndex];
+	const Texture* tex = &(scenedata->DeviceTextureBufferPtr[material->AlbedoTextureIndex]);
 
-	if (tex.componentCount < 4)
+	if (tex->componentCount < 4)
 		return true;
 
 	float3 hitpoint = ray.getOrigin() + ray.getDirection() * hit_distance;
+
+	//HitPayload payload;
 
 	float3 v0v1 = triangle->vertex1.position - triangle->vertex0.position;
 	float3 v0v2 = triangle->vertex2.position - triangle->vertex0.position;
@@ -31,15 +30,17 @@ __device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const Triangl
 	float d21 = dot(v0p, v0v2);
 
 	float denom = d00 * d11 - d01 * d01;
-	payload.UVW.y = (d11 * d20 - d01 * d21) / denom;
-	payload.UVW.z = (d00 * d21 - d01 * d20) / denom;
-	payload.UVW.x = 1.0f - payload.UVW.y - payload.UVW.z;
+	float3 UVW;
+	UVW.y = (d11 * d20 - d01 * d21) / denom;
+	UVW.z = (d00 * d21 - d01 * d20) / denom;
+	UVW.x = 1.0f - UVW.y - UVW.z;
 
 	float2 uv = {
-				 payload.UVW.x * triangle->vertex0.UV.x + payload.UVW.y * triangle->vertex1.UV.x + payload.UVW.z * triangle->vertex2.UV.x,
-				  payload.UVW.x * triangle->vertex0.UV.y + payload.UVW.y * triangle->vertex1.UV.y + payload.UVW.z * triangle->vertex2.UV.y
+				 UVW.x * triangle->vertex0.UV.x + UVW.y * triangle->vertex1.UV.x + UVW.z * triangle->vertex2.UV.x,
+				 UVW.x * triangle->vertex0.UV.y + UVW.y * triangle->vertex1.UV.y + UVW.z * triangle->vertex2.UV.y
 	};
-	alphaval = tex.getAlpha(uv);
+	float alphaval = 1;
+	alphaval = tex->getAlpha(uv);
 
 	if (alphaval < 1)return false;
 
