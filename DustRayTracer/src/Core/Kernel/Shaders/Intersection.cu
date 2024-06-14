@@ -5,32 +5,30 @@ __device__ ShortHitPayload Intersection(const Ray& ray, const Triangle* triangle
 {
 	ShortHitPayload payload;
 
-	float3 edge1, edge2, h, s, q;
-	float a, f, u, v, t;
+	float3 v0v1 = triangle->vertex1.position - triangle->vertex0.position;
+	float3 v0v2 = triangle->vertex2.position - triangle->vertex0.position;
 
-	edge1 = triangle->vertex1.position - triangle->vertex0.position;
-	edge2 = triangle->vertex2.position - triangle->vertex0.position;
-
-	h = cross(ray.getDirection(), edge2);
-	a = dot(edge1, h);
-	if (a > -TRIANGLE_EPSILON && a < TRIANGLE_EPSILON)
+	float3 pvec = cross(ray.getDirection(), v0v2);
+	float det = dot(v0v1, pvec);
+	if (det > -TRIANGLE_EPSILON && det < TRIANGLE_EPSILON)
 		return payload; // This ray is parallel to this triangle.
 
-	f = 1.0f / a;
-	s = ray.getOrigin() - triangle->vertex0.position;
-	u = f * dot(s, h);
+	float invDet = 1.0f / det;
+	float3 tvec = ray.getOrigin() - triangle->vertex0.position;
+	float u = invDet * dot(tvec, pvec);
 	if (u < 0.0f || u > 1.0f)
 		return payload;
 
-	q = cross(s, edge1);
-	v = f * dot(ray.getDirection(), q);
+	float3 qvec = cross(tvec, v0v1);
+	float v = invDet * dot(ray.getDirection(), qvec);
 	if (v < 0.0f || u + v > 1.0f)
 		return payload;
 
-	t = f * dot(edge2, q);
+	float t = invDet * dot(v0v2, qvec);
 	if (t > TRIANGLE_EPSILON) { // ray intersection
 		payload.hit_distance = t;
 		payload.primitiveptr = triangle;
+		payload.UVW = { 1.0f - u - v, u, v };
 		return payload;
 	}
 

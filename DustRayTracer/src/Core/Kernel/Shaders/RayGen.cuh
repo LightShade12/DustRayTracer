@@ -86,11 +86,13 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 	float3 throughput = { 1,1,1 };
 	int bounces = scenedata.RenderSettings.ray_bounce_limit;
+	float2 texture_sample_uv = { 0,1 };//DEBUG
+	HitPayload payload;
+	const Material* current_material = nullptr;
 
 	for (int i = 0; i <= bounces; i++)
 	{
-		float2 texture_sample_uv = { 0,1 };//DEBUG
-		HitPayload payload = TraceRay(ray, &scenedata);
+		payload = TraceRay(ray, &scenedata);
 		seed += i;
 
 		//SHADING------------------------------------------------------------
@@ -101,7 +103,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		}
 
 		//SKY SHADING------------------------
-		if (payload.hit_distance < 0)
+		if (payload.primitiveptr == nullptr)
 		{
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG &&
 				scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
@@ -116,36 +118,33 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			break;
 		}
 
-		Material material = scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->materialIdx];
+		current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->materialIdx]);
 
 		//SURFACE SHADING-------------------------------------------------------------------
-		if (material.AlbedoTextureIndex < 0)
+		if (current_material->AlbedoTextureIndex < 0)
 		{
-			if (material.Transmission)
+			if (current_material->Transmission)
 				throughput *= make_float3(.9f);
 			else
 			{
 				//TODO: Bug: Emissive material comtrib on diffuse isn't visisble when tonemapper is used
-				throughput *= material.Albedo;
-				if (!(material.EmmisiveFactor.x == 0 && material.EmmisiveFactor.y == 0 && material.EmmisiveFactor.z == 0)) {
-					light += throughput * material.EmmisiveFactor * 1000;
+				throughput *= current_material->Albedo;
+				if (!(current_material->EmmisiveFactor.x == 0 && current_material->EmmisiveFactor.y == 0 && current_material->EmmisiveFactor.z == 0)) {
+					light += throughput * current_material->EmmisiveFactor * 1000;
 					break;
 				}
 			}
 		}
 		else
 		{
-			if (material.Transmission)
+			if (current_material->Transmission)
 				throughput *= make_float3(.9f);
 			else
 			{
 				//Triangle tri = closestMesh.m_dev_triangles[payload.triangle_idx];
-				const Triangle tri = *(payload.primitiveptr);
-				texture_sample_uv = {
-					 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
-					  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
-				};
-				throughput *= scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_sample_uv);
+				const Triangle* tri = payload.primitiveptr;
+				texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
+				throughput *= scenedata.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv);
 			}
 		}
 
@@ -155,7 +154,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
-			if (!material.Metallic || !material.Transmission) {
+			if (!current_material->Metallic || !current_material->Transmission) {
 				if (!RayTest(Ray((newRayOrigin), (sunpos)+randomUnitVec3(seed) * 1.5),
 					&scenedata))
 				{
@@ -168,10 +167,10 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//BOUNCE RAY---------------------------------------------------------------------------------------
 
 		ray.setOrig(newRayOrigin);
-		if (material.Transmission) {
+		if (current_material->Transmission) {
 			//TODO: blue light specular should precede over the albedo at grazing angles
 			//internal multi refraction shouldn't darken light; should stay constant throughout medium
-			float ri = (payload.front_face) ? (1.f / material.refractive_index) : material.refractive_index;
+			float ri = (payload.front_face) ? (1.f / current_material->refractive_index) : current_material->refractive_index;
 
 			float3 unit_direction = normalize(ray.getDirection());
 			float cos_theta = fmin(dot(-unit_direction, payload.world_normal), 1.0f);
@@ -187,12 +186,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 			ray.setDir(direction);
 
-			float3 newpoint = payload.world_position;
-			ray.setOrig(newpoint);
+			ray.setOrig(payload.world_position);
 		}
-		else if (material.Metallic) {
+		else if (current_material->Metallic) {
 			ray.setDir(reflect(ray.getDirection(),
-				payload.world_normal + (randomUnitSphereVec3(seed) * material.Roughness)));
+				payload.world_normal + (randomUnitSphereVec3(seed) * current_material->Roughness)));
 		}
 		else
 		{//diffuse scattering
@@ -203,18 +201,18 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		{
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
 			{
-				if (material.AlbedoTextureIndex < 0)
+				if (current_material->AlbedoTextureIndex < 0)
 				{
-					light = material.Albedo;
+					light = current_material->Albedo;
 				}
 				else
 				{
-					Triangle tri = *(payload.primitiveptr);
-					texture_sample_uv = {
-						 payload.UVW.x * tri.vertex0.UV.x + payload.UVW.y * tri.vertex1.UV.x + payload.UVW.z * tri.vertex2.UV.x,
-						  payload.UVW.x * tri.vertex0.UV.y + payload.UVW.y * tri.vertex1.UV.y + payload.UVW.z * tri.vertex2.UV.y
-					};
-					light = scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_sample_uv);
+					const Triangle* tri = (payload.primitiveptr);
+					/*texture_sample_uv = {
+						 payload.UVW.x * tri->vertex0.UV.x + payload.UVW.y * tri->vertex1.UV.x + payload.UVW.z * tri->vertex2.UV.x,
+						  payload.UVW.x * tri->vertex0.UV.y + payload.UVW.y * tri->vertex1.UV.y + payload.UVW.z * tri->vertex2.UV.y
+					};*/
+					light = scenedata.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv);
 				}
 			}
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::NORMAL_DEBUG)

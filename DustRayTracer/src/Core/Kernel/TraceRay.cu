@@ -13,27 +13,22 @@
 
 //traverse accel struct
 __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
-	float closestHitDistance = FLT_MAX;//closesthit
 	HitPayload workingPayload;
-	const Triangle* hitprim = nullptr;
-	bool debug = false;
 
-	//here working payload is being sent in as closest hit payload
 	workingPayload.hit_distance = ray.interval.max;//this prevents closesthit being always closest
-	traverseBVH(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, &workingPayload, debug, scenedata);
-	closestHitDistance = workingPayload.hit_distance;
-	hitprim = workingPayload.primitiveptr;
+	//here working payload is being sent in as closest hit payload
+	traverseBVH(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, &workingPayload, scenedata);
 
-	if (debug)
-		return Debug();
+	//if (debug)
+		//return Debug();
 
 	//Have not hit
-	if (hitprim == nullptr)
+	if (workingPayload.primitiveptr == nullptr)
 	{
 		return Miss(ray, workingPayload.color);
 	}
 
-	return ClosestHit(ray, closestHitDistance, hitprim, workingPayload.color);
+	return ClosestHit(ray, &workingPayload);
 }
 
 //does not support glass material; cuz no mat processing

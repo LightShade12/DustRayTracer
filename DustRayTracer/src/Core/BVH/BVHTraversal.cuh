@@ -11,7 +11,7 @@
 //look for more early outs in traversal
 
 //Traversal
-__device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload* closest_hitpayload, bool& debug, const SceneData* scenedata) {
+__device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload* closest_hitpayload, const SceneData* scenedata) {
 	if (root_node_idx < 0) return;//empty scene
 
 	const uint8_t maxStackSize = 64;
@@ -19,28 +19,26 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 	float nodeHitDistStack[maxStackSize];
 	uint8_t stackPtr = 0;
 
-	float nodeHitDist = FLT_MAX;
+	float current_node_hitdist = FLT_MAX;
 
 	nodeIdxStack[stackPtr] = root_node_idx;
 	const BVHNode* stackTopNode = &(scenedata->DeviceBVHNodesBuffer[root_node_idx]);//is this in register?
 	nodeHitDistStack[stackPtr++] = stackTopNode->m_BoundingBox.intersect(ray);
 
 	ShortHitPayload workinghitpayload;//only to be written to by primitive proccessing
-	float hit1 = -1;
-	float hit2 = -1;
+	float child1_hitdist = -1;
+	float child2_hitdist = -1;
 	const Triangle* primitive = nullptr;
 
 	while (stackPtr > 0) {
 		stackTopNode = &(scenedata->DeviceBVHNodesBuffer[nodeIdxStack[--stackPtr]]);
-		nodeHitDist = nodeHitDistStack[stackPtr];
+		current_node_hitdist = nodeHitDistStack[stackPtr];
 
 		//custom ray interval culling
-		if (!(ray.interval.surrounds(nodeHitDist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
+		if (!(ray.interval.surrounds(current_node_hitdist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
 
 		//skip nodes farther than closest triangle
-		if (closest_hitpayload->primitiveptr != nullptr && closest_hitpayload->hit_distance < nodeHitDist) {
-			continue;
-		}
+		if (closest_hitpayload->primitiveptr != nullptr && closest_hitpayload->hit_distance < current_node_hitdist)continue;
 
 		closest_hitpayload->color += make_float3(1) * 0.05f;
 
@@ -50,24 +48,24 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 				workinghitpayload = Intersection(ray, primitive);
 
 				if (workinghitpayload.primitiveptr != nullptr && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {
-					if (!AnyHit(ray, scenedata,
-						primitive, workinghitpayload.hit_distance))continue;
+					if (!AnyHit(ray, scenedata, &workinghitpayload))continue;
 					closest_hitpayload->hit_distance = workinghitpayload.hit_distance;
 					closest_hitpayload->primitiveptr = workinghitpayload.primitiveptr;
+					closest_hitpayload->UVW = workinghitpayload.UVW;
 				}
 			}
 		}
 		else {
-			hit1 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox.intersect(ray);
-			hit2 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child2_idx]).m_BoundingBox.intersect(ray);
+			child1_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox.intersect(ray);
+			child2_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child2_idx]).m_BoundingBox.intersect(ray);
 			//TODO:implement early cull properly see discord for ref
-			if (hit1 > hit2) {
-				if (hit1 >= 0 && hit1 < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = hit1; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
-				if (hit2 >= 0 && hit2 < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = hit2; nodeIdxStack[stackPtr++] = stackTopNode->dev_child2_idx; }
+			if (child1_hitdist > child2_hitdist) {
+				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
+				if (child2_hitdist >= 0 && child2_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child2_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child2_idx; }
 			}
 			else {
-				if (hit2 >= 0 && hit2 < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = hit2; nodeIdxStack[stackPtr++] = stackTopNode->dev_child2_idx; }
-				if (hit1 >= 0 && hit1 < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = hit1; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
+				if (child2_hitdist >= 0 && child2_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child2_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child2_idx; }
+				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
 			}
 		}
 	}
@@ -109,7 +107,7 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 				workinghitpayload = Intersection(ray, primitive);
 
 				if (workinghitpayload.primitiveptr != nullptr) {
-					if (AnyHit(ray, scenedata, primitive, workinghitpayload.hit_distance)) {
+					if (AnyHit(ray, scenedata, &workinghitpayload)) {
 						return true; // Intersection found, return true immediately
 					}
 				}

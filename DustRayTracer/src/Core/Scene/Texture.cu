@@ -62,9 +62,10 @@ __device__ float Texture::getAlpha(float2 UV) const
 	if (componentCount < 4)
 		return 1;
 
-	uchar4* coldata = (uchar4*)d_data;
 	int x = (UV.x - floorf(UV.x)) * width;//wrapping
 	int y = (UV.y - floorf(UV.y)) * height;
+
+	uchar4* coldata = (uchar4*)d_data;
 	unsigned char fcol = (coldata[y * width + x]).w;
 	//printf("r: %u g: %u b: %u ||", (unsigned int)fcol.x, (unsigned int)fcol.y, (unsigned int)fcol.z);
 

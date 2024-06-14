@@ -22,5 +22,6 @@ struct HitPayload
 struct ShortHitPayload
 {
 	float hit_distance = -1;//default: -1
+	float3 UVW;
 	const Triangle* primitiveptr = nullptr;//default: nullptr
 };
