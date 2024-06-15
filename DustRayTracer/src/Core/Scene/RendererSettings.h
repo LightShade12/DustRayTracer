@@ -20,6 +20,7 @@ struct RendererSettings
 	};
 
 	bool gamma_correction = true;
+	bool tone_mapping = true;
 	bool enableSunlight = false;
 	int max_samples = 500;
 	int ray_bounce_limit = 2;
