@@ -37,7 +37,7 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 		//custom ray interval culling
 		if (!(ray.interval.surrounds(current_node_hitdist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
 
-		//skip nodes farther than closest triangle
+		//skip nodes farther than closest triangle; redundant
 		if (closest_hitpayload->primitiveptr != nullptr && closest_hitpayload->hit_distance < current_node_hitdist)continue;
 
 		closest_hitpayload->color += make_float3(1) * 0.05f;

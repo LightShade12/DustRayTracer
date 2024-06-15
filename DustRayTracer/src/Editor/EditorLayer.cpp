@@ -50,10 +50,9 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
-	//m_Scene->loadGLTFmodel("../models/test/EmissiveTest.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 6;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 8;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.build(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 

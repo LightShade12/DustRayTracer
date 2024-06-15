@@ -200,21 +200,7 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
 		{
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
-			{
-				if (current_material->AlbedoTextureIndex < 0)
-				{
-					light = current_material->Albedo;
-				}
-				else
-				{
-					const Triangle* tri = (payload.primitiveptr);
-					/*texture_sample_uv = {
-						 payload.UVW.x * tri->vertex0.UV.x + payload.UVW.y * tri->vertex1.UV.x + payload.UVW.z * tri->vertex2.UV.x,
-						  payload.UVW.x * tri->vertex0.UV.y + payload.UVW.y * tri->vertex1.UV.y + payload.UVW.z * tri->vertex2.UV.y
-					};*/
-					light = scenedata.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv);
-				}
-			}
+				light = throughput;
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::NORMAL_DEBUG)
 				light = payload.world_normal;//debug normals
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::BARYCENTRIC_DEBUG)
@@ -226,9 +212,8 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				light = { 0,0.1,0.1 };
 				light += payload.color;
 			}
-			//break;
+			break;
 		}
-		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)break;//break inside the 1st check?
 	}
 
 	if (scenedata.RenderSettings.gamma_correction &&
