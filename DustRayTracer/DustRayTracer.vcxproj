@@ -78,7 +78,7 @@
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <FastMath>true</FastMath>
       <PtxAsOptionV>false</PtxAsOptionV>
-      <AdditionalOptions>-arch=compute_75 -code=sm_75 -t0 --expt-relaxed-constexpr </AdditionalOptions>
+      <AdditionalOptions>-arch=compute_75 -code=sm_75 -t0 --expt-relaxed-constexpr</AdditionalOptions>
       <MaxRegCount>0</MaxRegCount>
       <CompileOut>..\bin-obj\cuda\Debug-x86_64\\%(Filename)%(Extension).obj</CompileOut>
       <CodeGeneration>

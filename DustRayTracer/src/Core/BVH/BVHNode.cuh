@@ -20,8 +20,9 @@ public:
 	Bounds3f m_BoundingBox;
 	int dev_child1_idx = -1;//left
 	int dev_child2_idx = -1;//right
-	const Triangle** dev_primitive_ptrs_buffer = nullptr;//buffer of ptrs to a another buffer's content; buffer of triangle ptrs
+	//const Triangle** dev_primitive_ptrs_buffer = nullptr;//buffer of ptrs to a another buffer's content; buffer of triangle ptrs
 	int primitives_count = 0;
+	int primitive_start_idx = -1;
 	static const int rayint_cost = 2;
 	static const int trav_cost = 1;
 
@@ -35,22 +36,8 @@ public:
 
 	void Cleanup()
 	{
-		/*
-		if (dev_child1 != nullptr) {
-			dev_child1->Cleanup();
-			cudaFree(dev_child1);
-			checkCudaErrors(cudaGetLastError());
-		}
-
-		if (dev_child2 != nullptr) {
-			dev_child2->Cleanup();
-			cudaFree(dev_child2);
-			checkCudaErrors(cudaGetLastError());
-		}
-		*/
-
-		if (dev_primitive_ptrs_buffer != nullptr)
-			cudaFree(dev_primitive_ptrs_buffer);
+		/*if (dev_primitive_ptrs_buffer != nullptr)
+			cudaFree(dev_primitive_ptrs_buffer);*/
 		checkCudaErrors(cudaGetLastError());
 		//printf("node killed\n");
 	}

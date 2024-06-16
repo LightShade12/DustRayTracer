@@ -43,8 +43,10 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 		closest_hitpayload->color += make_float3(1) * 0.05f;
 
 		if (stackTopNode->m_IsLeaf) {
-			for (int primIdx = 0; primIdx < stackTopNode->primitives_count; primIdx++) {
-				primitive = stackTopNode->dev_primitive_ptrs_buffer[primIdx];
+			for (int primIdx = stackTopNode->primitive_start_idx;
+				primIdx < stackTopNode->primitive_start_idx + stackTopNode->primitives_count; primIdx++) {
+				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
+				//primitive = stackTopNode->dev_primitive_ptrs_buffer[primIdx];
 				workinghitpayload = Intersection(ray, primitive);
 
 				if (workinghitpayload.primitiveptr != nullptr && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {
@@ -102,8 +104,9 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 		}
 
 		if (stackTopNode->m_IsLeaf) {
-			for (int primIdx = 0; primIdx < stackTopNode->primitives_count; primIdx++) {
-				const Triangle* primitive = stackTopNode->dev_primitive_ptrs_buffer[primIdx];
+			for (int primIdx = stackTopNode->primitive_start_idx;
+				primIdx < stackTopNode->primitive_start_idx + stackTopNode->primitives_count; primIdx++) {
+				const Triangle* primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
 				workinghitpayload = Intersection(ray, primitive);
 
 				if (workinghitpayload.primitiveptr != nullptr) {

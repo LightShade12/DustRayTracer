@@ -17,9 +17,11 @@ public:
 	int m_TargetLeafPrimitivesCount = 6;
 
 	//BVHNode* build(const thrust::universal_vector<Triangle>& primitives);
-	BVHNode* buildIterative(const thrust::universal_vector<Triangle>& primitives);
 
-	BVHNode* build(const thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes);
+	BVHNode* buildIterative(thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes);
+	BVHNode* build(thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes);
+	void recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes, std::vector<Triangle>& primitives);
+	//BVHNode* build(const thrust::host_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes);
 
 private:
 	enum class PARTITION_AXIS
@@ -29,23 +31,28 @@ private:
 		Z_AXIS
 	};
 
-	void recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes);
+	//void recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes);
 
 	//bin is in world space
-	void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);
-	void binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);
+	//void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);
+	__host__ void binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, std::vector<Triangle>& primitives, size_t start_idx, size_t end_idx);
+	void binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, std::vector<Triangle>& primitives, size_t start_idx, size_t end_idx);
+	//void binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, const Triangle** primitives_ptrs_buffer, size_t primitives_count);
 
-	void makePartition(const Triangle** primitives_ptrs_buffer, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode);
+	void makePartition(std::vector<Triangle>& primitives, size_t start_idx, size_t end_idx, BVHNode& leftnode, BVHNode& rightnode);
+
+	//void makePartition(const Triangle** primitives_ptrs_buffer, size_t primitives_count, BVHNode& leftnode, BVHNode& rightnode);
 
 	//TODO: change to getExtents
-	float3 getAbsoluteExtent(const Triangle** primitives_ptrs_buffer, size_t primitives_count, float3& min_extent)
+	//bounding box extents
+	float3 getAbsoluteExtent(const thrust::universal_vector<Triangle>& primitives, size_t start_idx, size_t end_idx, float3& min_extent) //abs
 	{
 		float3 extent;
 		float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
 
-		for (int primIdx = 0; primIdx < primitives_count; primIdx++)
+		for (int primIdx = start_idx; primIdx < end_idx; primIdx++)
 		{
-			const Triangle* tri = (primitives_ptrs_buffer[primIdx]);
+			const Triangle* tri = &(primitives[primIdx]);
 			float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
 			for (float3 pos : positions)
 			{
@@ -62,16 +69,14 @@ private:
 		extent = { max.x - min.x,max.y - min.y,max.z - min.z };
 		return extent;
 	};
-
-	//bounding box extents
-	float3 getAbsoluteExtent(const Triangle* primitives_buffer, size_t primitives_count, float3& min_extent) //abs
+	float3 getAbsoluteExtent(const std::vector<const Triangle*>& primitives, size_t start_idx, size_t end_idx, float3& min_extent) //abs
 	{
 		float3 extent;
 		float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
 
-		for (int primIdx = 0; primIdx < primitives_count; primIdx++)
+		for (int primIdx = start_idx; primIdx < end_idx; primIdx++)
 		{
-			const Triangle* tri = &(primitives_buffer[primIdx]);
+			const Triangle* tri = (primitives[primIdx]);
 			float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
 			for (float3 pos : positions)
 			{
