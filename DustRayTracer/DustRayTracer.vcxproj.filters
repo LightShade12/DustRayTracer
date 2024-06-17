@@ -107,6 +107,7 @@
     <ClInclude Include="src\Core\Scene\Vertex.cuh" />
     <ClInclude Include="src\Core\Sampler.cuh" />
     <ClInclude Include="src\Core\Interval.cuh" />
+    <ClInclude Include="include\DustRayTracer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\private\Application.cpp">

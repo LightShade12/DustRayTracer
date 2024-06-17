@@ -136,6 +136,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\DustRayTracer.hpp" />
     <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
     <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
