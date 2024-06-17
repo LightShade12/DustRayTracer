@@ -46,7 +46,6 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 			for (int primIdx = stackTopNode->primitive_start_idx;
 				primIdx < stackTopNode->primitive_start_idx + stackTopNode->primitives_count; primIdx++) {
 				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
-				//primitive = stackTopNode->dev_primitive_ptrs_buffer[primIdx];
 				workinghitpayload = Intersection(ray, primitive);
 
 				if (workinghitpayload.primitiveptr != nullptr && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {

@@ -186,6 +186,8 @@ bool Scene::loadGLTFmodel(const char* filepath)
 	loadTextures(loadedmodel, isBinary);
 	loadMaterials(loadedmodel);
 
+	printToConsole("Total meshes:%zu\n", loadedmodel.meshes.size());
+
 	//mesh looping
 	for (size_t nodeIdx = 0; nodeIdx < loadedmodel.nodes.size(); nodeIdx++)
 	{
@@ -307,9 +309,10 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		//printf("adding mesh\n");
 
 		m_Meshes.push_back(loadedMesh);
+		printToConsole("\rloaded mesh:%zu/%zu", nodeIdx, loadedmodel.nodes.size());
 		//printf("success\n\n");
 	}
-
+	printToConsole("\n");
 	return true;
 };
 
