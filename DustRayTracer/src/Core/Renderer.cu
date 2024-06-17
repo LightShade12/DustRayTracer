@@ -1,7 +1,7 @@
 #include "Core/Renderer.hpp"
 #include "Core/Scene/Camera.cuh"
 
-#include "Editor/Common/CudaCommon.cuh"
+#include "Common/CudaCommon.cuh"
 #include "Kernel/RenderKernel.cuh"
 #include <thrust/device_vector.h>
 #include <iostream>
