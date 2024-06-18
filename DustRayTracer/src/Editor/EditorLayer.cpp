@@ -32,13 +32,13 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera();
+	m_device_Camera = new Camera(make_float3(5.4,2.8,-36));
 	//m_device_Camera = new Camera(make_float3(0, 2, 5));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
-	//m_device_Camera->m_Forward_dir = { -1,0,0 };
+	m_device_Camera->m_Forward_dir = { -0.8,0,-0.5 };
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");

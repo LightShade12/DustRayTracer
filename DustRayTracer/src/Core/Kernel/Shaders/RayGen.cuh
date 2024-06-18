@@ -84,11 +84,12 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	HitPayload payload;
 	float2 texture_sample_uv = { 0,1 };//DEBUG
 	const Material* current_material = nullptr;
+	float3 lastworldnormal;
 
-	for (int i = 0; i <= bounces; i++)
+	for (int bounce_depth = 0; bounce_depth <= bounces; bounce_depth++)
 	{
 		payload = TraceRay(ray, &scenedata);
-		seed += i;
+		seed += bounce_depth;
 
 		//SHADING------------------------------------------------------------
 		/*if (payload.debug)
@@ -102,7 +103,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)light = payload.color;
 			else {
 				float3 skycolor = SkyModel(ray, scenedata);
-				light += skycolor * throughput * scenedata.RenderSettings.sky_intensity;
+				if (bounce_depth > 0) {
+					light += skycolor * throughput * scenedata.RenderSettings.sky_intensity * fmaxf(0, dot(normalize(ray.getDirection()), lastworldnormal));
+				}
+				else
+					light += skycolor * throughput * scenedata.RenderSettings.sky_intensity;
 			}
 			break;
 		}
@@ -114,7 +119,11 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		{
 			const Triangle* tri = payload.primitiveptr;
 			texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
-			throughput *= scenedata.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv);
+			if (bounce_depth > 0)
+				throughput *= scenedata.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv)
+				* fmaxf(0, dot(normalize(ray.getDirection()), lastworldnormal));
+			else
+				throughput *= scenedata.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv);
 		}
 
 		//SHADOWRAY-------------------------------------------------------------------------------------------
@@ -124,14 +133,16 @@ __device__ float3 RayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
 			if (!RayTest(Ray((newRayOrigin), (sunpos)+randomUnitVec3(seed) * 1.5),
-				&scenedata))light += suncol * throughput;
+				&scenedata))
+				light += suncol * throughput * fmaxf(0, dot(normalize(sunpos), payload.world_normal));
 		}
 
 		//BOUNCE RAY---------------------------------------------------------------------------------------
 
+		lastworldnormal = payload.world_normal;
 		//diffuse scattering
 		ray.setOrig(newRayOrigin);
-		ray.setDir(payload.world_normal + (randomUnitSphereVec3(seed)));
+		ray.setDir(normalize(payload.world_normal + (randomUnitSphereVec3(seed))));
 
 		//Debug Views------------------------------------------------------------------------------------
 		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
