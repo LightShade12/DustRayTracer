@@ -12,7 +12,7 @@
 #include <vector_types.h>
 
 //traverse accel struct
-__device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
+__device__ HitPayload traceRay(const Ray& ray, const SceneData* scenedata) {
 	HitPayload workingPayload;
 
 	workingPayload.hit_distance = ray.interval.max;//this prevents closesthit being always closest
@@ -32,7 +32,7 @@ __device__ HitPayload TraceRay(const Ray& ray, const SceneData* scenedata) {
 }
 
 //does not support glass material; cuz no mat processing
-__device__ bool RayTest(const Ray& ray, const SceneData* scenedata)
+__device__ bool rayTest(const Ray& ray, const SceneData* scenedata)
 {
 	return traverseBVH_raytest(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, scenedata);
 }

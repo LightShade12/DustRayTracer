@@ -9,9 +9,11 @@
 
 //#include <glm/glm.hpp>
 
+//hungarian for global and static floating vars
 extern bool g_ApplicationRunning;
 static Application* s_Instance = nullptr;
 
+//free floating function name case
 static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -36,7 +38,7 @@ void Application::Run()
 		glfwPollEvents();
 
 		for (auto& layer : m_LayerStack)
-			layer->OnUpdate(m_TimeStep_secs);
+			layer->OnUpdate(m_TimeStepSecs);
 
 		//Clear and Resize
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -111,11 +113,11 @@ void Application::Run()
 		glfwSwapBuffers(m_WindowHandle);
 
 		//capture delta time----------------------------------------------------------
-		float time_secs = GetTime_seconds();
-		m_FrameTime_secs = time_secs - m_LastFrameTime_secs;
+		float time_secs = GetTimeSeconds();
+		m_FrameTimeSecs = time_secs - m_LastFrameTimeSecs;
 		//m_TimeStep_secs = glm::min<float>(m_FrameTime_secs, 0.0333f);
-		m_TimeStep_secs = m_FrameTime_secs;
-		m_LastFrameTime_secs = time_secs;
+		m_TimeStepSecs = m_FrameTimeSecs;
+		m_LastFrameTimeSecs = time_secs;
 	}
 }
 
@@ -137,7 +139,7 @@ void Application::Close()
 }
 
 //wrong unit
-float Application::GetTime_seconds()
+float Application::GetTimeSeconds()
 {
 	return (float)glfwGetTime();
 }
@@ -165,7 +167,7 @@ void Application::Init()
 	//setup renderer backend
 	ImGui_ImplGlfw_InitForOpenGL(m_WindowHandle, true);
 
-	ImGui_ImplOpenGL3_Init(m_GLSL_Version);
+	ImGui_ImplOpenGL3_Init(m_GLSL_VERSION);
 
 	glViewport(0, 0, m_Specification.Width, m_Specification.Height);
 	glClearColor(0.07f, 0.13f, 0.17f, 1.0f);//navy blue default window color
@@ -173,7 +175,7 @@ void Application::Init()
 
 void Application::Shutdown()
 {
-	for (auto& layer : m_LayerStack)
+	for (std::shared_ptr<Layer>& layer : m_LayerStack)
 		layer->OnDetach();
 
 	m_LayerStack.clear();

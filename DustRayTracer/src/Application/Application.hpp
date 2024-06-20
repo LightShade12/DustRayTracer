@@ -20,8 +20,8 @@ public:
 	Application(const ApplicationSpecification& applicationSpecification = ApplicationSpecification());
 	static Application& Get();
 	void Close();
-	float GetTime_seconds();
-	float GetFrameTime_secs() const { return m_FrameTime_secs; }
+	float GetTimeSeconds();//TODO: ambigious terms
+	float GetFrameTimeSecs() const { return m_FrameTimeSecs; }
 	void Run();
 	template<typename T>
 	void PushLayer()
@@ -35,18 +35,18 @@ public:
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
 
 	~Application();
-	const char* m_GLSL_Version = "#version 460";
 private:
 	void Init();
 	void Shutdown();
 private:
+	const char* m_GLSL_VERSION = "#version 460";
 	ApplicationSpecification m_Specification;
 	GLFWwindow* m_WindowHandle = nullptr;
 	bool m_Running = false;
 
-	float m_TimeStep_secs = 0.0f;
-	float m_FrameTime_secs = 0.0f;
-	float m_LastFrameTime_secs = 0.0f;
+	float m_TimeStepSecs = 0.0f;//TODO: is this correct unit?
+	float m_FrameTimeSecs = 0.0f;
+	float m_LastFrameTimeSecs = 0.0f;
 
 	std::vector<std::shared_ptr<Layer>> m_LayerStack;
 };

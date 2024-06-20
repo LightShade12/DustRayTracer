@@ -4,17 +4,69 @@
 #include <thrust/partition.h>
 #include <algorithm>
 
+//TODO: change to getExtents; implicitly handles a vector of triangle in build code
+	//bounding box extents
+float3 get_Absolute_Extent(const thrust::universal_vector<Triangle>& primitives_, size_t start_idx_, size_t end_idx_, float3& min_extent_)
+{
+	float3 extent;
+	float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
+
+	for (int prim_idx = start_idx_; prim_idx < end_idx_; prim_idx++)
+	{
+		const Triangle* tri = &(primitives_[prim_idx]);
+		float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
+		for (float3 pos : positions)
+		{
+			min.x = fminf(min.x, pos.x);
+			min.y = fminf(min.y, pos.y);
+			min.z = fminf(min.z, pos.z);
+
+			max.x = fmaxf(max.x, pos.x);
+			max.y = fmaxf(max.y, pos.y);
+			max.z = fmaxf(max.z, pos.z);
+		}
+	}
+	min_extent_ = min;
+	extent = { max.x - min.x,max.y - min.y,max.z - min.z };
+	return extent;
+};
+
+float3 get_Absolute_Extent(const std::vector<const Triangle*>& primitives, size_t start_idx, size_t end_idx, float3& min_extent)
+{
+	float3 extent;
+	float3 min = { FLT_MAX,FLT_MAX,FLT_MAX }, max = { -FLT_MAX,-FLT_MAX,-FLT_MAX };
+
+	for (int prim_idx = start_idx; prim_idx < end_idx; prim_idx++)
+	{
+		const Triangle* tri = (primitives[prim_idx]);
+		float3 positions[3] = { tri->vertex0.position, tri->vertex1.position, tri->vertex2.position };
+		for (float3 pos : positions)
+		{
+			min.x = fminf(min.x, pos.x);
+			min.y = fminf(min.y, pos.y);
+			min.z = fminf(min.z, pos.z);
+
+			max.x = fmaxf(max.x, pos.x);
+			max.y = fmaxf(max.y, pos.y);
+			max.z = fmaxf(max.z, pos.z);
+		}
+	}
+	min_extent = min;
+	extent = { max.x - min.x,max.y - min.y,max.z - min.z };
+	return extent;
+};
+
 //UNSABLE---------------------------------
 // FIX BEFORE USING----------------------------------
 // The build function initializes the root and uses a stack for iterative processing
 
-BVHNode* BVHBuilder::buildIterative(thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes)
+BVHNode* BVHBuilder::BuildIterative(thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes)
 {
 	//int MAX_STACK_SIZE = 2 * ((primitives.size() + primitives.size() / m_TargetLeafPrimitivesCount) / 2) - 1; // Adjust this value as needed
 
 	BVHNode* hostBVHroot = new BVHNode();
 	float3 minextent;
-	float3 extent = getAbsoluteExtent(primitives, 0, primitives.size(), minextent);
+	float3 extent = get_Absolute_Extent(primitives, 0, primitives.size(), minextent);
 
 	hostBVHroot->m_BoundingBox = Bounds3f(minextent, minextent + extent);
 	hostBVHroot->primitive_start_idx = 0;
@@ -27,7 +79,7 @@ BVHNode* BVHBuilder::buildIterative(thrust::universal_vector<Triangle>& primitiv
 
 	std::vector <Triangle> host_prims(primitives.begin(), primitives.end());
 	std::vector <BVHNode> host_bvh_nodes;
-	size_t nodecount=1024*100;
+	size_t nodecount = 1024 * 100;
 	host_bvh_nodes.reserve(nodecount);
 
 	// If leaf candidate
@@ -97,28 +149,28 @@ Union of bbox in SAH bin computing
 */
 
 //TODO:copy tris to host for bvh, let tris be dev_vector
-BVHNode* BVHBuilder::build(thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes)
+BVHNode* BVHBuilder::BuildBVH(thrust::universal_vector<Triangle>& primitives, thrust::device_vector<BVHNode>& bvh_nodes)
 {
-	std::shared_ptr<BVHNode>hostBVHroot = std::make_shared<BVHNode>();
+	std::shared_ptr<BVHNode>host_BVH_root = std::make_shared<BVHNode>();
 
 	printToConsole("<--bvh build input tris count:%zu -->\n", primitives.size());
 	std::vector<Triangle> host_prims(primitives.begin(), primitives.end());
 
 	float3 minextent;
-	float3 extent = getAbsoluteExtent(host_prims,
+	float3 extent = get_Absolute_Extent(host_prims,
 		0, host_prims.size(), minextent);
-	hostBVHroot->m_BoundingBox = Bounds3f(minextent, minextent + extent);
+	host_BVH_root->m_BoundingBox = Bounds3f(minextent, minextent + extent);
 
-	hostBVHroot->primitives_count = host_prims.size();
+	host_BVH_root->primitives_count = host_prims.size();
 
 	//if leaf candidate
 	if (host_prims.size() <= m_TargetLeafPrimitivesCount)
 	{
-		hostBVHroot->m_IsLeaf = true;
-		hostBVHroot->primitive_start_idx = 0;
+		host_BVH_root->m_IsLeaf = true;
+		host_BVH_root->primitive_start_idx = 0;
 
-		bvh_nodes.push_back(*hostBVHroot);
-		printToConsole("-----made RootNode leaf with %d prims-----\n", hostBVHroot->primitives_count);
+		bvh_nodes.push_back(*host_BVH_root);
+		printToConsole("-----made RootNode leaf with %d prims-----\n", host_BVH_root->primitives_count);
 
 		return thrust::raw_pointer_cast(&(bvh_nodes.back()));
 	}
@@ -133,13 +185,13 @@ BVHNode* BVHBuilder::build(thrust::universal_vector<Triangle>& primitives, thrus
 	recursiveBuild(*right, bvh_nodes, host_prims);
 
 	bvh_nodes.push_back(*left);
-	hostBVHroot->dev_child1_idx = bvh_nodes.size() - 1;
+	host_BVH_root->dev_child1_idx = bvh_nodes.size() - 1;
 
 	bvh_nodes.push_back(*right);
-	hostBVHroot->dev_child2_idx = bvh_nodes.size() - 1;
+	host_BVH_root->dev_child2_idx = bvh_nodes.size() - 1;
 
 	primitives = host_prims;
-	bvh_nodes.push_back(*hostBVHroot);
+	bvh_nodes.push_back(*host_BVH_root);
 
 	return thrust::raw_pointer_cast(&(bvh_nodes.back()));
 }
@@ -156,85 +208,83 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 	}
 	else
 	{
-		std::shared_ptr<BVHNode>leftnode = std::make_shared<BVHNode>();//TODO: candidate for raw ptr
-		std::shared_ptr<BVHNode>rightnode = std::make_shared<BVHNode>();
+		std::shared_ptr<BVHNode>left_node = std::make_shared<BVHNode>();//TODO: candidate for raw ptr
+		std::shared_ptr<BVHNode>right_node = std::make_shared<BVHNode>();
 
-		makePartition(primitives, node.primitive_start_idx, node.primitive_start_idx + node.primitives_count, *leftnode, *rightnode);
+		makePartition(primitives, node.primitive_start_idx, node.primitive_start_idx + node.primitives_count, *left_node, *right_node);
 
-		recursiveBuild(*leftnode, bvh_nodes, primitives);
-		recursiveBuild(*rightnode, bvh_nodes, primitives);
+		recursiveBuild(*left_node, bvh_nodes, primitives);
+		recursiveBuild(*right_node, bvh_nodes, primitives);
 
-		bvh_nodes.push_back(*leftnode);
+		bvh_nodes.push_back(*left_node);
 		node.dev_child1_idx = bvh_nodes.size() - 1;
 
-		bvh_nodes.push_back(*rightnode);
+		bvh_nodes.push_back(*right_node);
 		node.dev_child2_idx = bvh_nodes.size() - 1;
 	}
 }
 
-__host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, std::vector<Triangle>& primitives,
+__host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, PartitionAxis axis, std::vector<Triangle>& primitives,
 	size_t start_idx, size_t end_idx)
 {
 	//sorting
-	std::vector<Triangle>::iterator it;
-	/*auto it = thrust::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
-		[bin](const Triangle& tri) {return tri.centroid.x < bin; });*/
+	std::vector<Triangle>::iterator partition_iterator;
 	switch (axis)
 	{
-	case BVHBuilder::PARTITION_AXIS::X_AXIS:
-		it = std::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
+	case BVHBuilder::PartitionAxis::X_AXIS:
+		partition_iterator = std::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
 			[bin](const Triangle& tri) { return tri.centroid.x < bin; });
 		break;
-	case BVHBuilder::PARTITION_AXIS::Y_AXIS:
-		it = std::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
+	case BVHBuilder::PartitionAxis::Y_AXIS:
+		partition_iterator = std::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
 			[bin](const Triangle& tri) { return tri.centroid.y < bin; });
 		break;
-	case BVHBuilder::PARTITION_AXIS::Z_AXIS:
-		it = std::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
+	case BVHBuilder::PartitionAxis::Z_AXIS:
+		partition_iterator = std::partition(primitives.begin() + start_idx, primitives.begin() + end_idx,
 			[bin](const Triangle& tri) { return tri.centroid.z < bin; });
 		break;
 	default:
 		break;
 	}
 
-	int idx = thrust::distance(primitives.begin(), it);
+	int idx = thrust::distance(primitives.begin(), partition_iterator);
 	left.primitive_start_idx = start_idx;
 	left.primitives_count = idx - start_idx;
 	float3 leftminextent;
-	float3 leftextent = getAbsoluteExtent(primitives, left.primitive_start_idx,
+	float3 leftextent = get_Absolute_Extent(primitives, left.primitive_start_idx,
 		left.primitive_start_idx + left.primitives_count, leftminextent);
 	left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
 	right.primitive_start_idx = idx;
 	right.primitives_count = end_idx - idx;
 	float3 rightminextent;
-	float3 rightextent = getAbsoluteExtent(primitives, right.primitive_start_idx,
+	float3 rightextent = get_Absolute_Extent(primitives, right.primitive_start_idx,
 		right.primitive_start_idx + right.primitives_count, rightminextent);
 	right.m_BoundingBox = Bounds3f(rightminextent, rightminextent + rightextent);
 }
 
-void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PARTITION_AXIS axis, std::vector<Triangle>& primitives,
+void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PartitionAxis axis, std::vector<Triangle>& primitives,
 	size_t start_idx, size_t end_idx)
 {
 	//can make a single vector and run partition
 	std::vector<const Triangle*>left_prim_ptrs;
 	std::vector<const Triangle*>right_prim_ptrs;
 
-	for (size_t primidx = start_idx; primidx < end_idx; primidx++)
+	for (size_t prim_idx = start_idx; prim_idx < end_idx; prim_idx++)
 	{
-		const Triangle* triangle = &(primitives[primidx]);
+		const Triangle* triangle = &(primitives[prim_idx]);
 
 		switch (axis)
 		{
-		case BVHBuilder::PARTITION_AXIS::X_AXIS:
+		case BVHBuilder::PartitionAxis::X_AXIS:
 			if (triangle->centroid.x < bin)left_prim_ptrs.push_back(triangle);
 			else right_prim_ptrs.push_back(triangle);
 			break;
-		case BVHBuilder::PARTITION_AXIS::Y_AXIS:
+		case BVHBuilder::PartitionAxis::Y_AXIS:
 			if (triangle->centroid.y < bin)left_prim_ptrs.push_back(triangle);
 			else right_prim_ptrs.push_back(triangle);
 			break;
-		case BVHBuilder::PARTITION_AXIS::Z_AXIS:
+		case BVHBuilder::PartitionAxis::Z_AXIS:
 			if (triangle->centroid.z < bin)left_prim_ptrs.push_back(triangle);
 			else right_prim_ptrs.push_back(triangle);
 			break;
@@ -245,29 +295,35 @@ void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PAR
 
 	left.primitives_count = left_prim_ptrs.size();
 	float3 leftminextent;
-	float3 leftextent = getAbsoluteExtent(left_prim_ptrs, 0, left_prim_ptrs.size(), leftminextent);
+	float3 leftextent = get_Absolute_Extent(left_prim_ptrs, 0, left_prim_ptrs.size(), leftminextent);
 	left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
 	right.primitives_count = right_prim_ptrs.size();
 	float3 rightminextent;
-	float3 rightextent = getAbsoluteExtent(right_prim_ptrs, 0, right.primitives_count, rightminextent);
+	float3 rightextent = get_Absolute_Extent(right_prim_ptrs, 0, right.primitives_count, rightminextent);
 	right.m_BoundingBox = Bounds3f(rightminextent, rightminextent + rightextent);
 }
 
-void BVHBuilder::makePartition(std::vector<Triangle>& primitives, size_t start_idx, size_t end_idx,
-	BVHNode& leftnode, BVHNode& rightnode)
-{
-	printToConsole("--->making partition, input prim count:%zu <---\n", end_idx - start_idx);
-	float lowestcost_partition_pt = 0;//best bin
-	PARTITION_AXIS bestpartitionaxis{};
+int BVHBuilder::costHeursitic(const BVHNode& left_node, const BVHNode& right_node, const Bounds3f& parent_bbox) {
+	return m_RayAABBIntersectionCost + 
+		((left_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * left_node.primitives_count * m_RayPrimitiveIntersectionCost) +
+		((right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * right_node.primitives_count * m_RayPrimitiveIntersectionCost);
+}
 
-	int lowestcost = INT_MAX;
+void BVHBuilder::makePartition(std::vector<Triangle>& primitives, size_t start_idx, size_t end_idx,
+	BVHNode& left_node, BVHNode& right_node)
+{
+	printToConsole("---> making partition, input prim count:%zu <---\n", end_idx - start_idx);
+	float lowest_cost_partition_pt = 0;//best bin
+	PartitionAxis best_partition_axis{};
+
+	int lowest_cost = INT_MAX;
 
 	float3 minextent = { FLT_MAX,FLT_MAX,FLT_MAX };
-	float3 extent = getAbsoluteExtent(primitives, start_idx, end_idx, minextent);
-	Bounds3f parentbbox(minextent, minextent + extent);
+	float3 extent = get_Absolute_Extent(primitives, start_idx, end_idx, minextent);
+	Bounds3f parent_bbox(minextent, minextent + extent);
 
-	BVHNode left, right;
+	BVHNode temp_left_node, temp_right_node;
 
 	//for x
 	std::vector<float>bins;//world space
@@ -280,17 +336,18 @@ void BVHBuilder::makePartition(std::vector<Triangle>& primitives, size_t start_i
 	for (float bin : bins)
 	{
 		//printf("proc x bin %.3f\n", bin);
-		binToShallowNodes(left, right, bin, PARTITION_AXIS::X_AXIS, primitives, start_idx, end_idx);
-		int cost = BVHNode::trav_cost + ((left.getSurfaceArea() / parentbbox.getSurfaceArea()) * left.primitives_count * left.rayint_cost) +
-			((right.getSurfaceArea() / parentbbox.getSurfaceArea()) * right.primitives_count * right.rayint_cost);
-		if (cost < lowestcost)
+		binToShallowNodes(temp_left_node, temp_right_node, bin, PartitionAxis::X_AXIS, primitives, start_idx, end_idx);
+		/*int cost = BVHNode::trav_cost + ((temp_left_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * temp_left_node.primitives_count * temp_left_node.rayint_cost) +
+			((temp_right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * temp_right_node.primitives_count * temp_right_node.rayint_cost);*/
+		int cost = costHeursitic(temp_left_node, temp_right_node, parent_bbox);
+		if (cost < lowest_cost)
 		{
-			lowestcost = cost;
-			bestpartitionaxis = PARTITION_AXIS::X_AXIS;
-			lowestcost_partition_pt = bin;
+			lowest_cost = cost;
+			best_partition_axis = PartitionAxis::X_AXIS;
+			lowest_cost_partition_pt = bin;
 		}
-		left.Cleanup();
-		right.Cleanup();
+		temp_left_node.Cleanup();
+		temp_right_node.Cleanup();
 	}
 
 	//for y
@@ -303,17 +360,16 @@ void BVHBuilder::makePartition(std::vector<Triangle>& primitives, size_t start_i
 	for (float bin : bins)
 	{
 		//printf("proc y bin %.3f\n", bin);
-		binToShallowNodes(left, right, bin, PARTITION_AXIS::Y_AXIS, primitives, start_idx, end_idx);
-		int cost = BVHNode::trav_cost + ((left.getSurfaceArea() / parentbbox.getSurfaceArea()) * left.primitives_count * left.rayint_cost) +
-			((right.getSurfaceArea() / parentbbox.getSurfaceArea()) * right.primitives_count * right.rayint_cost);
-		if (cost < lowestcost)
+		binToShallowNodes(temp_left_node, temp_right_node, bin, PartitionAxis::Y_AXIS, primitives, start_idx, end_idx);
+		int cost = costHeursitic(temp_left_node, temp_right_node, parent_bbox);
+		if (cost < lowest_cost)
 		{
-			lowestcost = cost;
-			bestpartitionaxis = PARTITION_AXIS::Y_AXIS;
-			lowestcost_partition_pt = bin;
+			lowest_cost = cost;
+			best_partition_axis = PartitionAxis::Y_AXIS;
+			lowest_cost_partition_pt = bin;
 		}
-		left.Cleanup();
-		right.Cleanup();
+		temp_left_node.Cleanup();
+		temp_right_node.Cleanup();
 	}
 
 	//for z
@@ -326,21 +382,20 @@ void BVHBuilder::makePartition(std::vector<Triangle>& primitives, size_t start_i
 	for (float bin : bins)
 	{
 		//printf("proc z bin %.3f\n", bin);
-		binToShallowNodes(left, right, bin, PARTITION_AXIS::Z_AXIS, primitives, start_idx, end_idx);
-		int cost = BVHNode::trav_cost + ((left.getSurfaceArea() / parentbbox.getSurfaceArea()) * left.primitives_count * left.rayint_cost) +
-			((right.getSurfaceArea() / parentbbox.getSurfaceArea()) * right.primitives_count * right.rayint_cost);
-		if (cost < lowestcost)
+		binToShallowNodes(temp_left_node, temp_right_node, bin, PartitionAxis::Z_AXIS, primitives, start_idx, end_idx);
+		int cost = costHeursitic(temp_left_node, temp_right_node, parent_bbox);
+		if (cost < lowest_cost)
 		{
-			lowestcost = cost;
-			bestpartitionaxis = PARTITION_AXIS::Z_AXIS;
-			lowestcost_partition_pt = bin;
+			lowest_cost = cost;
+			best_partition_axis = PartitionAxis::Z_AXIS;
+			lowest_cost_partition_pt = bin;
 		}
-		left.Cleanup();
-		right.Cleanup();
+		temp_left_node.Cleanup();
+		temp_right_node.Cleanup();
 	}
 
-	printToConsole(">> made a partition, bin: %.3f, axis: %d, cost: %d <<---\n", lowestcost_partition_pt, bestpartitionaxis, lowestcost);
-	binToNodes(leftnode, rightnode, lowestcost_partition_pt,
-		bestpartitionaxis, primitives, start_idx, end_idx);
-	printToConsole("left node prim count:%d | right node prim count: %d\n", leftnode.primitives_count, rightnode.primitives_count);
+	printToConsole(">> made a partition, bin: %.3f, axis: %d, cost: %d <<---\n", lowest_cost_partition_pt, best_partition_axis, lowest_cost);
+	binToNodes(left_node, right_node, lowest_cost_partition_pt,
+		best_partition_axis, primitives, start_idx, end_idx);
+	printToConsole("left node prim count:%d | right node prim count: %d\n", left_node.primitives_count, right_node.primitives_count);
 }

@@ -19,6 +19,12 @@ struct RendererSettings
 		WORLDBVH_DEBUG = 5
 	};
 
+	float global_reflectance = 0.5f;
+	float global_metallic = 0;
+	float global_roughness = 1.f;
+	float3 global_albedo = { 1,0,0 };
+	bool use_global_basecolor = false;
+
 	bool gamma_correction = true;
 	bool tone_mapping = true;
 	bool enableSunlight = false;

@@ -7,7 +7,7 @@
 
 __device__ bool AnyHit(const Ray& ray, const SceneData* scenedata, const ShortHitPayload* in_payload)
 {
-	const Material* material = &(scenedata->DeviceMaterialBufferPtr[in_payload->primitiveptr->materialIdx]);
+	const Material* material = &(scenedata->DeviceMaterialBufferPtr[in_payload->primitiveptr->material_idx]);
 
 	if (material->AlbedoTextureIndex < 0)
 		return true;

@@ -24,7 +24,7 @@ __global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camer
 
 	if ((i >= max_x) || (j >= max_y)) return;
 
-	float3 fcolor = RayGen(i, j, max_x, max_y, cam, frameidx, scenedata);
+	float3 fcolor = rayGen(i, j, max_x, max_y, cam, frameidx, scenedata);
 
 	accumulation_buffer[i + j * max_x] += fcolor;
 	float3 accol = accumulation_buffer[i + j * max_x] / frameidx;

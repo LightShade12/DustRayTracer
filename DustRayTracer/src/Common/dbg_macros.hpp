@@ -6,4 +6,7 @@
 	#define printToConsole
 #endif // DEBUG
 
+#ifdef CUSTOM_MACRO_CASING
+
+#endif // CUSTOM_MACRO_CASING
 

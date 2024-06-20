@@ -19,7 +19,7 @@ public:
 	__host__ void OnUpdate(float3 velocity, float delta);
 	__host__ void Rotate(float4 delta_degrees);
 
-	__device__ Ray GetRay(float2 _uv, float width, float height, uint32_t& seed) const;
+	__device__ Ray getRay(float2 _uv, float width, float height, uint32_t& seed) const;
 
 	//__device__ float3 GetRayDir(float2 _uv, float width, float height) const;
 

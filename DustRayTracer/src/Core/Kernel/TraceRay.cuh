@@ -3,8 +3,8 @@
 #include "Core/HitPayload.cuh"
 #include "Core/Scene/Scene.cuh"
 
-__device__ HitPayload TraceRay(const Ray& ray,
+__device__ HitPayload traceRay(const Ray& ray,
 	const SceneData* scenedata);
 
-__device__ bool RayTest(const Ray& ray,
+__device__ bool rayTest(const Ray& ray,
 	const SceneData* scenedata);

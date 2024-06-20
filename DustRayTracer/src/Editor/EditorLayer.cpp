@@ -32,8 +32,8 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera(make_float3(5.4,2.8,-36));
-	//m_device_Camera = new Camera(make_float3(0, 2, 5));
+	//m_device_Camera = new Camera(make_float3(5.4,2.8,-36));
+	m_device_Camera = new Camera(make_float3(0, 2, 5));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
@@ -50,9 +50,9 @@ void EditorLayer::OnAttach()
 	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 20;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 8;
-	m_Scene->d_BVHTreeRoot = bvhbuilder.buildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
+	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
 	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
 
@@ -112,9 +112,9 @@ void EditorLayer::OnUIRender()
 		ImGui::TableSetColumnIndex(0);
 		ImGui::Text("Application frame time");
 		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", Application::Get().GetFrameTime_secs() * 1000);//???
+		ImGui::Text("%.3fms", Application::Get().GetFrameTimeSecs() * 1000);//???
 		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1 / Application::Get().GetFrameTime_secs()));
+		ImGui::Text("%d hz", int(1 / Application::Get().GetFrameTimeSecs()));
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
@@ -253,6 +253,12 @@ void EditorLayer::OnUIRender()
 					if (ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit)))m_Renderer.resetAccumulationBuffer();
 					ImGui::Text("Max samples limit:"); ImGui::SameLine();
 					if (ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples)))m_Renderer.resetAccumulationBuffer();
+
+					if (ImGui::SliderFloat("Global reflectance: ", &(m_Renderer.m_RendererSettings.global_reflectance), 0, 1))m_Renderer.resetAccumulationBuffer();
+					if (ImGui::SliderFloat("Global metallic: ", &(m_Renderer.m_RendererSettings.global_metallic), 0, 1))m_Renderer.resetAccumulationBuffer();
+					if (ImGui::SliderFloat("Global roughness: ", &(m_Renderer.m_RendererSettings.global_roughness), 0, 1))m_Renderer.resetAccumulationBuffer();
+					if (ImGui::Checkbox("Use Global albedo: ", &(m_Renderer.m_RendererSettings.use_global_basecolor)))m_Renderer.resetAccumulationBuffer();
+					if (ImGui::ColorEdit3("Global albedo: ", &(m_Renderer.m_RendererSettings.global_albedo.x)))m_Renderer.resetAccumulationBuffer();
 				}
 				else {//DEBUG MODE
 					ImGui::Text("Debug view:"); ImGui::SameLine();
