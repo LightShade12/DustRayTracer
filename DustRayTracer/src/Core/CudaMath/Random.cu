@@ -40,7 +40,7 @@ __device__ float reflectance(float cosine, float refraction_index)
 	return r0 + (1 - r0) * powf((1 - cosine), 5.f);
 }
 
-__device__ float3 randomUnitVec3(uint32_t& seed)
+__device__ float3 randomUnitFloat3(uint32_t& seed)
 {
 	return normalize(make_float3(
 		randomFloat(seed) * 2.f - 1.f,
@@ -51,7 +51,7 @@ __device__ float3 randomUnitVec3(uint32_t& seed)
 __device__ float3 randomUnitSphereVec3(uint32_t& seed)
 {
 	while (true) {
-		float3 p = randomUnitVec3(seed);
+		float3 p = randomUnitFloat3(seed);
 		float len = length(p);
 		if ((len * len) < 1)
 			return p;

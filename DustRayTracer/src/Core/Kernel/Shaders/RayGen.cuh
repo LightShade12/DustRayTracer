@@ -21,37 +21,6 @@ TODO: List of things:
 -reuse a lot of vars in payload; like world_position
 */
 
-__device__ static float3 uncharted2_tonemap_partial(float3 x)
-{
-	float A = 0.15f;
-	float B = 0.50f;
-	float C = 0.10f;
-	float D = 0.20f;
-	float E = 0.02f;
-	float F = 0.30f;
-	return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
-}
-
-__device__ static float3 uncharted2_filmic(float3 v, float exposure)
-{
-	float exposure_bias = exposure;
-	float3 curr = uncharted2_tonemap_partial(v * exposure_bias);
-
-	float3 W = make_float3(11.2f);
-	float3 white_scale = make_float3(1.0f) / uncharted2_tonemap_partial(W);
-	return curr * white_scale;
-}
-
-__device__ static float3 toneMapping(float3 HDR_color, float exposure = 2.f) {
-	float3 LDR_color = uncharted2_filmic(HDR_color, exposure);
-	return LDR_color;
-}
-
-__device__ static float3 gammaCorrection(const float3 linear_color) {
-	float3 gamma_space_color = { sqrtf(linear_color.x),sqrtf(linear_color.y) ,sqrtf(linear_color.z) };
-	return gamma_space_color;
-}
-
 __device__ static float3 skyModel(const Ray& ray, const SceneData& scenedata) {
 	float vertical_gradient_factor = 0.5 * (1 + (normalize(ray.getDirection())).y);//clamps to range 0-1
 	float3 col1 = scenedata.RenderSettings.sky_color;
@@ -65,71 +34,77 @@ __device__ inline float cosine_falloff_factor(float3 incoming_lightdir, float3 n
 	return fmaxf(0, dot(incoming_lightdir, normal));
 }
 
-//v is viewdir
-__device__ float3 shlick_approx_fresnel_refl(float cos_theta, float3 f0) {
-	//Shlick approx
-	return f0 + (1 - f0) * powf(1.0f - cos_theta, 5);
+__device__ float3 fresnelSchlick(float cosTheta, float3 F0) {
+	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-//ggx ndf
-__device__ float ggx_D(float NoH, float roughness) {
-	float a = roughness * roughness;
-	float a2 = a * a;
+__device__ float D_GGX(float NoH, float roughness) {
+	float alpha = roughness * roughness;
+	float alpha2 = alpha * alpha;
 	float NoH2 = NoH * NoH;
-	float b = (NoH2 * (a2 - 1) + 1);
-	return a2 / (PI * b * b);
-	//return a * a / (PI * powf(powf(NoH, 2) * ((a * a) - 1) + 1, 2));
+	float b = (NoH2 * (alpha2 - 1.0) + 1.0);
+	return alpha2 * (1 / PI) / (b * b);
 }
 
-__device__ float shlick_ggx(float NoV, float roughness) {
-	//float nvd = fmaxf(0.001, AoB);
-	float k = roughness * roughness / 2;
-	return fmaxf(0.001, NoV) / (NoV * (1.f - k) + k);
+__device__ float G1_GGX_Schlick(float NoV, float roughness) {
+	float alpha = roughness * roughness;
+	float k = alpha / 2.0;
+	return max(NoV, 0.001) / (NoV * (1.0 - k) + k);
 }
 
-//G factor from 0 to 1
-	//slick ggx
-__device__ float smith_shlick_ggx_G(float NoV, float NoL, float roughness) {
-	return shlick_ggx(NoL, roughness) * shlick_ggx(NoV, roughness);
+__device__ float G_Smith(float NoV, float NoL, float roughness) {
+	return G1_GGX_Schlick(NoL, roughness) * G1_GGX_Schlick(NoV, roughness);
 }
 
-__device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal,
-	const SceneData& scenedata, const Material& material, const float2& texture_uv) {
-	float3 h = normalize(incoming_lightdir + outgoing_viewdir);
+__device__ float fresnelSchlick90(float cosTheta, float F0, float F90) {
+	return F0 + (F90 - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
-	float NoV = fminf(1, fmaxf(0, dot(normal, outgoing_viewdir)));
-	float NoH = fminf(1, fmaxf(0, dot(normal, h)));
-	float NoL = fminf(1, fmaxf(0, dot(normal, incoming_lightdir)));
-	float VoH = fminf(1, fmaxf(0, dot(outgoing_viewdir, h)));
+__device__ float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roughness) {
+	float alpha = roughness * roughness;
+	float F90 = 0.5 + 2.0 * alpha * VoH * VoH;
+	float F_in = fresnelSchlick90(NoL, 1.0, F90);
+	float F_out = fresnelSchlick90(NoV, 1.0, F90);
+	return F_in * F_out;
+}
 
-	float reflectance = scenedata.RenderSettings.global_reflectance;
-	float metallic = scenedata.RenderSettings.global_metallic;
-	float roughness = scenedata.RenderSettings.global_roughness;
+__device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
+	const Material& material, const float2& texture_uv) {
+	float3 H = normalize(outgoing_viewdir + incoming_lightdir);
 
-	float3 basecolor;
+	float NoV = clamp(dot(normal, outgoing_viewdir), 0.0, 1.0);
+	float NoL = clamp(dot(normal, incoming_lightdir), 0.0, 1.0);
+	float NoH = clamp(dot(normal, H), 0.0, 1.0);
+	float VoH = clamp(dot(outgoing_viewdir, H), 0.0, 1.0);
 
-	if (scenedata.RenderSettings.use_global_basecolor) basecolor = scenedata.RenderSettings.global_albedo;
-	//else basecolor = material.Albedo;
-	else
-	{
-		if (material.AlbedoTextureIndex < 0)basecolor = material.Albedo;
-		else basecolor = scenedata.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
-	}
+	float reflectance = scene_data.RenderSettings.global_reflectance;
+	float roughness = scene_data.RenderSettings.global_roughness;
+	float metallic = scene_data.RenderSettings.global_metallic;
+	float3 baseColor;
 
-	float3 f0 = make_float3(0.16f * (reflectance * reflectance));
-	f0 = lerp(f0, basecolor, metallic);
+	if (material.AlbedoTextureIndex < 0)baseColor = material.Albedo;
+	else baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
 
-	float3 F = shlick_approx_fresnel_refl(VoH, f0);
-	float D = ggx_D(NoH, roughness);
-	float G = smith_shlick_ggx_G(NoV, NoL, roughness);
+	float3 f0 = make_float3(0.16 * (reflectance * reflectance));
+	f0 = lerp(f0, baseColor, metallic);
 
-	float3 spec = (F * D * G) / (4.0f * fmaxf(0.001, NoV) * fmaxf(0.001, NoL));
-	float3 rhod = basecolor;
-	rhod *= 1.f - F;//optional
-	rhod *= (1.f - metallic);
-	float3 diffuse = rhod / PI;
+	float3 F = fresnelSchlick(VoH, f0);
+	float D = D_GGX(NoH, roughness);
+	float G = G_Smith(NoV, NoL, roughness);
 
-	return diffuse + spec;
+	float3 spec = (F * D * G) / (4.0 * max(NoV, 0.001) * max(NoL, 0.001));
+
+	float3 rhoD = baseColor;
+
+	// optionally
+	rhoD *= 1.0 - F;
+	rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
+
+	rhoD *= (1.0 - metallic);
+
+	float3 diff = rhoD / PI;
+
+	return diff + spec;
 }
 
 __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
@@ -155,9 +130,6 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	HitPayload payload;
 	float2 texture_sample_uv = { 0,1 };//DEBUG
 	const Material* current_material = nullptr;
-	float3 previous_worldnormal{};
-	float3 previous_ray_dir{};
-	float3 next_ray_dir{};
 
 	for (int bounce_depth = 0; bounce_depth <= bounces; bounce_depth++)
 	{
@@ -171,59 +143,42 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG &&
 				scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)outgoing_light = payload.color;
 			else {
-				float3 sky_incoming_emission = skyModel(ray, scenedata) * scenedata.RenderSettings.sky_intensity;
-				if (bounce_depth > 0)
-					outgoing_light += sky_incoming_emission * cumulative_incoming_light_throughput;
-				//* cosine_falloff_factor(normalize(ray.getDirection()), previous_worldnormal);
-				else
-					outgoing_light += sky_incoming_emission * cumulative_incoming_light_throughput;
+				float3 sky_integral_eval = skyModel(ray, scenedata) * scenedata.RenderSettings.sky_intensity;
+				outgoing_light += sky_integral_eval * cumulative_incoming_light_throughput;
 			}
 			break;
 		}
 
 		//SURFACE SHADING-------------------------------------------------------------------
-		next_ray_dir = normalize(payload.world_normal + (randomUnitSphereVec3(seed)));
+		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
+		float3 next_ray_dir = normalize(payload.world_normal + randomUnitSphereVec3(seed));
+
 		current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
-		if (current_material->AlbedoTextureIndex < 0) {
-			if (bounce_depth > 0)
-				cumulative_incoming_light_throughput *= BRDF(next_ray_dir, normalize(ray.getDirection()), payload.world_normal,
-					scenedata, *current_material, texture_sample_uv)
-				* cosine_falloff_factor(next_ray_dir, payload.world_normal);
-			else
-				cumulative_incoming_light_throughput *= BRDF(next_ray_dir, normalize(ray.getDirection()), payload.world_normal,
-					scenedata, *current_material, texture_sample_uv);
-		}
-		else
-		{
-			const Triangle* tri = payload.primitiveptr;
-			texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
-			if (bounce_depth > 0)
-				cumulative_incoming_light_throughput *= current_material->EmmisiveFactor + BRDF(next_ray_dir, normalize(ray.getDirection()), payload.world_normal,
-					scenedata, *current_material, texture_sample_uv)
-				* cosine_falloff_factor(next_ray_dir, payload.world_normal);
-			else
-				cumulative_incoming_light_throughput *= current_material->EmmisiveFactor + BRDF(next_ray_dir, normalize(ray.getDirection()), payload.world_normal,
-					scenedata, *current_material, texture_sample_uv);
-		}
+
+		const Triangle* tri = payload.primitiveptr;
+		texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
+		float3 lightdir = next_ray_dir;
+		float3 viewdir = -1.f * (ray.getDirection());
+		cumulative_incoming_light_throughput *= (current_material->EmmisiveFactor * 10) +
+			BRDF(lightdir, viewdir, payload.world_normal,
+				scenedata, *current_material, texture_sample_uv)
+			* cosine_falloff_factor(lightdir, payload.world_normal);
 
 		//SHADOWRAY-------------------------------------------------------------------------------------------
-		float3 new_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
 
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
-			if (!rayTest(Ray((new_ray_origin), (sunpos)+randomUnitVec3(seed) * 1.5),
+			if (!rayTest(Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * 1.5),
 				&scenedata))
 				outgoing_light += suncol * cumulative_incoming_light_throughput *
 				cosine_falloff_factor(normalize(sunpos), payload.world_normal);
+			//cumulative_incoming_light_throughput *= suncol * cosine_falloff_factor(normalize(sunpos), payload.world_normal);
 		}
 
 		//BOUNCE RAY---------------------------------------------------------------------------------------
 
-		previous_worldnormal = payload.world_normal;
-		previous_ray_dir = ray.getDirection();
-		//diffuse scattering
-		ray.setOrig(new_ray_origin);
+		ray.setOrig(next_ray_origin);
 		ray.setDir(next_ray_dir);
 
 		//Debug Views------------------------------------------------------------------------------------
@@ -252,14 +207,6 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			}
 			break;
 		}
-	}
-	//--------------------------------------------------------------------------------
-
-	//post processing
-	if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE || scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
-	{
-		if (scenedata.RenderSettings.tone_mapping)outgoing_light = toneMapping(outgoing_light, cam->exposure);
-		if (scenedata.RenderSettings.gamma_correction)outgoing_light = gammaCorrection(outgoing_light);
 	}
 
 	return outgoing_light;

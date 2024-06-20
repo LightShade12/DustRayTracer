@@ -38,7 +38,7 @@ void EditorLayer::OnAttach()
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
-	m_device_Camera->m_Forward_dir = { -0.8,0,-0.5 };
+	//m_device_Camera->m_Forward_dir = { -0.8,0,-0.5 };
 	m_Scene = new Scene();
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");

@@ -7,7 +7,7 @@ __device__ uint pcg_hash(uint input);
 __device__ float randomFloat(uint32_t& seed);
 
 //-1 to 1
-__device__ float3 randomUnitVec3(uint32_t& seed);
+__device__ float3 randomUnitFloat3(uint32_t& seed);
 
 __device__ float3 randomUnitSphereVec3(uint32_t& seed);
 
