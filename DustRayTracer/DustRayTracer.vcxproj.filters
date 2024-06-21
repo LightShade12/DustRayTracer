@@ -129,11 +129,9 @@
     <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
     <ClCompile Include="src\Application\private\Input.cpp" />
     <ClCompile Include="src\Core\Scene\RendererSettings.cpp" />
-    <ClCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
     <ClCompile Include="src\Editor\Panels\RendererMetricsPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\Editor\EditorLayer.cpp" />
     <CudaCompile Include="src\Core\Renderer.cu" />
     <CudaCompile Include="src\Core\Scene\Camera.cu" />
     <CudaCompile Include="src\Core\Kernel\RenderKernel.cu" />
@@ -149,6 +147,8 @@
     <CudaCompile Include="src\Core\BVH\BVHBuilder.cu" />
     <CudaCompile Include="src\Core\Interval.cu" />
     <CudaCompile Include="src\Core\CudaMath\Random.cu" />
+    <CudaCompile Include="src\Editor\EditorLayer.cpp" />
+    <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="dev_docs.txt" />

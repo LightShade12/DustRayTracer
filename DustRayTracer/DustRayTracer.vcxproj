@@ -183,7 +183,7 @@
     <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
+    <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
     <ClCompile Include="src\Core\Scene\RendererSettings.cpp" />
     <ClCompile Include="src\Application\private\Application.cpp" />
     <ClCompile Include="src\Application\private\Input.cpp" />

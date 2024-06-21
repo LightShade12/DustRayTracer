@@ -1,9 +1,11 @@
 #pragma once
 #include "Application/private/Layer.hpp"
 
-#include "Panels/RendererMetricsPanel.hpp"
-
 #include "Core/Renderer.hpp"
+
+#include "Panels/RendererMetricsPanel.hpp"
+#include "Panels/MaterialManagerPanel.hpp"
+
 //#include "DustRayTracer/include/DustRayTracer.hpp"
 
 #include <memory>
@@ -24,7 +26,7 @@ private:
 	bool saveImage(const char* filename, int _width, int _height, GLubyte* data);
 
 private:
-
+	MaterialManagerPanel m_MaterialManagerPanel;
 	RendererMetricsPanel m_RendererMetricsPanel;
 	float m_LastFrameTime_ms = 0;
 	float m_LastRenderTime_ms = 0;

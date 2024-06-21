@@ -43,6 +43,7 @@ void EditorLayer::OnAttach()
 
 	m_RendererMetricsPanel.SetRenderer(m_Renderer);
 	m_RendererMetricsPanel.SetCamera(m_device_Camera);
+	m_MaterialManagerPanel.Initialize(m_Scene.get());
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
 	ConsoleLogs.push_back("GLFW 3.4");
@@ -75,9 +76,6 @@ void EditorLayer::OnAttach()
 	ImGuiThemes::UE4();
 }
 
-void makeThumbnail() {
-}
-
 void EditorLayer::OnUIRender()
 {
 	//-------------------------------------------------------------------------------------------------
@@ -100,41 +98,6 @@ void EditorLayer::OnUIRender()
 			else
 				test_window_text = "Image save failed";
 		}
-		ImGui::End();
-	}
-
-	{
-		ImGui::Begin("Material Manager");
-		ImGui::Separator();
-		static int selected_material_idx = 0; // Here we store our selection data as an index.
-		if (ImGui::BeginListBox("###Materials", ImVec2(ImGui::GetContentRegionAvail().x / 4, ImGui::GetContentRegionAvail().y)))
-		{
-			for (int n = 0; n < m_Scene->m_Material.size(); n++)
-			{
-				const bool is_selected = (selected_material_idx == n);
-				if (ImGui::Selectable(m_Scene->m_Material[n].Name, is_selected))
-					selected_material_idx = n;
-
-				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-				if (is_selected)
-					ImGui::SetItemDefaultFocus();
-			}
-			ImGui::EndListBox();
-		}
-		ImGui::SameLine();
-		ImGui::BeginChild("proppanel", ImGui::GetContentRegionAvail());
-		ImGui::Text("Material Properties");
-		ImGui::Separator();
-		Material& selected_material = m_Scene->m_Material[selected_material_idx];
-		ImGui::Text(selected_material.Name);
-		
-		if (ImGui::ColorEdit3("Albedo", &selected_material.Albedo.x))m_Renderer.resetAccumulationBuffer();
-		if (ImGui::ColorEdit3("Emission", &selected_material.EmissiveColor.x))m_Renderer.resetAccumulationBuffer();
-		if (ImGui::SliderFloat("Metallicity", &(selected_material.Metallicity), 0, 1))m_Renderer.resetAccumulationBuffer();
-		if (ImGui::SliderFloat("Reflectance", &(selected_material.Reflectance), 0, 1))m_Renderer.resetAccumulationBuffer();
-		if (ImGui::SliderFloat("Roughness", &(selected_material.Roughness), 0, 1))m_Renderer.resetAccumulationBuffer();
-		ImGui::EndChild();
-
 		ImGui::End();
 	}
 
@@ -231,9 +194,10 @@ void EditorLayer::OnUIRender()
 
 	m_LastFrameTime_ms = timer.ElapsedMillis();
 
+	if (m_MaterialManagerPanel.OnUIRender())m_Renderer.resetAccumulationBuffer();
 	m_RendererMetricsPanel.OnUIRender(m_LastFrameTime_ms, m_LastRenderTime_ms);
 }
-
+//TODO: make proper Cuda C++ interface and wrappers
 //general purpose input handler
 bool processInput(GLFWwindow* window, Camera* cam, float delta)
 {

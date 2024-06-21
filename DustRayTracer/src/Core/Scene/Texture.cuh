@@ -15,6 +15,6 @@ public:
 	int width, height = 0;
 	int componentCount = 0;
 	//bool isfloatingPoint=false;
-private:
 	unsigned char* d_data = nullptr;
+private:
 };
