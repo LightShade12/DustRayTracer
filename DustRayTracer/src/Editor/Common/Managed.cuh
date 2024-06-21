@@ -15,3 +15,4 @@ public:
         cudaFree(ptr);
     }
 };
+

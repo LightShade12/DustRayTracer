@@ -78,8 +78,9 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float VoH = clamp(dot(outgoing_viewdir, H), 0.0, 1.0);
 
 	float reflectance = scene_data.RenderSettings.global_reflectance;
-	float roughness = scene_data.RenderSettings.global_roughness;
-	float metallic = scene_data.RenderSettings.global_metallic;
+	//float reflectance = material.Reflectance;
+	float roughness = material.Roughness;
+	float metallic = material.Metallicity;
 	float3 baseColor;
 
 	if (material.AlbedoTextureIndex < 0)baseColor = material.Albedo;
@@ -149,22 +150,23 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			break;
 		}
 
-		//SURFACE SHADING-------------------------------------------------------------------
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
 		float3 next_ray_dir = normalize(payload.world_normal + randomUnitSphereVec3(seed));
+		//SHADOWRAY-------------------------------------------------------------------------------------------
 
+		//SURFACE SHADING-------------------------------------------------------------------
 		current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
+		//emission
+		outgoing_light += (current_material->EmissiveColor * 100) * cumulative_incoming_light_throughput;
 
 		const Triangle* tri = payload.primitiveptr;
 		texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
 		float3 lightdir = next_ray_dir;
 		float3 viewdir = -1.f * (ray.getDirection());
-		cumulative_incoming_light_throughput *= (current_material->EmmisiveFactor * 10) +
+		cumulative_incoming_light_throughput *=
 			BRDF(lightdir, viewdir, payload.world_normal,
 				scenedata, *current_material, texture_sample_uv)
 			* cosine_falloff_factor(lightdir, payload.world_normal);
-
-		//SHADOWRAY-------------------------------------------------------------------------------------------
 
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)

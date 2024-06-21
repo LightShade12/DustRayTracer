@@ -39,7 +39,10 @@ void EditorLayer::OnAttach()
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
 	//m_device_Camera->m_Forward_dir = { -0.8,0,-0.5 };
-	m_Scene = new Scene();
+	m_Scene = std::make_shared<Scene>();
+
+	m_RendererMetricsPanel.SetRenderer(m_Renderer);
+	m_RendererMetricsPanel.SetCamera(m_device_Camera);
 
 	ConsoleLogs.push_back("-------------------console initialized-------------------");
 	ConsoleLogs.push_back("GLFW 3.4");
@@ -50,26 +53,29 @@ void EditorLayer::OnAttach()
 	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 12;
 	bvhbuilder.m_BinCount = 8;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
 	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
 
-	m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
 
 	for (Mesh mesh : m_Scene->m_Meshes)
 	{
-		m_DevMetrics.m_TrianglesCount += mesh.m_trisCount;
+		m_RendererMetricsPanel.m_DevMetrics.m_TrianglesCount += mesh.m_trisCount;
 	}
 
-	m_DevMetrics.m_MaterialsCount = m_Scene->m_Material.size();
-	m_DevMetrics.m_TexturesCount = m_Scene->m_Textures.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_Scene->m_Material.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_TexturesCount = m_Scene->m_Textures.size();
 
 	stbi_flip_vertically_on_write(true);
 
-	ImGuiThemes::dark();
-	//ImGuiThemes::UE4();
+	//ImGuiThemes::dark();
+	ImGuiThemes::UE4();
+}
+
+void makeThumbnail() {
 }
 
 void EditorLayer::OnUIRender()
@@ -98,134 +104,36 @@ void EditorLayer::OnUIRender()
 	}
 
 	{
-		ImGui::Begin("Developer Metrics");
-
-		ImGui::CollapsingHeader("Timers", ImGuiTreeNodeFlags_Leaf);
-
-		ImGui::BeginTable("timerstable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
-		ImGui::TableSetupColumn("Timer");
-		ImGui::TableSetupColumn("Milli Seconds(ms)");
-		ImGui::TableSetupColumn("Frequency(hz)");
-		ImGui::TableHeadersRow();
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Application frame time");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", Application::Get().GetFrameTimeSecs() * 1000);//???
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1 / Application::Get().GetFrameTimeSecs()));
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("GUI frame time(EditorLayer)");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", m_LastFrameTime_ms);
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1000 / m_LastFrameTime_ms));
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("CPU code execution time");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", (m_LastFrameTime_ms - m_LastRenderTime_ms));
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%d hz", int(1000 / (m_LastFrameTime_ms - m_LastRenderTime_ms)));
-
-		//TODO: this is quite "regarded"
-		//if moving/rendering
-		if (m_Renderer.getSampleCount() < m_Renderer.m_RendererSettings.max_samples)
+		ImGui::Begin("Material Manager");
+		ImGui::Separator();
+		static int selected_material_idx = 0; // Here we store our selection data as an index.
+		if (ImGui::BeginListBox("###Materials", ImVec2(ImGui::GetContentRegionAvail().x / 4, ImGui::GetContentRegionAvail().y)))
 		{
-			//if first frame/moving after render complete
-			if (skip) { skip = false; renderfreqavg = 0; framecounter = 0; rendercumulation = 0; }
-			else
+			for (int n = 0; n < m_Scene->m_Material.size(); n++)
 			{
-				framecounter++;
-				renderfreq = 1000 / m_LastRenderTime_ms;
-				renderfreqmin = fminf(renderfreq, renderfreqmin);
-				rendercumulation += renderfreq;
-				renderfreqavg = rendercumulation / framecounter;
-				renderfreqmax = fmaxf(renderfreq, renderfreqmax);
+				const bool is_selected = (selected_material_idx == n);
+				if (ImGui::Selectable(m_Scene->m_Material[n].Name, is_selected))
+					selected_material_idx = n;
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
 			}
+			ImGui::EndListBox();
 		}
-		else if (m_Renderer.getSampleCount() == 0) { skip = true; printf("sample 0"); }
-		else
-		{//render complete/not moving; stationary display
-			skip = true;
-		}
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("GPU Kernel time");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%.3fms", m_LastRenderTime_ms);
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("%.3f hz | (%.1f|%.1f|%.1f)", renderfreq, renderfreqmin, renderfreqavg, renderfreqmax);
-
-		ImGui::EndTable();
-
-		ImGui::CollapsingHeader("Geometry", ImGuiTreeNodeFlags_Leaf);
-
-		ImGui::BeginTable("geometrytable", 2);
-
-		ImGui::TableSetupColumn("Data");
-		ImGui::TableSetupColumn("Value");
-		ImGui::TableHeadersRow();
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Objects in scene");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%d", m_DevMetrics.m_ObjectsCount);
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Net triangles in scene");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%d", m_DevMetrics.m_TrianglesCount);
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Materials loaded");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%d", m_DevMetrics.m_MaterialsCount);
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Textures loaded");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%d", m_DevMetrics.m_TexturesCount);
-
-		ImGui::EndTable();
-
-		ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_Leaf);
-
-		ImGui::BeginTable("renderertable", 2);
-		ImGui::TableSetupColumn("Property");
-		ImGui::TableSetupColumn("Value");
-		ImGui::TableHeadersRow();
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("Samples");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("%d", m_Renderer.getSampleCount());
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("View position");
-		ImGui::TableSetColumnIndex(1);
-		float3 pos = m_device_Camera->GetPosition();
-		ImGui::Text("x: %.3f y: %.3f z: %.3f", pos.x, pos.y, pos.z);
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("View direction");
-		ImGui::TableSetColumnIndex(1);
-		float3 fdir = m_device_Camera->m_Forward_dir;
-		ImGui::Text("x: %.3f y: %.3f z: %.3f", fdir.x, fdir.y, fdir.z);
-
-		ImGui::EndTable();
+		ImGui::SameLine();
+		ImGui::BeginChild("proppanel", ImGui::GetContentRegionAvail());
+		ImGui::Text("Material Properties");
+		ImGui::Separator();
+		Material& selected_material = m_Scene->m_Material[selected_material_idx];
+		ImGui::Text(selected_material.Name);
+		
+		if (ImGui::ColorEdit3("Albedo", &selected_material.Albedo.x))m_Renderer.resetAccumulationBuffer();
+		if (ImGui::ColorEdit3("Emission", &selected_material.EmissiveColor.x))m_Renderer.resetAccumulationBuffer();
+		if (ImGui::SliderFloat("Metallicity", &(selected_material.Metallicity), 0, 1))m_Renderer.resetAccumulationBuffer();
+		if (ImGui::SliderFloat("Reflectance", &(selected_material.Reflectance), 0, 1))m_Renderer.resetAccumulationBuffer();
+		if (ImGui::SliderFloat("Roughness", &(selected_material.Roughness), 0, 1))m_Renderer.resetAccumulationBuffer();
+		ImGui::EndChild();
 
 		ImGui::End();
 	}
@@ -289,8 +197,6 @@ void EditorLayer::OnUIRender()
 		ImGui::End();
 	}
 
-	//ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(100, 100));
-	//0.3 times dlss
 	ImGui::SetNextWindowSize(ImVec2(640 + 16, 360 + 47), ImGuiCond_Once);
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
 
@@ -300,7 +206,7 @@ void EditorLayer::OnUIRender()
 		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
 			ImVec2(m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight()), { 0,1 }, { 1,0 });
 
-	ImGui::BeginChild("statusbar", ImVec2(ImGui::GetContentRegionAvail().x, 14), 0);
+	ImGui::BeginChild("Statusbar", ImVec2(ImGui::GetContentRegionAvail().x, 14), 0);
 
 	//ImGui::SetCursorScreenPos({ ImGui::GetCursorScreenPos().x + 5, ImGui::GetCursorScreenPos().y + 4 });
 
@@ -324,6 +230,8 @@ void EditorLayer::OnUIRender()
 	m_Renderer.Render(m_device_Camera, (*m_Scene), &m_LastRenderTime_ms);//make lastrendertime a member var of renderer and access it?
 
 	m_LastFrameTime_ms = timer.ElapsedMillis();
+
+	m_RendererMetricsPanel.OnUIRender(m_LastFrameTime_ms, m_LastRenderTime_ms);
 }
 
 //general purpose input handler
@@ -433,5 +341,4 @@ void EditorLayer::OnUpdate(float ts)
 void EditorLayer::OnDetach()
 {
 	delete m_device_Camera;
-	delete m_Scene;
 }

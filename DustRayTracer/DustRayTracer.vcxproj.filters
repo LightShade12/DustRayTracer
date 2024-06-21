@@ -108,6 +108,8 @@
     <ClInclude Include="src\Core\Sampler.cuh" />
     <ClInclude Include="src\Core\Interval.cuh" />
     <ClInclude Include="include\DustRayTracer.hpp" />
+    <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
+    <ClInclude Include="src\Editor\Panels\RendererMetricsPanel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\private\Application.cpp">
@@ -127,6 +129,8 @@
     <ClCompile Include="thirdparty\tinygltf\tiny_gltf.cc" />
     <ClCompile Include="src\Application\private\Input.cpp" />
     <ClCompile Include="src\Core\Scene\RendererSettings.cpp" />
+    <ClCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
+    <ClCompile Include="src\Editor\Panels\RendererMetricsPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Editor\EditorLayer.cpp" />

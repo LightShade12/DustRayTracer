@@ -1,23 +1,23 @@
 #pragma once
 #include <vector_types.h>
+#include <string>
 
 struct Material
 {
-	//std::string name;
+public:
 	Material() = default;
 	Material(float3 albedo) :Albedo(albedo) {};
 
+public:
+	char Name[32];
 	float3 Albedo = { 1,1,1 };
-	float3 EmmisiveFactor = { 0,0,0 };
-
+	float3 EmissiveColor = { 0,0,0 };
 	int AlbedoTextureIndex = -1;
-	//int NormalTextureIndex = -1;
-	//float NormalScale=1;
-	//int RoughnessTextureIndex = -1;
-	//int EmissionTextureIndex = -1;
-
-	float Roughness = 0.f;
-	bool Transmission = false;
-	float refractive_index = 1.45f;
-	bool Metallic = false;
+	int RoughnessTextureIndex = -1;
+	int NormalTextureIndex = -1;
+	int EmissionTextureIndex = -1;
+	float Reflectance = 0.5;// default: F0=0.16
+	float Metallicity = 0;
+	float Roughness = 0.8f;
+	float NormalMapScale = 1.0f;
 };

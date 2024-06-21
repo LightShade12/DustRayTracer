@@ -37,5 +37,5 @@ struct RendererSettings
 	float sunlight_intensity = 30;
 	float3 sky_color = { 0.25f ,0.498f,0.80f };
 	//float3 sky_color = { 0.609,0.695,1.000 }; //apparently physically based?
-	float sky_intensity = 20;
+	float sky_intensity = 10;
 };

@@ -1,0 +1,1 @@
+#include "MaterialManagerPanel.hpp"

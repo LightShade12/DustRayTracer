@@ -62,25 +62,26 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	//printf("detected materials count in file: %d\n", model.materials.size());
 	for (size_t matIdx = 0; matIdx < model.materials.size(); matIdx++)
 	{
-		tinygltf::Material mat = model.materials[matIdx];
-		Material drt_mat;
-		printToConsole("material name: %s\n", mat.name.c_str());
-		std::vector<double> color = mat.pbrMetallicRoughness.baseColorFactor;
-		float3 albedo = { color[0], color[1], color[2] };//We just use RGB material albedo
-
-		//drt_mat.Metallic = (matIdx % 2 == 0);
-		//drt_mat.Transmission = !(matIdx % 2 == 0);
-		drt_mat.Metallic = (mat.pbrMetallicRoughness.metallicFactor > 0);
-		drt_mat.Roughness = mat.pbrMetallicRoughness.roughnessFactor;
-		drt_mat.EmmisiveFactor = { (float)mat.emissiveFactor[0],(float)mat.emissiveFactor[1] ,(float)mat.emissiveFactor[2] };
-		//drt_mat.Albedo = (matIdx % 2 == 0) ? make_float3(1, 0.25, 0.25) : albedo;
-
-		drt_mat.Albedo = albedo;
-		drt_mat.AlbedoTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;//should be -1 when empty
-		printToConsole("albedo texture idx: %d\n", drt_mat.AlbedoTextureIndex);
-		m_Material.push_back(drt_mat);
+		Material drt_material;
+		tinygltf::Material gltf_material = model.materials[matIdx];
+		printToConsole("material name: %s\n", gltf_material.name.c_str());
+		tinygltf::PbrMetallicRoughness PBR_data = gltf_material.pbrMetallicRoughness;
+		memset(drt_material.Name, 0, 32);
+		strncpy(drt_material.Name, gltf_material.name.c_str(), gltf_material.name.size());
+		drt_material.Name[gltf_material.name.size()] = '\0';
+		drt_material.Albedo = make_float3(PBR_data.baseColorFactor[0], PBR_data.baseColorFactor[1], PBR_data.baseColorFactor[2]);//We just use RGB material albedo for now
+		drt_material.EmissiveColor = make_float3(gltf_material.emissiveFactor[0], gltf_material.emissiveFactor[1], gltf_material.emissiveFactor[2]);
+		drt_material.AlbedoTextureIndex = PBR_data.baseColorTexture.index;//should be -1 when empty
+		drt_material.RoughnessTextureIndex = PBR_data.metallicRoughnessTexture.index;
+		drt_material.NormalTextureIndex = gltf_material.normalTexture.index;
+		drt_material.NormalMapScale = gltf_material.normalTexture.scale;
+		drt_material.EmissionTextureIndex = gltf_material.emissiveTexture.index;
+		drt_material.Metallicity = PBR_data.metallicFactor;
+		drt_material.Roughness = PBR_data.roughnessFactor;
+		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);
+		m_Material.push_back(drt_material);
 	}
-	//printf("loaded materials count: %d \n\n", m_Material.size());//should be 36 for cube
+	//printf("loaded materials count: %d \n\n", m_Material.size());
 
 	return true;
 }
