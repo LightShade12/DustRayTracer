@@ -110,6 +110,7 @@
     <ClInclude Include="include\DustRayTracer.hpp" />
     <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
     <ClInclude Include="src\Editor\Panels\RendererMetricsPanel.hpp" />
+    <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\private\Application.cpp">

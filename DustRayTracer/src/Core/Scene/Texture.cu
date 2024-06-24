@@ -18,7 +18,7 @@ Texture::Texture(const char* filepath)
 	stbi_image_free(imgdata);
 }
 
-Texture::Texture(unsigned char* data, size_t bytesize)
+Texture::Texture(const unsigned char* data, size_t bytesize)
 {
 	unsigned char* imgdata = stbi_load_from_memory(data, bytesize, &width, &height, &componentCount, 0);
 	size_t imgbuffersize = width * height * componentCount * sizeof(unsigned char);//1byte ik; till float texture support, this is format
@@ -30,7 +30,7 @@ Texture::Texture(unsigned char* data, size_t bytesize)
 }
 
 //returns pink if numcolch < 3 or > 4
-__device__ float3 Texture::getPixel(float2 UV) const
+__device__ float3 Texture::getPixel(float2 UV, bool noncolor) const
 {
 	int x = (UV.x - floorf(UV.x)) * width;
 	int y = (UV.y - floorf(UV.y)) * height;
@@ -53,7 +53,8 @@ __device__ float3 Texture::getPixel(float2 UV) const
 
 	float3 fltcol = make_float3(fcol.x / (float)255, fcol.y / (float)255, fcol.z / (float)255);
 	//printf("r: %.3f g: %.3f b: %.3f ||", fltcol.x, fltcol.y, fltcol.z);
-	fltcol = { std::powf(fltcol.x,2), std::powf(fltcol.y,2), std::powf(fltcol.z,2) };
+	if (!noncolor)
+		fltcol = { std::powf(fltcol.x,2), std::powf(fltcol.y,2), std::powf(fltcol.z,2) };//srgb to linear
 	return fltcol;
 }
 
@@ -76,6 +77,7 @@ __device__ float Texture::getAlpha(float2 UV) const
 
 void Texture::Cleanup()
 {
+	cudaDeviceSynchronize();
 	cudaFree(d_data);
 	checkCudaErrors(cudaGetLastError());
 }

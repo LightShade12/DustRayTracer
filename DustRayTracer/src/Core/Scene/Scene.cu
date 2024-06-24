@@ -56,17 +56,16 @@ bool loadModel(tinygltf::Model& model, const char* filename, bool& is_binary) {
 	return res;
 }
 
-bool Scene::loadMaterials(tinygltf::Model& model)
+bool Scene::loadMaterials(const tinygltf::Model& model)
 {
-	//printf("loading materials\n\n");
-	//printf("detected materials count in file: %d\n", model.materials.size());
+	printToConsole("detected materials count in file: %d\n", model.materials.size());
 	for (size_t matIdx = 0; matIdx < model.materials.size(); matIdx++)
 	{
 		Material drt_material;
 		tinygltf::Material gltf_material = model.materials[matIdx];
 		printToConsole("material name: %s\n", gltf_material.name.c_str());
 		tinygltf::PbrMetallicRoughness PBR_data = gltf_material.pbrMetallicRoughness;
-		memset(drt_material.Name, 0, 32);
+		memset(drt_material.Name, 0, sizeof(drt_material.Name));
 		strncpy(drt_material.Name, gltf_material.name.c_str(), gltf_material.name.size());
 		drt_material.Name[gltf_material.name.size()] = '\0';
 		drt_material.Albedo = make_float3(PBR_data.baseColorFactor[0], PBR_data.baseColorFactor[1], PBR_data.baseColorFactor[2]);//We just use RGB material albedo for now
@@ -86,39 +85,39 @@ bool Scene::loadMaterials(tinygltf::Model& model)
 	return true;
 }
 
-bool Scene::loadTextures(tinygltf::Model& model, bool is_binary)
+//TODO: probably already handled by tinygltf stb; redundant stb call?
+bool Scene::loadTextures(const tinygltf::Model& model, bool is_binary)
 {
-	const char* imgdir = "../models/";
-	//printf("Images count in file: %d\n", model.images.size());
-	//printf("total images: %zu\n", model.images.size());
-	for (size_t textureIdx = 0; textureIdx < model.images.size(); textureIdx++)
+	const char* image_reference_directory = "../models/";
+	printToConsole("detected images count in file: %zu\n", model.images.size());
+
+	for (size_t texture_idx = 0; texture_idx < model.images.size(); texture_idx++)
 	{
-		tinygltf::Image current_img = model.images[textureIdx];
-		//printf("image: %s\n", current_img.name.c_str());
-		Texture tex;
+		tinygltf::Image gltf_image = model.images[texture_idx];
+		Texture drt_texture;
+		memset(drt_texture.Name, 0, sizeof(drt_texture.Name));
+		strncpy(drt_texture.Name, gltf_image.name.c_str(), gltf_image.name.size());
+		drt_texture.Name[gltf_image.name.size()] = '\0';
+		drt_texture.ChannelBitDepth = gltf_image.bits;
+
 		if (is_binary)
 		{
-			tinygltf::BufferView imgbufferview = model.bufferViews[current_img.bufferView];
-			imgbufferview.byteOffset;
-			imgbufferview.buffer;
-			unsigned char* imgdata = model.buffers[imgbufferview.buffer].data.data() + imgbufferview.byteOffset;
-			tex = Texture(imgdata, imgbufferview.byteLength);
+			tinygltf::BufferView imgbufferview = model.bufferViews[gltf_image.bufferView];
+			const unsigned char* imgdata = model.buffers[imgbufferview.buffer].data.data() + imgbufferview.byteOffset;
+			drt_texture = Texture(imgdata, imgbufferview.byteLength);
 		}
 		else
 		{
-			//printf("uri: %s\n", current_img.uri.c_str());
-			//printf("processing idx: %d,name= %s\n", textureIdx, current_img.name.c_str());
-			//printf("load path: %s\n", (imgdir + current_img.uri).c_str());
-			tex = Texture((imgdir + current_img.uri).c_str());
-			//printf("img dims: w:%d h:%d ch:%d\n", tex.width, tex.height, tex.componentCount);
+			drt_texture = Texture((image_reference_directory + gltf_image.uri).c_str());
 		}
-		m_Textures.push_back(tex);//whitespace will be incorrectly parsed
+		if (drt_texture.d_data == nullptr)return false;
+		m_Textures.push_back(drt_texture);//whitespace will be incorrectly parsed
 	}
-	return false;
+	return true;
 }
 
 //does not support reused mesh
-bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals,
+static bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals,
 	std::vector<float2>& UVs, std::vector<int>& prim_mat_idx)
 {
 	//printf("total primitives: %zu\n", mesh.primitives.size());
@@ -181,13 +180,13 @@ bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& 
 //tinyGLTF impl
 bool Scene::loadGLTFmodel(const char* filepath)
 {
-	bool isBinary = false;
+	bool is_binary = false;
 	tinygltf::Model loadedmodel;
-	loadModel(loadedmodel, filepath, isBinary);
-	loadTextures(loadedmodel, isBinary);
+	loadModel(loadedmodel, filepath, is_binary);
+	loadTextures(loadedmodel, is_binary);
 	loadMaterials(loadedmodel);
 
-	printToConsole("Total meshes:%zu\n", loadedmodel.meshes.size());
+	printToConsole("Detected mesh count in file:%zu\n", loadedmodel.meshes.size());
 
 	//mesh looping
 	for (size_t nodeIdx = 0; nodeIdx < loadedmodel.nodes.size(); nodeIdx++)
@@ -197,19 +196,19 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		std::vector<float2>loadedMeshUVs;
 		std::vector<int>loadedMeshPrimitiveMatIdx;
 
-		tinygltf::Node current_node = loadedmodel.nodes[nodeIdx];
-		tinygltf::Mesh current_mesh = loadedmodel.meshes[current_node.mesh];
+		tinygltf::Node gltf_node = loadedmodel.nodes[nodeIdx];
+		tinygltf::Mesh gltf_mesh = loadedmodel.meshes[gltf_node.mesh];
 
-		//printf("processing node: %s with mesh: %s , mesh index= %d\n", current_node.name.c_str(), current_mesh.name.c_str(), current_node.mesh);
-		Mesh loadedMesh;
-		loadedMesh.m_primitives_offset = m_PrimitivesBuffer.size();
+		Mesh drt_mesh;
+		memset(drt_mesh.Name, 0, sizeof(drt_mesh.Name));
+		strncpy(drt_mesh.Name, gltf_mesh.name.c_str(), gltf_mesh.name.size());
+		drt_mesh.Name[gltf_mesh.name.size()] = '\0';
+		printToConsole("\nprocessing mesh:%s\n", gltf_mesh.name.c_str());
 
-		parseMesh(current_mesh, loadedmodel, loadedMeshPositions,
+		drt_mesh.m_primitives_offset = m_PrimitivesBuffer.size();
+
+		parseMesh(gltf_mesh, loadedmodel, loadedMeshPositions,
 			loadedMeshNormals, loadedMeshUVs, loadedMeshPrimitiveMatIdx);
-
-		//printf("constructed positions count: %d \n", loadedMeshPositions.size());//should be 36 for cube
-		//printf("constructed normals count: %d \n", loadedMeshNormals.size());//should be 36 for cube
-		//printf("constructed UVs count: %d \n", loadedMeshUVs.size());//should be 36 for cube
 
 		//DEBUG positions-normal-d_data print
 		if (loadedMeshPositions.size() == loadedMeshNormals.size())
@@ -265,10 +264,10 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		}
 		else
 		{
-			printf("positions-normals count mismatch!\n");
+			printToConsole("positions-normals count mismatch!\n");
 		}
 
-		//Contruct Triangles
+		//Contruct and push Triangles
 		//Positions.size() and vertex_normals.size() must be equal!
 		for (size_t i = 0; i < loadedMeshPositions.size(); i += 3)
 		{
@@ -282,18 +281,6 @@ bool Scene::loadGLTFmodel(const char* filepath)
 
 			float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
 
-			////bounding box
-			//for (size_t j = i; j < i + 3; j++)
-			//{
-			//	if (Bounds.pMax.x < positions[j].x)Bounds.pMax.x = positions[j].x;
-			//	if (Bounds.pMax.y < positions[j].y)Bounds.pMax.y = positions[j].y;
-			//	if (Bounds.pMax.z < positions[j].z)Bounds.pMax.z = positions[j].z;
-
-			//	if (Bounds.pMin.x > positions[j].x)Bounds.pMin.x = positions[j].x;
-			//	if (Bounds.pMin.y > positions[j].y)Bounds.pMin.y = positions[j].y;
-			//	if (Bounds.pMin.z > positions[j].z)Bounds.pMin.z = positions[j].z;
-			//}
-
 			m_PrimitivesBuffer.push_back(Triangle(
 				Vertex(loadedMeshPositions[i], loadedMeshNormals[i], loadedMeshUVs[i]),
 				Vertex(loadedMeshPositions[i + 1], loadedMeshNormals[i + 1], loadedMeshUVs[i + 1]),
@@ -302,16 +289,10 @@ bool Scene::loadGLTFmodel(const char* filepath)
 				loadedMeshPrimitiveMatIdx[i / 3]));
 		}
 
-		loadedMesh.m_trisCount = m_PrimitivesBuffer.size() - loadedMesh.m_primitives_offset;
+		drt_mesh.m_trisCount = m_PrimitivesBuffer.size() - drt_mesh.m_primitives_offset;
 
-		//printf("constructing mesh\n");
-		//printf("bbox max: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMax.x, loadedMesh.Bounds.pMax.y, loadedMesh.Bounds.pMax.z);
-		//printf("bbox min: x:%.3f y:%.3f z:%.3f \n", loadedMesh.Bounds.pMin.x, loadedMesh.Bounds.pMin.y, loadedMesh.Bounds.pMin.z);
-		//printf("adding mesh\n");
-
-		m_Meshes.push_back(loadedMesh);
-		printToConsole("\rloaded mesh:%zu/%zu", nodeIdx, loadedmodel.nodes.size());
-		//printf("success\n\n");
+		m_Meshes.push_back(drt_mesh);
+		printToConsole("\rloaded mesh:%zu/%zu", nodeIdx + 1, loadedmodel.nodes.size());
 	}
 	printToConsole("\n");
 	return true;
@@ -327,11 +308,6 @@ Scene::~Scene()
 		//printf("node freed\n");
 		node.Cleanup();
 	}
-	//if (d_BVHTreeRoot != nullptr)
-	//{
-	//	d_BVHTreeRoot->Cleanup();
-	//	cudaFree(d_BVHTreeRoot);
-	//}
 
 	checkCudaErrors(cudaGetLastError());
 

@@ -40,7 +40,7 @@ struct SceneData
 
 struct Scene
 {
-	thrust::device_vector<Mesh> m_Meshes;
+	thrust::universal_vector<Mesh> m_Meshes;
 	thrust::universal_vector<Material> m_Material;
 	thrust::device_vector<Texture>m_Textures;
 	thrust::device_vector<BVHNode>m_BVHNodes;
@@ -51,6 +51,6 @@ struct Scene
 
 	~Scene();
 private:
-	bool loadMaterials(tinygltf::Model& model);
-	bool loadTextures(tinygltf::Model& model, bool is_binary);
+	bool loadMaterials(const tinygltf::Model& model);
+	bool loadTextures(const tinygltf::Model& model, bool is_binary);
 };

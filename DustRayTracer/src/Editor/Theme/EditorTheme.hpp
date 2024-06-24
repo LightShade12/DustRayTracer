@@ -1,15 +1,17 @@
 #include <imgui.h>
 //TODO: this is "regarded"
 namespace ImGuiThemes {
+	void nighttheme();
 
-    void nighttheme();
+	void UE4();
 
-    void UE4();
+	void vs();
 
-    void vs();
+	void modifiedDark();
 
-    void dark();
+	void embraceTheDarkness();
 
-    void embraceTheDarkness();
+	void OldSteam();
 
+	void Photoshop();
 }

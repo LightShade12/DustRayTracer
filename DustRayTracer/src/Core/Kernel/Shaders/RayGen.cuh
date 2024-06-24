@@ -4,6 +4,7 @@
 #include "Common/physical_units.hpp"
 #include "Core/CudaMath/helper_math.cuh"
 #include "Core/CudaMath/Random.cuh"
+#include "Core/CudaMath/cuda_mat.cuh"
 
 #include "Core/Ray.cuh"
 #include "Core/HitPayload.cuh"
@@ -77,14 +78,22 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float NoH = clamp(dot(normal, H), 0.0, 1.0);
 	float VoH = clamp(dot(outgoing_viewdir, H), 0.0, 1.0);
 
-	float reflectance = scene_data.RenderSettings.global_reflectance;
-	//float reflectance = material.Reflectance;
+	//float reflectance = scene_data.RenderSettings.global_reflectance;
+	float reflectance = material.Reflectance;
 	float roughness = material.Roughness;
 	float metallic = material.Metallicity;
 	float3 baseColor;
 
 	if (material.AlbedoTextureIndex < 0)baseColor = material.Albedo;
 	else baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
+
+	if (scene_data.RenderSettings.UseMaterialOverride)
+	{
+		reflectance = scene_data.RenderSettings.OverrideMaterial.Reflectance;
+		roughness = scene_data.RenderSettings.OverrideMaterial.Roughness;
+		metallic = scene_data.RenderSettings.OverrideMaterial.Metallicity;
+		baseColor = scene_data.RenderSettings.OverrideMaterial.Albedo;
+	}
 
 	float3 f0 = make_float3(0.16 * (reflectance * reflectance));
 	f0 = lerp(f0, baseColor, metallic);
@@ -150,17 +159,41 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			break;
 		}
 
-		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
-		float3 next_ray_dir = normalize(payload.world_normal + randomUnitSphereVec3(seed));
 		//SHADOWRAY-------------------------------------------------------------------------------------------
 
 		//SURFACE SHADING-------------------------------------------------------------------
 		current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
-		//emission
-		outgoing_light += (current_material->EmissiveColor * 100) * cumulative_incoming_light_throughput;
-
 		const Triangle* tri = payload.primitiveptr;
 		texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
+
+		//normal map
+		if (current_material->NormalTextureIndex >= 0) {
+			float3 edge0 = tri->vertex1.position - tri->vertex0.position;
+			float3 edge1 = tri->vertex2.position - tri->vertex0.position;
+			float2 deltaUV0 = tri->vertex1.UV - tri->vertex0.UV;
+			float2 deltaUV1 = tri->vertex2.UV - tri->vertex0.UV;
+			float invDet = 1.0f / (deltaUV0.x * deltaUV1.y - deltaUV1.x * deltaUV0.y);
+			float3 tangent = invDet * (deltaUV1.y * edge0 - deltaUV0.y * edge1);
+			float3 bitangent = invDet * (-deltaUV1.x * edge0 + deltaUV0.x * edge1);
+			float3 T = normalize(tangent);
+			float3 N = payload.world_normal;
+			//T - normalize(T - dot(T, N) * N);
+			float3 B = normalize(cross(N, T));
+
+			Matrix3x3_d TBN(T, B, N);
+			TBN = TBN.transpose();
+			payload.world_normal = normalize(
+				TBN * (scenedata.DeviceTextureBufferPtr[current_material->NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1));
+			payload.world_normal.z *= current_material->NormalMapScale;
+		}
+
+		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
+		float3 next_ray_dir = normalize(payload.world_normal + randomUnitSphereVec3(seed));
+
+		//emission
+		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
+			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv)) * current_material->EmissiveScale * cumulative_incoming_light_throughput;
+
 		float3 lightdir = next_ray_dir;
 		float3 viewdir = -1.f * (ray.getDirection());
 		cumulative_incoming_light_throughput *=
@@ -169,6 +202,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			* cosine_falloff_factor(lightdir, payload.world_normal);
 
 		//shadow ray for sunlight
+		//TODO: add brdf for proper glint and mirror
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
 			if (!rayTest(Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * 1.5),

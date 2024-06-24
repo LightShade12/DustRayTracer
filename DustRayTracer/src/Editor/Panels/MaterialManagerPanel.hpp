@@ -33,5 +33,7 @@ private:
 private:
 	//resources:
 	DRTThumbnail albedothumbnail;
+	DRTThumbnail emissionthumbnail;
+	DRTThumbnail normalthumbnail;
 	Scene* m_Scene;//non owning
 };

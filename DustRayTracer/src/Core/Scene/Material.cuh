@@ -9,9 +9,10 @@ public:
 	Material(float3 albedo) :Albedo(albedo) {};
 
 public:
-	char Name[32];
+	char Name[32]="Unnamed";
 	float3 Albedo = { 1,1,1 };
 	float3 EmissiveColor = { 0,0,0 };
+	float EmissiveScale = 1;
 	int AlbedoTextureIndex = -1;
 	int RoughnessTextureIndex = -1;
 	int NormalTextureIndex = -1;

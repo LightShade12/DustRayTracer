@@ -22,8 +22,14 @@ bool MaterialManagerPanel::OnUIRender()
 			if (ImGui::Selectable(m_Scene->m_Material[n].Name, is_selected)) {
 				selected_material_idx = n;
 				glDeleteTextures(1, &(albedothumbnail.gl_texture_name));
+				glDeleteTextures(1, &(emissionthumbnail.gl_texture_name));
+				glDeleteTextures(1, &(normalthumbnail.gl_texture_name));
 				if (m_Scene->m_Material[selected_material_idx].AlbedoTextureIndex >= 0)
 					albedothumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].AlbedoTextureIndex]));
+				if (m_Scene->m_Material[selected_material_idx].EmissionTextureIndex >= 0)
+					emissionthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].EmissionTextureIndex]));
+				if (m_Scene->m_Material[selected_material_idx].NormalTextureIndex >= 0)
+					normalthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].NormalTextureIndex]));
 			}
 
 			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -37,15 +43,26 @@ bool MaterialManagerPanel::OnUIRender()
 	ImGui::Text("Material Properties");
 	ImGui::Separator();
 	Material& selected_material = m_Scene->m_Material[selected_material_idx];
+
 	ImGui::Text(selected_material.Name);
 	if (selected_material.AlbedoTextureIndex >= 0)
 		ImGui::Image((void*)albedothumbnail.gl_texture_name, ImVec2(128 * (albedothumbnail.width / (float)albedothumbnail.height), 128));
+	if (selected_material.EmissionTextureIndex >= 0) {
+		ImGui::SameLine();
+		ImGui::Image((void*)emissionthumbnail.gl_texture_name, ImVec2(128 * (emissionthumbnail.width / (float)emissionthumbnail.height), 128));
+	}
+	if (selected_material.NormalTextureIndex >= 0) {
+		ImGui::SameLine();
+		ImGui::Image((void*)normalthumbnail.gl_texture_name, ImVec2(128 * (normalthumbnail.width / (float)normalthumbnail.height), 128));
+	}
 
 	refreshRender |= ImGui::ColorEdit3("Albedo", &selected_material.Albedo.x);
-	refreshRender |= ImGui::ColorEdit3("Emission", &selected_material.EmissiveColor.x);
+	refreshRender |= ImGui::ColorEdit3("Emission color", &selected_material.EmissiveColor.x);
+	refreshRender |= ImGui::SliderFloat("Emission scale", &selected_material.EmissiveScale, 0, 50);
 	refreshRender |= ImGui::SliderFloat("Metallicity", &(selected_material.Metallicity), 0, 1);
 	refreshRender |= ImGui::SliderFloat("Reflectance", &(selected_material.Reflectance), 0, 1);
 	refreshRender |= ImGui::SliderFloat("Roughness", &(selected_material.Roughness), 0, 1);
+	refreshRender |= ImGui::SliderFloat("Normal scale", &(selected_material.NormalMapScale), 0, 1);
 	ImGui::EndChild();
 
 	ImGui::End();
@@ -56,6 +73,8 @@ bool MaterialManagerPanel::OnUIRender()
 MaterialManagerPanel::~MaterialManagerPanel()
 {
 	glDeleteTextures(1, &(albedothumbnail.gl_texture_name));
+	glDeleteTextures(1, &(emissionthumbnail.gl_texture_name));
+	glDeleteTextures(1, &(normalthumbnail.gl_texture_name));
 }
 
 MaterialManagerPanel::DRTThumbnail MaterialManagerPanel::makeThumbnail(const Texture& drt_texture)

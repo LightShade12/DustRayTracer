@@ -76,7 +76,7 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
 	if (root_node_idx < 0) return false;//empty scene
 
-	const uint8_t maxStackSize = 64;
+	const uint8_t maxStackSize = 64*2;//TODO: make this const for all
 	int nodeIdxStack[maxStackSize];
 	uint8_t stackPtr = 0;
 
