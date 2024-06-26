@@ -24,12 +24,15 @@ bool MaterialManagerPanel::OnUIRender()
 				glDeleteTextures(1, &(albedothumbnail.gl_texture_name));
 				glDeleteTextures(1, &(emissionthumbnail.gl_texture_name));
 				glDeleteTextures(1, &(normalthumbnail.gl_texture_name));
+				glDeleteTextures(1, &(roughnessthumbnail.gl_texture_name));
 				if (m_Scene->m_Material[selected_material_idx].AlbedoTextureIndex >= 0)
 					albedothumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].AlbedoTextureIndex]));
 				if (m_Scene->m_Material[selected_material_idx].EmissionTextureIndex >= 0)
 					emissionthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].EmissionTextureIndex]));
 				if (m_Scene->m_Material[selected_material_idx].NormalTextureIndex >= 0)
 					normalthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].NormalTextureIndex]));
+				if (m_Scene->m_Material[selected_material_idx].RoughnessTextureIndex >= 0)
+					roughnessthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Material[selected_material_idx].RoughnessTextureIndex]));
 			}
 
 			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -55,6 +58,10 @@ bool MaterialManagerPanel::OnUIRender()
 		ImGui::SameLine();
 		ImGui::Image((void*)normalthumbnail.gl_texture_name, ImVec2(128 * (normalthumbnail.width / (float)normalthumbnail.height), 128));
 	}
+	if (selected_material.RoughnessTextureIndex >= 0) {
+		ImGui::SameLine();
+		ImGui::Image((void*)roughnessthumbnail.gl_texture_name, ImVec2(128 * (roughnessthumbnail.width / (float)roughnessthumbnail.height), 128));
+	}
 
 	refreshRender |= ImGui::ColorEdit3("Albedo", &selected_material.Albedo.x);
 	refreshRender |= ImGui::ColorEdit3("Emission color", &selected_material.EmissiveColor.x);
@@ -75,6 +82,7 @@ MaterialManagerPanel::~MaterialManagerPanel()
 	glDeleteTextures(1, &(albedothumbnail.gl_texture_name));
 	glDeleteTextures(1, &(emissionthumbnail.gl_texture_name));
 	glDeleteTextures(1, &(normalthumbnail.gl_texture_name));
+	glDeleteTextures(1, &(roughnessthumbnail.gl_texture_name));
 }
 
 MaterialManagerPanel::DRTThumbnail MaterialManagerPanel::makeThumbnail(const Texture& drt_texture)

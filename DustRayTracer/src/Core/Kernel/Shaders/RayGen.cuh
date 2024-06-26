@@ -81,22 +81,29 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	//float reflectance = scene_data.RenderSettings.global_reflectance;
 	float reflectance = material.Reflectance;
 	float roughness = material.Roughness;
-	float metallic = material.Metallicity;
+	float metallicity = material.Metallicity;
 	float3 baseColor;
 
 	if (material.AlbedoTextureIndex < 0)baseColor = material.Albedo;
 	else baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
+	
+	//roughness-metallic texture
+	if (material.RoughnessTextureIndex >= 0) {
+		float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
+		roughness = col.y;
+		metallicity = col.z;
+	}
 
 	if (scene_data.RenderSettings.UseMaterialOverride)
 	{
 		reflectance = scene_data.RenderSettings.OverrideMaterial.Reflectance;
 		roughness = scene_data.RenderSettings.OverrideMaterial.Roughness;
-		metallic = scene_data.RenderSettings.OverrideMaterial.Metallicity;
+		metallicity = scene_data.RenderSettings.OverrideMaterial.Metallicity;
 		baseColor = scene_data.RenderSettings.OverrideMaterial.Albedo;
 	}
 
 	float3 f0 = make_float3(0.16 * (reflectance * reflectance));
-	f0 = lerp(f0, baseColor, metallic);
+	f0 = lerp(f0, baseColor, metallicity);
 
 	float3 F = fresnelSchlick(VoH, f0);
 	float D = D_GGX(NoH, roughness);
@@ -110,7 +117,7 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	rhoD *= 1.0 - F;
 	rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
 
-	rhoD *= (1.0 - metallic);
+	rhoD *= (1.0 - metallicity);
 
 	float3 diff = rhoD / PI;
 

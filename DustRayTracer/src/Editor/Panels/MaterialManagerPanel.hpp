@@ -35,5 +35,6 @@ private:
 	DRTThumbnail albedothumbnail;
 	DRTThumbnail emissionthumbnail;
 	DRTThumbnail normalthumbnail;
+	DRTThumbnail roughnessthumbnail;
 	Scene* m_Scene;//non owning
 };
