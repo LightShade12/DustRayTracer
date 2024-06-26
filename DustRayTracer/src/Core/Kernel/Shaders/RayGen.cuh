@@ -22,6 +22,42 @@ TODO: List of things:
 -reuse a lot of vars in payload; like world_position
 */
 
+__device__ float3 sampleGGX(float3 normal, float roughness, float2 xi) {
+	float alpha = roughness * roughness;
+
+	float phi = 2.0f * PI * xi.x;
+	float cosTheta = sqrtf((1.0f - xi.y) / (1.0f + (alpha * alpha - 1.0f) * xi.y));
+	float sinTheta = sqrtf(1.0f - cosTheta * cosTheta);
+
+	float3 H;
+	H.x = sinTheta * cosf(phi);
+	H.y = sinTheta * sinf(phi);
+	H.z = cosTheta;
+
+	float3 up = fabs(normal.z) < 0.999 ? make_float3(0.0, 0.0, 1.0) : make_float3(1.0, 0.0, 0.0);
+	float3 tangent = normalize(cross(up, normal));
+	float3 bitangent = cross(normal, tangent);
+
+	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
+}
+
+__device__ float3 sampleHemisphere(float3 normal, float2 xi) {
+	float phi = 2.0f * PI * xi.x;
+	float cosTheta = sqrtf(1.0f - xi.y);
+	float sinTheta = sqrtf(xi.y);
+
+	float3 H;
+	H.x = sinTheta * cosf(phi);
+	H.y = sinTheta * sinf(phi);
+	H.z = cosTheta;
+
+	float3 up = fabs(normal.z) < 0.999 ? make_float3(0.0, 0.0, 1.0) : make_float3(1.0, 0.0, 0.0);
+	float3 tangent = normalize(cross(up, normal));
+	float3 bitangent = cross(normal, tangent);
+
+	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
+}
+
 __device__ static float3 skyModel(const Ray& ray, const SceneData& scenedata) {
 	float vertical_gradient_factor = 0.5 * (1 + (normalize(ray.getDirection())).y);//clamps to range 0-1
 	float3 col1 = scenedata.RenderSettings.sky_color;
@@ -47,6 +83,29 @@ __device__ float D_GGX(float NoH, float roughness) {
 	return alpha2 * (1 / PI) / (b * b);
 }
 
+__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf) {
+	float roughness = material.Roughness;
+	float metallicity = material.Metallicity;
+	float3 H;
+	float3 sampleDir;
+
+	float random_value = randomFloat(seed);
+	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));
+
+	if (random_value < metallicity) {
+		// Specular
+		H = sampleGGX(normal, roughness, xi);
+		sampleDir = reflect(-viewDir, H);
+		pdf = D_GGX(dot(normal, H), roughness) * dot(normal, H) / (4.0f * dot(sampleDir, H));
+	}
+	else {
+		// Diffuse
+		sampleDir = sampleHemisphere(normal, xi);
+		pdf = dot(normal, sampleDir) * (1.0f / PI);
+	}
+
+	return sampleDir;
+}
 __device__ float G1_GGX_Schlick(float NoV, float roughness) {
 	float alpha = roughness * roughness;
 	float k = alpha / 2.0;
@@ -86,7 +145,7 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	if (material.AlbedoTextureIndex < 0)baseColor = material.Albedo;
 	else baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
-	
+
 	//roughness-metallic texture
 	if (material.RoughnessTextureIndex >= 0) {
 		float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
@@ -202,18 +261,17 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		}
 
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
-		float3 next_ray_dir = normalize(payload.world_normal + randomUnitSphereVec3(seed));
+		float pdf;
+		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, -1.f * ray.getDirection(), *current_material, seed, pdf);
 
-		//emission
 		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
 			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv)) * current_material->EmissiveScale * cumulative_incoming_light_throughput;
 
 		float3 lightdir = next_ray_dir;
 		float3 viewdir = -1.f * (ray.getDirection());
 		cumulative_incoming_light_throughput *=
-			BRDF(lightdir, viewdir, payload.world_normal,
-				scenedata, *current_material, texture_sample_uv)
-			* cosine_falloff_factor(lightdir, payload.world_normal);
+			(BRDF(lightdir, viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
+				* cosine_falloff_factor(lightdir, payload.world_normal)) / pdf;
 
 		//shadow ray for sunlight
 		//TODO: add brdf for proper glint and mirror
