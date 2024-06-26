@@ -166,6 +166,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		const Triangle* tri = payload.primitiveptr;
 		texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
 
+		//TODO: fix smooth normals and triangle face normal situation
+		//smooth shading
+		payload.world_normal = normalize(payload.UVW.x * tri->vertex0.normal + payload.UVW.y * tri->vertex1.normal + payload.UVW.z * tri->vertex2.normal);
+		if (!payload.front_face)payload.world_normal = -payload.world_normal;
+
 		//normal map
 		if (current_material->NormalTextureIndex >= 0) {
 			float3 edge0 = tri->vertex1.position - tri->vertex0.position;
@@ -174,7 +179,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float2 deltaUV1 = tri->vertex2.UV - tri->vertex0.UV;
 			float invDet = 1.0f / (deltaUV0.x * deltaUV1.y - deltaUV1.x * deltaUV0.y);
 			float3 tangent = invDet * (deltaUV1.y * edge0 - deltaUV0.y * edge1);
-			float3 bitangent = invDet * (-deltaUV1.x * edge0 + deltaUV0.x * edge1);
+			//float3 bitangent = invDet * (-deltaUV1.x * edge0 + deltaUV0.x * edge1);
 			float3 T = normalize(tangent);
 			float3 N = payload.world_normal;
 			//T - normalize(T - dot(T, N) * N);
@@ -182,9 +187,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 			Matrix3x3_d TBN(T, B, N);
 			TBN = TBN.transpose();
-			payload.world_normal = normalize(
-				TBN * (scenedata.DeviceTextureBufferPtr[current_material->NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1));
-			payload.world_normal.z *= current_material->NormalMapScale;
+			payload.world_normal = (scenedata.DeviceTextureBufferPtr[current_material->NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1);
+			payload.world_normal.x *= current_material->NormalMapScale;
+			payload.world_normal.y *= current_material->NormalMapScale;
+			payload.world_normal = normalize(payload.world_normal);
+			payload.world_normal = normalize(TBN * payload.world_normal);
 		}
 
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
