@@ -52,7 +52,7 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/test/normal_map_test.glb");
+	m_Scene->loadGLTFmodel("../models/cornell_box.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
@@ -246,7 +246,7 @@ void EditorLayer::OnUIRender()
 	};
 	ImGui::End();
 
-	vpdims.y -= 12;//TODO: make this sensible; not a constant
+	if (vpdims.x > 14)vpdims.y -= 12;//TODO: make this sensible var; not a constant
 	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
 	m_Renderer.Render(m_device_Camera, (*m_Scene), &m_LastRenderTime_ms);//make lastrendertime a member var of renderer and access it?
 
