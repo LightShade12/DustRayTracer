@@ -59,25 +59,24 @@ __device__ float3 sampleGGX(float3 normal, float roughness, float2 xi) {
 //}
 
 __device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi) {
-    // Generate a cosine-weighted direction in the local frame
-    float phi = 2.0f * PI * xi.x;
-    float cosTheta = sqrtf(xi.y);//TODO: might have to switch with sinTheta
-    float sinTheta = sqrtf(1.0f - xi.y); 
+	// Generate a cosine-weighted direction in the local frame
+	float phi = 2.0f * PI * xi.x;
+	float cosTheta = sqrtf(xi.y);//TODO: might have to switch with sinTheta
+	float sinTheta = sqrtf(1.0f - xi.y);
 
-    float3 H;
-    H.x = sinTheta * cosf(phi);
-    H.y = sinTheta * sinf(phi);
-    H.z = cosTheta;
+	float3 H;
+	H.x = sinTheta * cosf(phi);
+	H.y = sinTheta * sinf(phi);
+	H.z = cosTheta;
 
-    // Create an orthonormal basis (tangent, bitangent, normal)
-    float3 up = fabs(normal.z) < 0.999f ? make_float3(0.0f, 0.0f, 1.0f) : make_float3(1.0f, 0.0f, 0.0f);
-    float3 tangent = normalize(cross(up, normal));
-    float3 bitangent = cross(normal, tangent);
+	// Create an orthonormal basis (tangent, bitangent, normal)
+	float3 up = fabs(normal.z) < 0.999f ? make_float3(0.0f, 0.0f, 1.0f) : make_float3(1.0f, 0.0f, 0.0f);
+	float3 tangent = normalize(cross(up, normal));
+	float3 bitangent = cross(normal, tangent);
 
-    // Transform the sample direction from local space to world space
-    return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
+	// Transform the sample direction from local space to world space
+	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
 }
-
 
 __device__ static float3 skyModel(const Ray& ray, const SceneData& scenedata) {
 	float vertical_gradient_factor = 0.5 * (1 + (normalize(ray.getDirection())).y);//clamps to range 0-1
@@ -104,10 +103,10 @@ __device__ float D_GGX(float NoH, float roughness) {
 	return alpha2 * (1 / PI) / (b * b);
 }
 
-__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf) {
+__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf, const SceneData& scene_data, float2 texture_uv) {
 	float roughness = material.Roughness;
 	float metallicity = material.Metallicity;
-	float3 H;
+	float3 H{};
 	float3 sampleDir;
 
 	float random_value = randomFloat(seed);
@@ -121,10 +120,29 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	}
 	else {
 		// Non-metallic
+		H = sampleGGX(normal, roughness, xi);
+		float VoH = clamp(dot(viewDir, H), 0.0, 1.0);
 
-		//diffuse
-		sampleDir = sampleCosineWeightedHemisphere(normal, xi);
-		pdf = dot(normal, sampleDir) * (1.0f / PI);
+		float reflectance = material.Reflectance;
+
+		float3 f0 = make_float3(0.16 * (reflectance * reflectance));
+		float3 F = fresnelSchlick(VoH, f0);
+
+		random_value = randomFloat(seed);
+
+		if (random_value < (F.x + F.y + F.z) / 3)
+		{
+			//specular
+			sampleDir = reflect(-viewDir, H);
+			pdf = D_GGX(clamp(dot(normal, H), 0.f, 1.f),roughness)
+				* clamp(dot(normal, H), 0.f, 1.f) / (4.0f * clamp(dot(sampleDir, H),0.f,1.f));
+		}
+		else
+		{
+			//diffuse
+			sampleDir = sampleCosineWeightedHemisphere(normal, xi);
+			pdf = dot(normal, sampleDir) * (1.0f / PI);
+		}
 	}
 
 	return sampleDir;
@@ -285,7 +303,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
 		float pdf;
-		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, -1.f * ray.getDirection(), *current_material, seed, pdf);
+		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, -1.f * ray.getDirection(), *current_material, seed, pdf, scenedata, texture_sample_uv);
 
 		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
 			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv)) * current_material->EmissiveScale * cumulative_incoming_light_throughput;

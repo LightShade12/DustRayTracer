@@ -53,8 +53,8 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
-	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
-	m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
+	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
+	//m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 16;
