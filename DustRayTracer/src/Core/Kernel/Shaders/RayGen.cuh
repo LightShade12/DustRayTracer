@@ -41,22 +41,43 @@ __device__ float3 sampleGGX(float3 normal, float roughness, float2 xi) {
 	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
 }
 
-__device__ float3 sampleHemisphere(float3 normal, float2 xi) {
-	float phi = 2.0f * PI * xi.x;
-	float cosTheta = sqrtf(1.0f - xi.y);
-	float sinTheta = sqrtf(xi.y);
+//__device__ float3 sampleHemisphere(float3 normal, float2 xi) {
+//	float phi = 2.0f * PI * xi.x;
+//	float cosTheta = sqrtf(1.0f - xi.y);
+//	float sinTheta = sqrtf(xi.y);
+//
+//	float3 H;
+//	H.x = sinTheta * cosf(phi);
+//	H.y = sinTheta * sinf(phi);
+//	H.z = cosTheta;
+//
+//	float3 up = fabs(normal.z) < 0.999 ? make_float3(0.0, 0.0, 1.0) : make_float3(1.0, 0.0, 0.0);
+//	float3 tangent = normalize(cross(up, normal));
+//	float3 bitangent = cross(normal, tangent);
+//
+//	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
+//}
 
-	float3 H;
-	H.x = sinTheta * cosf(phi);
-	H.y = sinTheta * sinf(phi);
-	H.z = cosTheta;
+__device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi) {
+    // Generate a cosine-weighted direction in the local frame
+    float phi = 2.0f * PI * xi.x;
+    float cosTheta = sqrtf(xi.y);//TODO: might have to switch with sinTheta
+    float sinTheta = sqrtf(1.0f - xi.y); 
 
-	float3 up = fabs(normal.z) < 0.999 ? make_float3(0.0, 0.0, 1.0) : make_float3(1.0, 0.0, 0.0);
-	float3 tangent = normalize(cross(up, normal));
-	float3 bitangent = cross(normal, tangent);
+    float3 H;
+    H.x = sinTheta * cosf(phi);
+    H.y = sinTheta * sinf(phi);
+    H.z = cosTheta;
 
-	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
+    // Create an orthonormal basis (tangent, bitangent, normal)
+    float3 up = fabs(normal.z) < 0.999f ? make_float3(0.0f, 0.0f, 1.0f) : make_float3(1.0f, 0.0f, 0.0f);
+    float3 tangent = normalize(cross(up, normal));
+    float3 bitangent = cross(normal, tangent);
+
+    // Transform the sample direction from local space to world space
+    return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
 }
+
 
 __device__ static float3 skyModel(const Ray& ray, const SceneData& scenedata) {
 	float vertical_gradient_factor = 0.5 * (1 + (normalize(ray.getDirection())).y);//clamps to range 0-1
@@ -93,19 +114,22 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));
 
 	if (random_value < metallicity) {
-		// Specular
+		// Metallic (Specular only)
 		H = sampleGGX(normal, roughness, xi);
 		sampleDir = reflect(-viewDir, H);
 		pdf = D_GGX(dot(normal, H), roughness) * dot(normal, H) / (4.0f * dot(sampleDir, H));
 	}
 	else {
-		// Diffuse
-		sampleDir = sampleHemisphere(normal, xi);
+		// Non-metallic
+
+		//diffuse
+		sampleDir = sampleCosineWeightedHemisphere(normal, xi);
 		pdf = dot(normal, sampleDir) * (1.0f / PI);
 	}
 
 	return sampleDir;
 }
+
 __device__ float G1_GGX_Schlick(float NoV, float roughness) {
 	float alpha = roughness * roughness;
 	float k = alpha / 2.0;
@@ -137,7 +161,6 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float NoH = clamp(dot(normal, H), 0.0, 1.0);
 	float VoH = clamp(dot(outgoing_viewdir, H), 0.0, 1.0);
 
-	//float reflectance = scene_data.RenderSettings.global_reflectance;
 	float reflectance = material.Reflectance;
 	float roughness = material.Roughness;
 	float metallicity = material.Metallicity;
@@ -172,9 +195,9 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	float3 rhoD = baseColor;
 
-	// optionally
 	rhoD *= 1.0 - F;
-	rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
+	// optionally for less AO
+	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
 
 	rhoD *= (1.0 - metallicity);
 
