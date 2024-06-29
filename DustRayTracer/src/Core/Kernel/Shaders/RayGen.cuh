@@ -86,51 +86,6 @@ __device__ float D_GGX(float NoH, float roughness) {
 	return alpha2 * (1 / PI) / (b * b);
 }
 
-__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf, const SceneData& scene_data, float2 texture_uv) {
-	float roughness = material.Roughness;
-	float metallicity = material.Metallicity;
-	float3 H{};
-	float3 sampleDir;
-
-	float random_value = randomFloat(seed);
-	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));//uniform rng sample
-
-	if (random_value < metallicity) {
-		// Metallic (Specular only)
-		H = sampleGGX(normal, roughness, xi);
-		sampleDir = reflect(-viewDir, H);
-		pdf = D_GGX(dot(normal, H), roughness) * dot(normal, H) / (4.0f * dot(sampleDir, H));
-	}
-	else {
-		// Non-metallic
-		H = sampleGGX(normal, roughness, xi);
-		float VoH = clamp(dot(viewDir, H), 0.0, 1.0);
-
-		float reflectance = material.Reflectance;
-
-		float3 f0 = make_float3(0.16 * (reflectance * reflectance));
-		float3 F = fresnelSchlick(VoH, f0);
-
-		random_value = randomFloat(seed);
-
-		if (random_value < (F.x + F.y + F.z) / 3)
-		{
-			//specular
-			sampleDir = reflect(-viewDir, H);
-			pdf = D_GGX(clamp(dot(normal, H), 0.f, 1.f), roughness)
-				* clamp(dot(normal, H), 0.f, 1.f) / (4.0f * clamp(dot(sampleDir, H), 0.f, 1.f));
-		}
-		else
-		{
-			//diffuse
-			sampleDir = sampleCosineWeightedHemisphere(normal, xi);
-			pdf = dot(normal, sampleDir) * (1.0f / PI);
-		}
-	}
-
-	return sampleDir;
-}
-
 __device__ float G1_GGX_Schlick(float NoV, float roughness) {
 	float alpha = roughness * roughness;
 	float k = alpha / 2.0;
@@ -153,6 +108,32 @@ __device__ float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roug
 	return F_in * F_out;
 }
 
+__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf, const SceneData& scene_data, float2 texture_uv) {
+	float roughness = material.Roughness;
+	float metallicity = material.Metallicity;
+	float3 H{};
+	float3 sampleDir;
+
+	float random_value = randomFloat(seed);
+	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));//uniform rng sample
+
+	if (random_value < metallicity) {
+		// Metallic (Specular only)
+		H = sampleGGX(normal, roughness, xi);
+		sampleDir = reflect(-viewDir, H);
+		pdf = D_GGX(dot(normal, H), roughness) * dot(normal, H) / (4.0f * dot(sampleDir, H));
+	}
+	else {
+		// Non-metallic
+
+		//diffuse
+		sampleDir = sampleCosineWeightedHemisphere(normal, xi);
+		pdf = dot(normal, sampleDir) * (1.0f / PI);
+	}
+
+	return sampleDir;
+}
+
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
 	const Material& material, const float2& texture_uv) {
 	float3 H = normalize(outgoing_viewdir + incoming_lightdir);
@@ -165,10 +146,9 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float reflectance = material.Reflectance;
 	float roughness = material.Roughness;
 	float metallicity = material.Metallicity;
-	float3 baseColor;
+	float3 baseColor = material.Albedo;
 
-	if (material.AlbedoTextureIndex < 0)baseColor = material.Albedo;
-	else baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
+	if (material.AlbedoTextureIndex >= 0)baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
 
 	//roughness-metallic texture
 	if (material.RoughnessTextureIndex >= 0) {
@@ -196,7 +176,7 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	float3 rhoD = baseColor;
 
-	rhoD *= 1.0 - F;
+	rhoD *= (1.0 - F);//F=Ks
 	// optionally for less AO
 	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
 
@@ -302,23 +282,23 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
 		float pdf_eval;
 		float3 viewdir = -1.f * (ray.getDirection());
-		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, viewdir, *current_material, seed, pdf_eval, scenedata, texture_sample_uv);
+		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, normalize(viewdir), *current_material, seed, pdf_eval, scenedata, texture_sample_uv);
 		float3 lightdir = next_ray_dir;
+
+		//shadow ray for sunlight
+		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
+		{
+			Ray sunray = Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scenedata.RenderSettings.sun_size);
+			if (!rayTest(sunray, &scenedata))
+				outgoing_light += suncol * cumulative_incoming_light_throughput *
+				BRDF(normalize(sunray.getDirection()), normalize(viewdir), payload.world_normal, scenedata, *current_material, texture_sample_uv) *
+				cosine_falloff_factor(normalize(sunpos), payload.world_normal);
+		}
 
 		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
-			(BRDF(lightdir, viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
+			(BRDF(normalize(lightdir), normalize(viewdir), payload.world_normal, scenedata, *current_material, texture_sample_uv)
 				* cosine_falloff_factor(lightdir, payload.world_normal)) / pdf_eval;
-
-		//shadow ray for sunlight
-		//TODO: add brdf for proper glint and mirror
-		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
-		{
-			if (!rayTest(Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scenedata.RenderSettings.sun_size),
-				&scenedata))
-				outgoing_light += suncol * cumulative_incoming_light_throughput *
-				cosine_falloff_factor(normalize(sunpos), payload.world_normal);
-		}
 
 		//BOUNCE RAY---------------------------------------------------------------------------------------
 

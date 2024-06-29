@@ -33,13 +33,13 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	//m_device_Camera = new Camera(make_float3(-4.65,1.8,-5));
-	m_device_Camera = new Camera(make_float3(0, 1, 2.8));
+	m_device_Camera = new Camera(make_float3(-4.65,1.8,-5));
+	//m_device_Camera = new Camera(make_float3(0, 1, 2.8));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
-	//m_device_Camera->m_Forward_dir = { 0.6,-0.14,0.66 };
+	m_device_Camera->m_Forward_dir = { 0.6,-0.14,0.66 };
 	m_Scene = std::make_shared<Scene>();
 
 	m_RendererMetricsPanel.SetRenderer(m_Renderer);
@@ -52,12 +52,12 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
-	//m_Scene->loadGLTFmodel("../models/source/cs16_dust2.glb");
-	m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb");
+	m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
+	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
+	//m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 4;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 16;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
