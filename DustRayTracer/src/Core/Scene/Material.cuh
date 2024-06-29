@@ -12,7 +12,7 @@ public:
 	char Name[32]="Unnamed";
 	float3 Albedo = { 1,1,1 };
 	float3 EmissiveColor = { 0,0,0 };
-	float EmissiveScale = 1;
+	float EmissiveScale = 0;
 	int AlbedoTextureIndex = -1;
 	int RoughnessTextureIndex = -1;
 	int NormalTextureIndex = -1;

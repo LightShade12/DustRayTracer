@@ -69,7 +69,7 @@ bool MaterialManagerPanel::OnUIRender()
 	refreshRender |= ImGui::SliderFloat("Metallicity", &(selected_material.Metallicity), 0, 1);
 	refreshRender |= ImGui::SliderFloat("Reflectance", &(selected_material.Reflectance), 0, 1);
 	refreshRender |= ImGui::SliderFloat("Roughness", &(selected_material.Roughness), 0, 1);
-	refreshRender |= ImGui::SliderFloat("Normal scale", &(selected_material.NormalMapScale), 0, 1);
+	refreshRender |= ImGui::SliderFloat("Normal scale", &(selected_material.NormalMapScale), 0, 2);
 	ImGui::EndChild();
 
 	ImGui::End();

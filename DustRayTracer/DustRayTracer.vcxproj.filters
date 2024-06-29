@@ -111,6 +111,7 @@
     <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
     <ClInclude Include="src\Editor\Panels\RendererMetricsPanel.hpp" />
     <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
+    <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\private\Application.cpp">

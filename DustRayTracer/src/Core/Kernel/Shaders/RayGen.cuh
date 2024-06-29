@@ -41,23 +41,6 @@ __device__ float3 sampleGGX(float3 normal, float roughness, float2 xi) {
 	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
 }
 
-//__device__ float3 sampleHemisphere(float3 normal, float2 xi) {
-//	float phi = 2.0f * PI * xi.x;
-//	float cosTheta = sqrtf(1.0f - xi.y);
-//	float sinTheta = sqrtf(xi.y);
-//
-//	float3 H;
-//	H.x = sinTheta * cosf(phi);
-//	H.y = sinTheta * sinf(phi);
-//	H.z = cosTheta;
-//
-//	float3 up = fabs(normal.z) < 0.999 ? make_float3(0.0, 0.0, 1.0) : make_float3(1.0, 0.0, 0.0);
-//	float3 tangent = normalize(cross(up, normal));
-//	float3 bitangent = cross(normal, tangent);
-//
-//	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
-//}
-
 __device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi) {
 	// Generate a cosine-weighted direction in the local frame
 	float phi = 2.0f * PI * xi.x;
@@ -110,7 +93,7 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	float3 sampleDir;
 
 	float random_value = randomFloat(seed);
-	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));
+	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));//uniform rng sample
 
 	if (random_value < metallicity) {
 		// Metallic (Specular only)
@@ -134,8 +117,8 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 		{
 			//specular
 			sampleDir = reflect(-viewDir, H);
-			pdf = D_GGX(clamp(dot(normal, H), 0.f, 1.f),roughness)
-				* clamp(dot(normal, H), 0.f, 1.f) / (4.0f * clamp(dot(sampleDir, H),0.f,1.f));
+			pdf = D_GGX(clamp(dot(normal, H), 0.f, 1.f), roughness)
+				* clamp(dot(normal, H), 0.f, 1.f) / (4.0f * clamp(dot(sampleDir, H), 0.f, 1.f));
 		}
 		else
 		{
@@ -224,6 +207,35 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	return diff + spec;
 }
 
+__device__ float3 normalMap(const Material& current_material,
+	const Triangle* tri, float3 normal, const SceneData& scene_data,
+	float2 texture_sample_uv) {
+	float3 edge0 = tri->vertex1.position - tri->vertex0.position;
+	float3 edge1 = tri->vertex2.position - tri->vertex0.position;
+	float2 deltaUV0 = tri->vertex1.UV - tri->vertex0.UV;
+	float2 deltaUV1 = tri->vertex2.UV - tri->vertex0.UV;
+	float invDet = 1.0f / (deltaUV0.x * deltaUV1.y - deltaUV1.x * deltaUV0.y);
+	float3 tangent = invDet * (deltaUV1.y * edge0 - deltaUV0.y * edge1);
+	//float3 bitangent = invDet * (-deltaUV1.x * edge0 + deltaUV0.x * edge1);
+	float3 T = normalize(tangent);
+	float3 N = normal;
+	//T - normalize(T - dot(T, N) * N);
+	float3 B = normalize(cross(N, T));
+
+	Matrix3x3_d TBN(T, B, N);
+	TBN = TBN.transpose();
+
+	float3 alteredNormal = (scene_data.DeviceTextureBufferPtr[current_material.NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1);
+	alteredNormal.x *= current_material.NormalMapScale;
+	alteredNormal.y *= current_material.NormalMapScale;
+	alteredNormal = normalize(alteredNormal);
+	alteredNormal = normalize(TBN * alteredNormal);
+	return alteredNormal;
+}
+
+//Its called a Monte Carlo estimator
+
+//TODO: maybe create a LaunchID struct instead of x,y?
 __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, uint32_t frameidx, const SceneData scenedata) {
 	float3 sunpos = make_float3(
@@ -241,20 +253,20 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	ray.interval = Interval(-1, FLT_MAX);
 
 	float3 outgoing_light = { 0,0,0 };
-	float3 cumulative_incoming_light_throughput = { 1,1,1 };
-	int bounces = scenedata.RenderSettings.ray_bounce_limit;
+	float3 cumulative_incoming_light_throughput = { 1,1,1 };//Transport operator
+	int max_bounces = scenedata.RenderSettings.ray_bounce_limit;
 
 	HitPayload payload;
-	float2 texture_sample_uv = { 0,1 };//DEBUG
-	const Material* current_material = nullptr;
-
-	for (int bounce_depth = 0; bounce_depth <= bounces; bounce_depth++)
+	//TODO: fix shadow at grazing angles issue
+	//TODO: does russian roulette matter?
+	//operator formulation for rendering equation
+	for (int bounce_depth = 0; bounce_depth <= max_bounces; bounce_depth++)
 	{
 		payload = traceRay(ray, &scenedata);
 		seed += bounce_depth;
 
 		//SHADING------------------------------------------------------------
-		//SKY SHADING------------------------
+		//SKY SHADING----------------------------------
 		if (payload.primitiveptr == nullptr)
 		{
 			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG &&
@@ -266,12 +278,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			break;
 		}
 
-		//SHADOWRAY-------------------------------------------------------------------------------------------
-
 		//SURFACE SHADING-------------------------------------------------------------------
-		current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
+		const Material* current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
 		const Triangle* tri = payload.primitiveptr;
-		texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
+		const float2 texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
+		//--------------------
 
 		//TODO: fix smooth normals and triangle face normal situation
 		//smooth shading
@@ -280,49 +291,33 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		//normal map
 		if (current_material->NormalTextureIndex >= 0) {
-			float3 edge0 = tri->vertex1.position - tri->vertex0.position;
-			float3 edge1 = tri->vertex2.position - tri->vertex0.position;
-			float2 deltaUV0 = tri->vertex1.UV - tri->vertex0.UV;
-			float2 deltaUV1 = tri->vertex2.UV - tri->vertex0.UV;
-			float invDet = 1.0f / (deltaUV0.x * deltaUV1.y - deltaUV1.x * deltaUV0.y);
-			float3 tangent = invDet * (deltaUV1.y * edge0 - deltaUV0.y * edge1);
-			//float3 bitangent = invDet * (-deltaUV1.x * edge0 + deltaUV0.x * edge1);
-			float3 T = normalize(tangent);
-			float3 N = payload.world_normal;
-			//T - normalize(T - dot(T, N) * N);
-			float3 B = normalize(cross(N, T));
-
-			Matrix3x3_d TBN(T, B, N);
-			TBN = TBN.transpose();
-			payload.world_normal = (scenedata.DeviceTextureBufferPtr[current_material->NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1);
-			payload.world_normal.x *= current_material->NormalMapScale;
-			payload.world_normal.y *= current_material->NormalMapScale;
-			payload.world_normal = normalize(payload.world_normal);
-			payload.world_normal = normalize(TBN * payload.world_normal);
+			payload.world_normal = normalMap(*current_material, tri,
+				payload.world_normal, scenedata, texture_sample_uv);
 		}
 
-		float3 next_ray_origin = payload.world_position + (payload.world_normal * 0.001f);
-		float pdf;
-		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, -1.f * ray.getDirection(), *current_material, seed, pdf, scenedata, texture_sample_uv);
-
+		//emission; currently ignores solid angle term for emitter
 		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
 			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv)) * current_material->EmissiveScale * cumulative_incoming_light_throughput;
 
-		float3 lightdir = next_ray_dir;
+		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
+		float pdf_eval;
 		float3 viewdir = -1.f * (ray.getDirection());
+		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, viewdir, *current_material, seed, pdf_eval, scenedata, texture_sample_uv);
+		float3 lightdir = next_ray_dir;
+
+		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
 			(BRDF(lightdir, viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
-				* cosine_falloff_factor(lightdir, payload.world_normal)) / pdf;
+				* cosine_falloff_factor(lightdir, payload.world_normal)) / pdf_eval;
 
 		//shadow ray for sunlight
 		//TODO: add brdf for proper glint and mirror
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
-			if (!rayTest(Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * 1.5),
+			if (!rayTest(Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scenedata.RenderSettings.sun_size),
 				&scenedata))
 				outgoing_light += suncol * cumulative_incoming_light_throughput *
 				cosine_falloff_factor(normalize(sunpos), payload.world_normal);
-			//cumulative_incoming_light_throughput *= suncol * cosine_falloff_factor(normalize(sunpos), payload.world_normal);
 		}
 
 		//BOUNCE RAY---------------------------------------------------------------------------------------
@@ -354,7 +349,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			default:
 				break;
 			}
-			break;
+			break;//no bounce
 		}
 	}
 

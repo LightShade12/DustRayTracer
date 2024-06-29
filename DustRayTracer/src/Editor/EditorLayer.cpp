@@ -34,7 +34,7 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 void EditorLayer::OnAttach()
 {
 	//m_device_Camera = new Camera(make_float3(-4.65,1.8,-5));
-	m_device_Camera = new Camera(make_float3(0, 2, 5));
+	m_device_Camera = new Camera(make_float3(0, 1, 2.8));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
@@ -53,11 +53,11 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
-	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
-	//m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
+	//m_Scene->loadGLTFmodel("../models/source/cs16_dust2.glb");
+	m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb");
 
 	BVHBuilder bvhbuilder;
-	bvhbuilder.m_TargetLeafPrimitivesCount = 16;
+	bvhbuilder.m_TargetLeafPrimitivesCount = 4;
 	bvhbuilder.m_BinCount = 16;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
@@ -123,7 +123,7 @@ void EditorLayer::OnUIRender()
 				}
 				else {//DEBUG MODE
 					ImGui::Text("Debug view:"); ImGui::SameLine();
-					if (ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs\0MeshBVH\0WorldBounds"))
+					if (ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs\0BVH"))
 					{
 						m_Renderer.m_RendererSettings.DebugMode = (RendererSettings::DebugModes)debug_view; m_Renderer.resetAccumulationBuffer();
 					}
@@ -142,6 +142,7 @@ void EditorLayer::OnUIRender()
 			{
 				ImGui::CollapsingHeader("Sun light", ImGuiTreeNodeFlags_Leaf);
 				if (ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color)))m_Renderer.resetAccumulationBuffer();
+				if (ImGui::SliderFloat("Sunlight size", &(m_Renderer.m_RendererSettings.sun_size), 0, 5))m_Renderer.resetAccumulationBuffer();
 				if (ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10))m_Renderer.resetAccumulationBuffer();
 				if (ImGui::SliderAngle("Sunlight Y rotation", &(m_Renderer.m_RendererSettings.sunlight_dir.x)))m_Renderer.resetAccumulationBuffer();
 				if (ImGui::SliderAngle("Sunlight altitude", &(m_Renderer.m_RendererSettings.sunlight_dir.y), 0, 90))m_Renderer.resetAccumulationBuffer();

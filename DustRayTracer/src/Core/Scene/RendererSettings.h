@@ -18,7 +18,6 @@ struct RendererSettings
 		BARYCENTRIC_DEBUG = 2,
 		UVS_DEBUG = 3,
 		MESHBVH_DEBUG = 4,
-		WORLDBVH_DEBUG = 5
 	};
 
 	bool UseMaterialOverride = false;
@@ -31,6 +30,7 @@ struct RendererSettings
 	int ray_bounce_limit = 2;
 	RenderModes RenderMode = RenderModes::NORMALMODE;
 	DebugModes DebugMode = DebugModes::ALBEDO_DEBUG;
+	float sun_size = 1.5;
 	float2 sunlight_dir = { -0.803f,0.681f };
 	float3 sunlight_color = { 1.000f,0.944f,0.917f };
 	float sunlight_intensity = 30;

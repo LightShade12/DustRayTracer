@@ -139,6 +139,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\DustRayTracer.hpp" />
+    <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
     <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
     <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
     <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
