@@ -134,8 +134,6 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	return sampleDir;
 }
 
-
-
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
 	const Material& material, const float2& texture_uv) {
 	float3 H = normalize(outgoing_viewdir + incoming_lightdir);
@@ -278,9 +276,20 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				payload.world_normal, scenedata, texture_sample_uv);
 		}
 
-		//emission; currently ignores solid angle term for emitter
-		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
-			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv)) * current_material->EmissiveScale * cumulative_incoming_light_throughput;
+		bool MIS = true;
+		float weight = (bounce_depth != 0 && MIS) ? 0 : 1;
+
+		//Emission;
+		float bemitter_cosTheta = dot(tri->face_normal, -1.f * ray.getDirection());//TODO: why tf is this even correct
+		bemitter_cosTheta = fmaxf(0.0f, bemitter_cosTheta);
+		float bdistanceSquared = payload.hit_distance * payload.hit_distance;
+		float3 bedge1 = tri->vertex1.position - tri->vertex0.position;
+		float3 bedge2 = tri->vertex2.position - tri->vertex0.position;
+		float blightArea = 0.5f * length(cross(bedge1, bedge2));
+
+		if (true)outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
+			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv))
+			* 10 * current_material->EmissiveScale * cumulative_incoming_light_throughput * weight;
 
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
 		float pdf_eval;
@@ -288,52 +297,51 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, normalize(viewdir), *current_material, seed, pdf_eval, scenedata, texture_sample_uv);
 		float3 lightdir = next_ray_dir;
 
-		//for (int i = 0; i < scenedata.DeviceMeshLightsBufferSize; i++) {
-		//	const Triangle* meshlight = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[i]];
-		//	if (payload.primitiveptr == meshlight) {
-		//		outgoing_light = meshlight->face_normal;
-		//		break;
-		//	}
-		//}
-		//break;
+		//Direct light sampling----------------------------------------------------
+		const Triangle* meshlight_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
 
-		// Direct light sampling
-		const Triangle* meshlight = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
-		//meshlight = &scenedata.DevicePrimitivesBuffer[2];
-		if (payload.primitiveptr != meshlight) {
+		if (payload.primitiveptr != meshlight_triangle && MIS)
+		{
 			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
-			//barycentric = {0.33,0.33};
+
 			// Ensure that barycentric coordinates sum to 1
 			if (barycentric.x + barycentric.y > 1.0f) {
 				barycentric.x = 1.0f - barycentric.x;
 				barycentric.y = 1.0f - barycentric.y;
 			}
-			// Calculate the target position on the mesh light
-			float3 target = meshlight->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
-				meshlight->vertex1.position * barycentric.x +
-				meshlight->vertex2.position * barycentric.y;
+			// Calculate the triangle_sample_point position on the mesh light
+			float3 triangle_sample_point = meshlight_triangle->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
+				meshlight_triangle->vertex1.position * barycentric.x +
+				meshlight_triangle->vertex2.position * barycentric.y;
 
-			float3 targetDir = normalize(target - next_ray_origin);
+			float3 shadowray_dir = normalize(triangle_sample_point - next_ray_origin);
 
-			Ray dlray(next_ray_origin, targetDir);
-			dlray.interval = Interval(-1, FLT_MAX);
-			//dlray.interval.max = length(target - next_ray_origin) + 0.01f;
-			// Set the maximum interval to the distance to the target point minus a small epsilon
-			HitPayload hp = traceRay(dlray, &scenedata);
+			Ray shadow_ray(next_ray_origin, shadowray_dir);
+			shadow_ray.interval = Interval(-1, FLT_MAX);
 
-			// Check if the ray hit the mesh light
-			if (hp.primitiveptr != nullptr) {
-				// Calculate the emission from the light
-				float3 le = scenedata.DeviceMaterialBufferPtr[hp.primitiveptr->material_idx].EmissiveColor * 10;
+			HitPayload shadowray_payload = traceRay(shadow_ray, &scenedata);
 
+			if (shadowray_payload.primitiveptr != nullptr)//guard against alpha test; pseudo visibility term
+			{
+				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
+				float3 Le = scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveColor * 10 *
+					scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveScale;
 				// Calculate the BRDF and other factors
-				float3 brdf = BRDF(dlray.getDirection(), -1.f * ray.getDirection(), payload.world_normal, scenedata, *current_material, texture_sample_uv);
-				float falloff = cosine_falloff_factor(dlray.getDirection(), payload.world_normal);
-				float distanceSquared = dot(dlray.getOrigin() - hp.world_position, dlray.getOrigin() - hp.world_position);
+				float3 brdf = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
+					payload.world_normal, scenedata, *current_material, texture_sample_uv);
+				float reciever_cosTheta = cosine_falloff_factor(shadow_ray.getDirection(), payload.world_normal);
+				reciever_cosTheta = fmaxf(0.0f, reciever_cosTheta);
+				float emitter_cosTheta = dot(shadowray_payload.primitiveptr->face_normal, -1.f * shadow_ray.getDirection());//TODO: why tf is this even correct
+				emitter_cosTheta = fmaxf(0.0f, emitter_cosTheta);
+				//float distanceSquared = dot(shadow_ray.getOrigin() - shadowray_payload.world_position, shadow_ray.getOrigin() - shadowray_payload.world_position);
+				float distanceSquared = shadowray_payload.hit_distance * shadowray_payload.hit_distance;
+				float3 edge1 = shadowray_payload.primitiveptr->vertex1.position - shadowray_payload.primitiveptr->vertex0.position;
+				float3 edge2 = shadowray_payload.primitiveptr->vertex2.position - shadowray_payload.primitiveptr->vertex0.position;
+				float lightArea = 0.5f * length(cross(edge1, edge2));
+				float pdf_light = distanceSquared / (emitter_cosTheta * lightArea);
 
-				//outgoing_light += make_float3(0, 1, 0);
-				// Accumulate the outgoing light
-				outgoing_light += le * falloff * cumulative_incoming_light_throughput * brdf / distanceSquared;
+				outgoing_light += brdf * Le * cumulative_incoming_light_throughput * reciever_cosTheta * emitter_cosTheta / (distanceSquared);//*
+				//outgoing_light = make_float3(0,1,0);
 			}
 		}
 		break;

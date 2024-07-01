@@ -32,15 +32,16 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera(make_float3(-4.65, 1.8, -5));
-	//m_device_Camera = new Camera(make_float3(0, 1, 2.8));
+	m_Renderer.m_RendererSettings.sky_intensity = 0;
+	//m_device_Camera = new Camera(make_float3(-4.65, 1.8, -5));
+	m_device_Camera = new Camera(make_float3(0, 1, 2.8));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
-	m_device_Camera->m_Forward_dir = { 0.6,-0.14,0.66 };
+	m_device_Camera->exposure= 10.f;
+	//m_device_Camera->m_Forward_dir = { 0.6,-0.14,0.66 };
 	m_Scene = std::make_shared<Scene>();
-
 	m_RendererMetricsPanel.SetRenderer(m_Renderer);
 	m_RendererMetricsPanel.SetCamera(m_device_Camera);
 	m_MaterialManagerPanel.Initialize(m_Scene.get());
