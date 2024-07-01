@@ -78,9 +78,9 @@ bool Scene::loadMaterials(const tinygltf::Model& model)
 		drt_material.Metallicity = PBR_data.metallicFactor;
 		drt_material.Roughness = PBR_data.roughnessFactor;
 		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);
-		m_Material.push_back(drt_material);
+		m_Materials.push_back(drt_material);
 	}
-	//printf("loaded materials count: %d \n\n", m_Material.size());
+	//printf("loaded materials count: %d \n\n", m_Materials.size());
 
 	return true;
 }
@@ -287,6 +287,13 @@ bool Scene::loadGLTFmodel(const char* filepath)
 				Vertex(loadedMeshPositions[i + 2], loadedMeshNormals[i + 2], loadedMeshUVs[i + 2]),
 				normalize(surface_normal),
 				loadedMeshPrimitiveMatIdx[i / 3]));
+
+			/*if (m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissionTextureIndex >= 0 ||
+				!(m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.x == 0 &&
+					m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.y == 0 &&
+					m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.z == 0)) {
+				m_MeshLights.push_back(m_PrimitivesBuffer.size() - 1);
+			}*/
 		}
 
 		drt_mesh.m_trisCount = m_PrimitivesBuffer.size() - drt_mesh.m_primitives_offset;
@@ -294,7 +301,10 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		m_Meshes.push_back(drt_mesh);
 		printToConsole("\rloaded mesh:%zu/%zu", nodeIdx + 1, loadedmodel.nodes.size());
 	}
+
+	//printToConsole("meshlights:%zu\n", m_MeshLights.size());
 	printToConsole("\n");
+
 	return true;
 };
 

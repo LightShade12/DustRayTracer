@@ -25,6 +25,7 @@ struct SceneData
 	const Texture* DeviceTextureBufferPtr = nullptr;
 	const Material* DeviceMaterialBufferPtr = nullptr;
 	const Triangle* DevicePrimitivesBuffer = nullptr;
+	const int* DeviceMeshLightsBufferPtr = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
 	const BVHNode* DeviceBVHTreeRootPtr = nullptr;
 	const BVHNode* DeviceBVHNodesBuffer = nullptr;
@@ -36,14 +37,16 @@ struct SceneData
 	size_t DeviceMaterialBufferSize = 0;//unused
 	size_t DeviceMeshBufferSize = 0;
 	size_t DevicePrimitivesBufferSize = 0;
+	size_t DeviceMeshLightsBufferSize = 0;
 };
 
 struct Scene
 {
 	thrust::universal_vector<Mesh> m_Meshes;
-	thrust::universal_vector<Material> m_Material;
+	thrust::universal_vector<Material> m_Materials;
 	thrust::device_vector<Texture>m_Textures;
 	thrust::device_vector<BVHNode>m_BVHNodes;
+	thrust::device_vector<int>m_MeshLights;
 	//lights vector
 	thrust::universal_vector<Triangle>m_PrimitivesBuffer;
 	BVHNode* d_BVHTreeRoot = nullptr;//Why???

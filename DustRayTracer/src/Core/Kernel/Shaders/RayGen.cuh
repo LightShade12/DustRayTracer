@@ -134,6 +134,8 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	return sampleDir;
 }
 
+
+
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
 	const Material& material, const float2& texture_uv) {
 	float3 H = normalize(outgoing_viewdir + incoming_lightdir);
@@ -235,6 +237,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	float3 outgoing_light = { 0,0,0 };
 	float3 cumulative_incoming_light_throughput = { 1,1,1 };//Transport operator
 	int max_bounces = scenedata.RenderSettings.ray_bounce_limit;
+	//int max_bounces = 1;
 
 	HitPayload payload;
 	//TODO: fix shadow at grazing angles issue
@@ -284,6 +287,56 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 viewdir = -1.f * (ray.getDirection());
 		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, normalize(viewdir), *current_material, seed, pdf_eval, scenedata, texture_sample_uv);
 		float3 lightdir = next_ray_dir;
+
+		//for (int i = 0; i < scenedata.DeviceMeshLightsBufferSize; i++) {
+		//	const Triangle* meshlight = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[i]];
+		//	if (payload.primitiveptr == meshlight) {
+		//		outgoing_light = meshlight->face_normal;
+		//		break;
+		//	}
+		//}
+		//break;
+
+		// Direct light sampling
+		const Triangle* meshlight = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
+		//meshlight = &scenedata.DevicePrimitivesBuffer[2];
+		if (payload.primitiveptr != meshlight) {
+			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
+			//barycentric = {0.33,0.33};
+			// Ensure that barycentric coordinates sum to 1
+			if (barycentric.x + barycentric.y > 1.0f) {
+				barycentric.x = 1.0f - barycentric.x;
+				barycentric.y = 1.0f - barycentric.y;
+			}
+			// Calculate the target position on the mesh light
+			float3 target = meshlight->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
+				meshlight->vertex1.position * barycentric.x +
+				meshlight->vertex2.position * barycentric.y;
+
+			float3 targetDir = normalize(target - next_ray_origin);
+
+			Ray dlray(next_ray_origin, targetDir);
+			dlray.interval = Interval(-1, FLT_MAX);
+			//dlray.interval.max = length(target - next_ray_origin) + 0.01f;
+			// Set the maximum interval to the distance to the target point minus a small epsilon
+			HitPayload hp = traceRay(dlray, &scenedata);
+
+			// Check if the ray hit the mesh light
+			if (hp.primitiveptr != nullptr) {
+				// Calculate the emission from the light
+				float3 le = scenedata.DeviceMaterialBufferPtr[hp.primitiveptr->material_idx].EmissiveColor * 10;
+
+				// Calculate the BRDF and other factors
+				float3 brdf = BRDF(dlray.getDirection(), -1.f * ray.getDirection(), payload.world_normal, scenedata, *current_material, texture_sample_uv);
+				float falloff = cosine_falloff_factor(dlray.getDirection(), payload.world_normal);
+				float distanceSquared = dot(dlray.getOrigin() - hp.world_position, dlray.getOrigin() - hp.world_position);
+
+				//outgoing_light += make_float3(0, 1, 0);
+				// Accumulate the outgoing light
+				outgoing_light += le * falloff * cumulative_incoming_light_throughput * brdf / distanceSquared;
+			}
+		}
+		break;
 
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)

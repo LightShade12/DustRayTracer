@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Interval.cuh"
 #include "Core/CudaMath/helper_math.cuh"
-
+//TODO: interval logic is shit
 struct Ray {
 	Ray() = default;
 	__device__ Ray(float3 orig, float3 dir) :origin(orig), direction(dir) { inv_dir = (1.0f / dir); }

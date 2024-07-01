@@ -79,17 +79,16 @@ void InvokeRenderKernel(
 	scenedata.DeviceBVHNodesBuffer = thrust::raw_pointer_cast(scene.m_BVHNodes.data());
 	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
 	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
-	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Material.data());
+	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Materials.data());
 	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_PrimitivesBuffer.data());
+	scenedata.DeviceMeshLightsBufferPtr = thrust::raw_pointer_cast(scene.m_MeshLights.data());
+	//----
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
+	scenedata.DeviceMeshLightsBufferSize= scene.m_MeshLights.size();
 	scenedata.DeviceBVHNodesBufferSize = scene.m_BVHNodes.size();
 	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
-	//printf("pointer: %p\n", scenedata.DeviceMeshBufferPtr);
-	//printf("pointer: %p\n", scenedata.DeviceMaterialBufferPtr);
-	//printf("pointer: %p\n", scenedata.DeviceTextureBufferPtr);
-	//printf("pointer: %p\n", scene.d_BVHTreeRoot);
 
 	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, frameidx, accumulation_buffer, scenedata);
 }

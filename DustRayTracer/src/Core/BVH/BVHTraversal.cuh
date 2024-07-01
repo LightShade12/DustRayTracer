@@ -73,10 +73,10 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 }
 
 //apparently do not bother sorting nodes for shadow rays and do an early out
-__device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
+__device__ const Triangle* traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
 	if (root_node_idx < 0) return false;//empty scene
 
-	const uint8_t maxStackSize = 64*2;//TODO: make this const for all
+	const uint8_t maxStackSize = 64 * 2;//TODO: make this const for all
 	int nodeIdxStack[maxStackSize];
 	uint8_t stackPtr = 0;
 
@@ -102,6 +102,11 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 			nodeHitDist = bbox_hitDist;
 		}
 
+		//custom ray interval culling
+		//if (!(ray.interval.surrounds(nodeHitDist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
+
+		//if (nodeHitDist > ray.interval.max)continue;
+
 		if (stackTopNode->m_IsLeaf) {
 			for (int primIdx = stackTopNode->primitive_start_idx;
 				primIdx < stackTopNode->primitive_start_idx + stackTopNode->primitives_count; primIdx++) {
@@ -110,7 +115,7 @@ __device__ bool traverseBVH_raytest(const Ray& ray, const int root_node_idx, con
 
 				if (workinghitpayload.primitiveptr != nullptr) {
 					if (AnyHit(ray, scenedata, &workinghitpayload)) {
-						return true; // Intersection found, return true immediately
+						return workinghitpayload.primitiveptr; // Intersection found, return true immediately
 					}
 				}
 			}

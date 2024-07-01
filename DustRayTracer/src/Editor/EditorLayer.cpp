@@ -17,8 +17,7 @@
 #include <stb_image_write.h>
 
 /*
-TODO:
-add denoiser settings
+TODO:add denoiser settings
 */
 
 //appends extension automatically;png
@@ -33,7 +32,7 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	m_device_Camera = new Camera(make_float3(-4.65,1.8,-5));
+	m_device_Camera = new Camera(make_float3(-4.65, 1.8, -5));
 	//m_device_Camera = new Camera(make_float3(0, 1, 2.8));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
 	m_device_Camera->m_movement_speed = 10.0;
@@ -52,15 +51,27 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
+	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
 	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
-	//m_Scene->loadGLTFmodel("../models/suzanne_plane.glb");
+	m_Scene->loadGLTFmodel("../models/test/emissive_test.glb");
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 16;
 	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
 
+	for (size_t i = 0; i < m_Scene->m_PrimitivesBuffer.size(); i++)
+	{
+		auto tri = &m_Scene->m_PrimitivesBuffer[i];
+		auto mtid = tri->material_idx;
+		if (m_Scene->m_Materials[mtid].EmissionTextureIndex >= 0 ||
+			!(m_Scene->m_Materials[mtid].EmissiveColor.x == 0 &&
+				m_Scene->m_Materials[mtid].EmissiveColor.y == 0 &&
+				m_Scene->m_Materials[mtid].EmissiveColor.z == 0)) {
+			m_Scene->m_MeshLights.push_back(i);
+		}
+	}
+	printf("mesh lights %zu \n", m_Scene->m_MeshLights.size());
 	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
 
 	m_RendererMetricsPanel.m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
@@ -70,7 +81,7 @@ void EditorLayer::OnAttach()
 		m_RendererMetricsPanel.m_DevMetrics.m_TrianglesCount += mesh.m_trisCount;
 	}
 
-	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_Scene->m_Material.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_Scene->m_Materials.size();
 	m_RendererMetricsPanel.m_DevMetrics.m_TexturesCount = m_Scene->m_Textures.size();
 
 	stbi_flip_vertically_on_write(true);
