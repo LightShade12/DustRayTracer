@@ -340,11 +340,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				float lightArea = 0.5f * length(cross(edge1, edge2));
 				float pdf_light = distanceSquared / (emitter_cosTheta * lightArea);
 
-				outgoing_light += brdf * Le * cumulative_incoming_light_throughput * reciever_cosTheta * emitter_cosTheta / (distanceSquared);//*
+				outgoing_light += brdf * Le * cumulative_incoming_light_throughput * reciever_cosTheta * emitter_cosTheta * lightArea / (distanceSquared);//*
 				//outgoing_light = make_float3(0,1,0);
 			}
 		}
-		break;
+		//break;
 
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
