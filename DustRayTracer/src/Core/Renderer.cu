@@ -74,7 +74,7 @@ void Renderer::ResizeBuffer(uint32_t width, uint32_t height) {
 		cudaGraphicsGLRegisterImage(&m_viewCudaResource, m_RenderTargetTexture_name, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
 	}
 
-	resetAccumulationBuffer();
+	clearAccumulation();
 }
 
 void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
@@ -129,7 +129,7 @@ Renderer::~Renderer()
 	glDeleteTextures(1, &m_RenderTargetTexture_name);
 }
 
-void Renderer::resetAccumulationBuffer()
+void Renderer::clearAccumulation()
 {
 	thrust::fill(m_AccumulationFrameBuffer->ColorDataBuffer.begin(), m_AccumulationFrameBuffer->ColorDataBuffer.end(), float3());
 	m_FrameIndex = 1;

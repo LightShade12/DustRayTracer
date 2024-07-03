@@ -24,7 +24,7 @@ public:
 	uint32_t getBufferWidth() const { return m_BufferWidth; }
 	uint32_t getBufferHeight() const { return m_BufferHeight; }
 	uint32_t getSampleCount() const { return m_FrameIndex; }
-	void resetAccumulationBuffer();
+	void clearAccumulation();
 
 public:
 	RendererSettings m_RendererSettings;

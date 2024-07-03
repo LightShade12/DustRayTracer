@@ -152,7 +152,4 @@
     <CudaCompile Include="src\Editor\EditorLayer.cpp" />
     <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="dev_docs.txt" />
-  </ItemGroup>
 </Project>

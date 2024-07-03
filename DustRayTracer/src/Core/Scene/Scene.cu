@@ -1,18 +1,17 @@
 #include "Scene.cuh"
 //TODO: apparently this must exist on the device: its the standard
 //#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
+#include "Camera.cuh"
 #include "Common/dbg_macros.hpp"
 #include "Editor/Common/CudaCommon.cuh"
 
 #include "Core/BVH/BVHNode.cuh"
 
-//#include <cuda_runtime.h>
-#include <thrust/host_vector.h>
-
+#include "stb_image.h"
 #include <tiny_gltf.h>
 
+#include <thrust/host_vector.h>
+//TODO: texture reuse doesnt work
 static std::string GetFilePathExtension(const std::string& FileName) {
 	if (FileName.find_last_of(".") != std::string::npos)
 		return FileName.substr(FileName.find_last_of(".") + 1);
@@ -178,7 +177,7 @@ static bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<fl
 }
 
 //tinyGLTF impl
-bool Scene::loadGLTFmodel(const char* filepath)
+bool Scene::loadGLTFmodel(const char* filepath, Camera** camera)
 {
 	bool is_binary = false;
 	tinygltf::Model loadedmodel;
@@ -197,6 +196,14 @@ bool Scene::loadGLTFmodel(const char* filepath)
 		std::vector<int>loadedMeshPrimitiveMatIdx;
 
 		tinygltf::Node gltf_node = loadedmodel.nodes[nodeIdx];
+		if (gltf_node.camera >= 0) {
+			printToConsole("found camera\n");
+			tinygltf::Camera gltf_camera = loadedmodel.cameras[gltf_node.camera];
+			float3 cpos = { gltf_node.translation[0] ,gltf_node.translation[1] ,gltf_node.translation[2] };
+			*camera = new Camera(cpos);
+			(*camera)->vfov_rad = gltf_camera.perspective.yfov;
+		}
+		if (gltf_node.mesh < 0)continue;//TODO: crude fix
 		tinygltf::Mesh gltf_mesh = loadedmodel.meshes[gltf_node.mesh];
 
 		Mesh drt_mesh;

@@ -263,6 +263,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		const Material* current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
 		const Triangle* tri = payload.primitiveptr;
 		const float2 texture_sample_uv = payload.UVW.x * tri->vertex0.UV + payload.UVW.y * tri->vertex1.UV + payload.UVW.z * tri->vertex2.UV;
+		float weight = (bounce_depth != 0 && scenedata.RenderSettings.useMIS) ? 0 : 1;
 		//--------------------
 
 		//TODO: fix smooth normals and triangle face normal situation
@@ -276,9 +277,6 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				payload.world_normal, scenedata, texture_sample_uv);
 		}
 
-		bool MIS = true;
-		float weight = (bounce_depth != 0 && MIS) ? 0 : 1;
-
 		//Emission;
 		float bemitter_cosTheta = dot(tri->face_normal, -1.f * ray.getDirection());//TODO: why tf is this even correct
 		bemitter_cosTheta = fmaxf(0.0f, bemitter_cosTheta);
@@ -289,7 +287,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		if (true)outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
 			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv))
-			* 10 * current_material->EmissiveScale * cumulative_incoming_light_throughput * weight;
+			* current_material->EmissiveScale * cumulative_incoming_light_throughput * weight;
 
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
 		float pdf_eval;
@@ -299,8 +297,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		//Direct light sampling----------------------------------------------------
 		const Triangle* meshlight_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
-
-		if (payload.primitiveptr != meshlight_triangle && MIS)
+		if (payload.primitiveptr != meshlight_triangle && scenedata.RenderSettings.useMIS)
 		{
 			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
 
@@ -324,16 +321,14 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			if (shadowray_payload.primitiveptr != nullptr)//guard against alpha test; pseudo visibility term
 			{
 				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
-				float3 Le = scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveColor * 10 *
+				float3 Le = scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveColor *
 					scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveScale;
-				// Calculate the BRDF and other factors
 				float3 brdf = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
 					payload.world_normal, scenedata, *current_material, texture_sample_uv);
 				float reciever_cosTheta = cosine_falloff_factor(shadow_ray.getDirection(), payload.world_normal);
 				reciever_cosTheta = fmaxf(0.0f, reciever_cosTheta);
 				float emitter_cosTheta = dot(shadowray_payload.primitiveptr->face_normal, -1.f * shadow_ray.getDirection());//TODO: why tf is this even correct
 				emitter_cosTheta = fmaxf(0.0f, emitter_cosTheta);
-				//float distanceSquared = dot(shadow_ray.getOrigin() - shadowray_payload.world_position, shadow_ray.getOrigin() - shadowray_payload.world_position);
 				float distanceSquared = shadowray_payload.hit_distance * shadowray_payload.hit_distance;
 				float3 edge1 = shadowray_payload.primitiveptr->vertex1.position - shadowray_payload.primitiveptr->vertex0.position;
 				float3 edge2 = shadowray_payload.primitiveptr->vertex2.position - shadowray_payload.primitiveptr->vertex0.position;

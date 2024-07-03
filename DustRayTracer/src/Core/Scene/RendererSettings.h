@@ -2,7 +2,6 @@
 #include "Core/Scene/Material.cuh"
 #include <vector_types.h>
 
-
 struct RendererSettings
 {
 	enum class RenderModes
@@ -26,6 +25,7 @@ struct RendererSettings
 	bool gamma_correction = true;
 	bool tone_mapping = true;
 	bool enableSunlight = false;
+	bool useMIS = false;
 	int max_samples = 500;
 	int ray_bounce_limit = 2;
 	RenderModes RenderMode = RenderModes::NORMALMODE;

@@ -4,6 +4,7 @@
 #include "Core/Scene/Mesh.cuh"
 #include "Core/Scene/RendererSettings.h"
 #include "Core/Scene/Texture.cuh"
+#include  "Camera.cuh"
 
 #include <thrust/device_vector.h>
 #include <thrust/universal_vector.h>
@@ -50,7 +51,7 @@ struct Scene
 	//lights vector
 	thrust::universal_vector<Triangle>m_PrimitivesBuffer;
 	BVHNode* d_BVHTreeRoot = nullptr;//Why???
-	bool loadGLTFmodel(const char* filepath);
+	bool loadGLTFmodel(const char* filepath, Camera** camera);
 
 	~Scene();
 private:
