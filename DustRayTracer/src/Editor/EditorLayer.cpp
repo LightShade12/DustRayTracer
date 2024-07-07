@@ -36,7 +36,6 @@ void EditorLayer::OnAttach()
 	//m_device_Camera = new Camera(make_float3(-4.65, 1.8, -5));
 	//m_device_Camera = new Camera(make_float3(0, 1, 2.8));
 	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
-	//m_device_Camera->m_Forward_dir = { 0.6,-0.14,0.66 };
 	m_Scene = std::make_shared<Scene>();
 
 	ConsoleLogs.push_back("-------------------console initialized--------------------");
@@ -47,9 +46,10 @@ void EditorLayer::OnAttach()
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
 	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
-	m_Scene->loadGLTFmodel("../models/temp.glb", &m_device_Camera);
+	m_Scene->loadGLTFmodel("../models/test/mis_test.glb", &m_device_Camera);
 	//m_Scene->loadGLTFmodel("../models/small_light.glb", &m_device_Camera);
-	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
+	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(-.06, 0.777, 1.05)); }
+	m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
 	m_device_Camera->m_movement_speed = 5.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
