@@ -349,10 +349,10 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				float pdf_light_nee = distanceSquared / (emitter_cosTheta * lightArea);
 				float pdf_brdf_nee = dot(payload.world_normal, shadow_ray.getDirection()) * (1.0f / PI);//lambertian diffuse only
 
-				float MIS_nee_weight = (bounce_depth > 0 && scenedata.RenderSettings.useMIS) ? (pdf_light_nee / (pdf_light_nee + pdf_brdf_nee)) : 0;
+				float MIS_nee_weight = pdf_light_nee / (pdf_light_nee + pdf_brdf_nee);
 
 				outgoing_light += brdf_nee * Le * cumulative_incoming_light_throughput * reciever_cosTheta *
-					scenedata.DeviceMeshLightsBufferSize / (pdf_light_nee + pdf_brdf_nee);
+					scenedata.DeviceMeshLightsBufferSize * (MIS_nee_weight / pdf_light_nee);
 				//outgoing_light = make_float3(0,1,0);
 			}
 			//break;
