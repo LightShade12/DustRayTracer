@@ -62,16 +62,12 @@ __device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi) {
 }
 
 __device__ static float3 skyModel(const Ray& ray, const SceneData& scenedata) {
-	float vertical_gradient_factor = 0.5 * (1 + (normalize(ray.getDirection())).y);//clamps to range 0-1
+	float vertical_gradient_factor = 0.5 * (1 + ray.getDirection()).y;//clamps to range 0-1
 	float3 col1 = scenedata.RenderSettings.sky_color;
 	float3 col2 = { 1,1,1 };
 	float3 fcol = (float(1 - vertical_gradient_factor) * col2) + (vertical_gradient_factor * col1);
 	fcol = { std::powf(fcol.x,2), std::powf(fcol.y,2) , std::powf(fcol.z,2) };
 	return fcol;
-}
-//make sure the directions are facing the same general direction
-__device__ inline float cosine_falloff_factor(float3 incoming_lightdir, float3 normal) {
-	return fmaxf(0, dot(incoming_lightdir, normal));
 }
 
 __device__ float3 fresnelSchlick(float cosTheta, float3 F0) {
@@ -108,6 +104,7 @@ __device__ float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roug
 	return F_in * F_out;
 }
 
+//returns normalized direction
 __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf, const SceneData& scene_data, float2 texture_uv) {
 	float roughness = material.Roughness;
 	float metallicity = material.Metallicity;
@@ -117,7 +114,9 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	float random_value = randomFloat(seed);
 	float2 xi = make_float2(randomFloat(seed), randomFloat(seed));//uniform rng sample
 
-	if (random_value < metallicity) {
+	//if (random_value < metallicity)
+	if (false)
+	{
 		// Metallic (Specular only)
 		H = sampleGGX(normal, roughness, xi);
 		sampleDir = reflect(-viewDir, H);
@@ -131,7 +130,7 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 		pdf = dot(normal, sampleDir) * (1.0f / PI);
 	}
 
-	return sampleDir;
+	return normalize(sampleDir);
 }
 
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
@@ -176,15 +175,16 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	float3 rhoD = baseColor;
 
-	rhoD *= (1.0 - F);//F=Ks
+	//rhoD *= (1.0 - F);//F=Ks
 	// optionally for less AO
 	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
-
+	metallicity = 0;
 	rhoD *= (1.0 - metallicity);
 
 	float3 diff = rhoD / PI;
 
-	return diff + spec;
+	return diff;
+	//return diff + spec;
 }
 
 __device__ float3 normalMap(const Material& current_material,
@@ -235,7 +235,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	float3 outgoing_light = { 0,0,0 };
 	float3 cumulative_incoming_light_throughput = { 1,1,1 };//Transport operator
 	int max_bounces = scenedata.RenderSettings.ray_bounce_limit;
-	//int max_bounces = 1;
+	//max_bounces = 1;
 
 	HitPayload payload;
 	//TODO: fix shadow at grazing angles issue
@@ -278,26 +278,27 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		}
 
 		//Emission;
-		float bemitter_cosTheta = dot(tri->face_normal, -1.f * ray.getDirection());//TODO: why tf is this even correct
-		bemitter_cosTheta = fmaxf(0.0f, bemitter_cosTheta);
+		float bemitter_cosTheta = dot(tri->face_normal, -1.f * ray.getDirection());
+		bemitter_cosTheta = fabs(bemitter_cosTheta);
 		float bdistanceSquared = payload.hit_distance * payload.hit_distance;
 		float3 bedge1 = tri->vertex1.position - tri->vertex0.position;
 		float3 bedge2 = tri->vertex2.position - tri->vertex0.position;
 		float blightArea = 0.5f * length(cross(bedge1, bedge2));
+		float pdf_light_brdf = bdistanceSquared / blightArea * bemitter_cosTheta;
 
-		if (true)outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
+		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
 			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv))
 			* current_material->EmissiveScale * cumulative_incoming_light_throughput * weight;
 
+		float pdf_brdf = 1;
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
-		float pdf_eval;
-		float3 viewdir = -1.f * (ray.getDirection());
-		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, normalize(viewdir), *current_material, seed, pdf_eval, scenedata, texture_sample_uv);
+		float3 viewdir = -1.f * ray.getDirection();
+		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, viewdir, *current_material, seed, pdf_brdf, scenedata, texture_sample_uv);
 		float3 lightdir = next_ray_dir;
 
 		//Direct light sampling----------------------------------------------------
-		const Triangle* meshlight_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
-		if (payload.primitiveptr != meshlight_triangle && scenedata.RenderSettings.useMIS)
+		const Triangle* emissive_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
+		if (payload.primitiveptr != emissive_triangle && scenedata.RenderSettings.useMIS)
 		{
 			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
 
@@ -307,9 +308,9 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				barycentric.y = 1.0f - barycentric.y;
 			}
 			// Calculate the triangle_sample_point position on the mesh light
-			float3 triangle_sample_point = meshlight_triangle->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
-				meshlight_triangle->vertex1.position * barycentric.x +
-				meshlight_triangle->vertex2.position * barycentric.y;
+			float3 triangle_sample_point = emissive_triangle->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
+				emissive_triangle->vertex1.position * barycentric.x +
+				emissive_triangle->vertex2.position * barycentric.y;
 
 			float3 shadowray_dir = normalize(triangle_sample_point - next_ray_origin);
 
@@ -323,23 +324,29 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
 				float3 Le = scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveColor *
 					scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveScale;
-				float3 brdf = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
+				float3 brdf_nee = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
 					payload.world_normal, scenedata, *current_material, texture_sample_uv);
-				float reciever_cosTheta = cosine_falloff_factor(shadow_ray.getDirection(), payload.world_normal);
+
+				float reciever_cosTheta = dot(shadow_ray.getDirection(), payload.world_normal);
 				reciever_cosTheta = fmaxf(0.0f, reciever_cosTheta);
-				float emitter_cosTheta = dot(shadowray_payload.primitiveptr->face_normal, -1.f * shadow_ray.getDirection());//TODO: why tf is this even correct
-				emitter_cosTheta = fmaxf(0.0f, emitter_cosTheta);
+
+				float emitter_cosTheta = dot(shadowray_payload.primitiveptr->face_normal, -1.f * shadow_ray.getDirection());
+				emitter_cosTheta = fabs(emitter_cosTheta);
+
 				float distanceSquared = shadowray_payload.hit_distance * shadowray_payload.hit_distance;
+
 				float3 edge1 = shadowray_payload.primitiveptr->vertex1.position - shadowray_payload.primitiveptr->vertex0.position;
 				float3 edge2 = shadowray_payload.primitiveptr->vertex2.position - shadowray_payload.primitiveptr->vertex0.position;
 				float lightArea = 0.5f * length(cross(edge1, edge2));
-				float pdf_light = distanceSquared / (emitter_cosTheta * lightArea);
 
-				outgoing_light += brdf * Le * cumulative_incoming_light_throughput * reciever_cosTheta * emitter_cosTheta * lightArea / (distanceSquared);//*
+				float pdf_light_nee = distanceSquared / (emitter_cosTheta * lightArea);
+				float pdf_brdf_nee = dot(payload.world_normal, shadow_ray.getDirection()) * (1.0f / PI);//lambertian diffuse only
+
+				outgoing_light += brdf_nee * Le * cumulative_incoming_light_throughput * reciever_cosTheta * scenedata.DeviceMeshLightsBufferSize / pdf_light_nee;
 				//outgoing_light = make_float3(0,1,0);
 			}
+			//break;
 		}
-		//break;
 
 		//shadow ray for sunlight
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
@@ -347,14 +354,14 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			Ray sunray = Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scenedata.RenderSettings.sun_size);
 			if (!rayTest(sunray, &scenedata))
 				outgoing_light += suncol * cumulative_incoming_light_throughput *
-				BRDF(normalize(sunray.getDirection()), normalize(viewdir), payload.world_normal, scenedata, *current_material, texture_sample_uv) *
-				cosine_falloff_factor(normalize(sunpos), payload.world_normal);
+				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv) *
+				fmaxf(0, dot(normalize(sunpos), payload.world_normal));
 		}
 
 		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
-			(BRDF(normalize(lightdir), normalize(viewdir), payload.world_normal, scenedata, *current_material, texture_sample_uv)
-				* cosine_falloff_factor(lightdir, payload.world_normal)) / pdf_eval;
+			(BRDF(lightdir, viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
+				* fmaxf(0, dot(lightdir, payload.world_normal))) / pdf_brdf;
 
 		//BOUNCE RAY---------------------------------------------------------------------------------------
 

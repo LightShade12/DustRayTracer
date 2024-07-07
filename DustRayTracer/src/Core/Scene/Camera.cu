@@ -79,6 +79,7 @@ __host__ void Camera::Rotate(float4 delta_degrees)
 	m_Right_dir = cross(m_Forward_dir, m_Up_dir);
 }
 
+//returns normalized dir
 __device__ Ray Camera::getRay(float2 _uv, float width, float height, uint32_t& seed) const
 {
 	float theta = vfov_rad / 2;

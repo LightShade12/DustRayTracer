@@ -46,9 +46,9 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
-	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb");
-	m_Scene->loadGLTFmodel("../models/test/demo.glb", &m_device_Camera);
-	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(-4.65, 1.8, -5)); }
+	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
+	m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb", &m_device_Camera);
+	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
 	m_device_Camera->m_movement_speed = 5.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
@@ -254,10 +254,10 @@ void EditorLayer::OnUIRender()
 		{
 			// Update selection state
 			// (process outside of tree loop to avoid visual inconsistencies during the clicking frame)
-			if (ImGui::GetIO().KeyCtrl)
-				selection_mask ^= (1 << node_clicked);          // CTRL+click to toggle
-			else //if (!(selection_mask & (1 << node_clicked))) // Depending on selection behavior you want, may want to preserve selection when clicking on item that is part of the selection
-				selection_mask = (1 << node_clicked);           // Click to single-select
+			//if (ImGui::GetIO().KeyCtrl)
+			//	selection_mask ^= (1 << node_clicked);          // CTRL+click to toggle
+			//else //if (!(selection_mask & (1 << node_clicked))) // Depending on selection behavior you want, may want to preserve selection when clicking on item that is part of the selection
+			selection_mask = (1 << node_clicked);           // Click to single-select
 		}
 		ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
 		ImGui::TreePop();
