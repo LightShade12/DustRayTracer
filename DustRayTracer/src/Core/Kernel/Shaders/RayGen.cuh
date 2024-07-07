@@ -313,30 +313,34 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				emissive_triangle->vertex2.position * barycentric.y;
 
 			float3 shadowray_dir = normalize(triangle_sample_point - next_ray_origin);
-
+			float dist = length(triangle_sample_point - next_ray_origin);
 			Ray shadow_ray(next_ray_origin, shadowray_dir);
-			shadow_ray.interval = Interval(-1, FLT_MAX);
+			//shadow_ray.interval = Interval(-1, FLT_MAX);
+			shadow_ray.interval = Interval(-1, length(triangle_sample_point - next_ray_origin) - 0.01);
 
-			HitPayload shadowray_payload = traceRay(shadow_ray, &scenedata);
+			//HitPayload shadowray_payload = traceRay(shadow_ray, &scenedata);
 
-			if (shadowray_payload.primitiveptr != nullptr)//guard against alpha test; pseudo visibility term
+			bool occluded = rayTest(shadow_ray, &scenedata);
+
+			//if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
+			if (!occluded)//guard against alpha test; pseudo visibility term
 			{
 				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
-				float3 Le = scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveColor *
-					scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveScale;
+				float3 Le = scenedata.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveColor *
+					scenedata.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveScale;
 				float3 brdf_nee = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
 					payload.world_normal, scenedata, *current_material, texture_sample_uv);
 
 				float reciever_cosTheta = dot(shadow_ray.getDirection(), payload.world_normal);
 				reciever_cosTheta = fmaxf(0.0f, reciever_cosTheta);
 
-				float emitter_cosTheta = dot(shadowray_payload.primitiveptr->face_normal, -1.f * shadow_ray.getDirection());
+				float emitter_cosTheta = dot(emissive_triangle->face_normal, -1.f * shadow_ray.getDirection());
 				emitter_cosTheta = fabs(emitter_cosTheta);
 
-				float distanceSquared = shadowray_payload.hit_distance * shadowray_payload.hit_distance;
+				float distanceSquared = dist * dist;
 
-				float3 edge1 = shadowray_payload.primitiveptr->vertex1.position - shadowray_payload.primitiveptr->vertex0.position;
-				float3 edge2 = shadowray_payload.primitiveptr->vertex2.position - shadowray_payload.primitiveptr->vertex0.position;
+				float3 edge1 = emissive_triangle->vertex1.position - emissive_triangle->vertex0.position;
+				float3 edge2 = emissive_triangle->vertex2.position - emissive_triangle->vertex0.position;
 				float lightArea = 0.5f * length(cross(edge1, edge2));
 
 				float pdf_light_nee = distanceSquared / (emitter_cosTheta * lightArea);

@@ -76,41 +76,34 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 __device__ const Triangle* traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
 	if (root_node_idx < 0) return false;//empty scene
 
-	const uint8_t maxStackSize = 64 * 2;//TODO: make this const for all
+	const uint8_t maxStackSize = 64;//TODO: make this const for all
 	int nodeIdxStack[maxStackSize];
 	uint8_t stackPtr = 0;
 
-	float nodeHitDist = FLT_MAX;//redundant?
-	const BVHNode* stackTopNode = nullptr;//in register?
-	float hit1 = -1;
-	float hit2 = -1;
-	ShortHitPayload workinghitpayload;
+	//float current_node_hitdist = FLT_MAX;//redundant?
 
 	nodeIdxStack[stackPtr++] = root_node_idx;
+	const BVHNode* stackTopNode = &(scenedata->DeviceBVHNodesBuffer[root_node_idx]);//is this in register?
+
+	ShortHitPayload workinghitpayload;
+	float hit1 = -1;
+	float hit2 = -1;
+	const Triangle* primitive = nullptr;
 
 	while (stackPtr > 0) {
 		stackTopNode = &(scenedata->DeviceBVHNodesBuffer[nodeIdxStack[--stackPtr]]);
 
-		//if root node; one shot
-		if (nodeIdxStack[stackPtr] == root_node_idx) {
-			float bbox_hitDist = stackTopNode->m_BoundingBox.intersect(ray);
-
-			if (bbox_hitDist < 0) {
-				continue;
-			}
-
-			nodeHitDist = bbox_hitDist;
-		}
+		float current_node_hitdist = stackTopNode->m_BoundingBox.intersect(ray);
 
 		//custom ray interval culling
-		//if (!(ray.interval.surrounds(nodeHitDist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
+		if (!(ray.interval.surrounds(current_node_hitdist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
 
-		//if (nodeHitDist > ray.interval.max)continue;
+		//if (current_node_hitdist > ray.interval.max)continue;
 
 		if (stackTopNode->m_IsLeaf) {
 			for (int primIdx = stackTopNode->primitive_start_idx;
 				primIdx < stackTopNode->primitive_start_idx + stackTopNode->primitives_count; primIdx++) {
-				const Triangle* primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
+				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
 				workinghitpayload = Intersection(ray, primitive);
 
 				if (workinghitpayload.primitiveptr != nullptr) {
