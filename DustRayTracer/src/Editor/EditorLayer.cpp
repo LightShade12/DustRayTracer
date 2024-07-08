@@ -46,14 +46,14 @@ void EditorLayer::OnAttach()
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mcTransparencyTest.glb");
 	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
 	m_Scene->loadGLTFmodel("../models/test/mis_test.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/small_light.glb", &m_device_Camera);
-	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(-.06, 0.777, 1.05)); }
+	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
 	m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
 	m_device_Camera->m_movement_speed = 5.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
-	m_device_Camera->exposure = 10.f;
+	m_device_Camera->exposure = 90.f;
 
 	m_RendererMetricsPanel.SetRenderer(m_Renderer);
 	m_RendererMetricsPanel.SetCamera(m_device_Camera);

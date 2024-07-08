@@ -48,32 +48,33 @@ __device__ static float3 gammaCorrection(const float3 linear_color) {
 }
 
 //Render Kernel
-__global__ void kernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* cam, uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata)
+__global__ void integratorKernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* device_camera, uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
 
 	if ((i >= max_x) || (j >= max_y)) return;
 
-	//raygen is the integrator
-	float3 fcolor = rayGen(i, j, max_x, max_y, cam, frameidx, scenedata);
+	//raygen is the integration solver, the renderloop is integrator
+	float3 sampled_radiance = rayGen(i, j, max_x, max_y, device_camera, frameidx, scenedata);
 
-	accumulation_buffer[i + j * max_x] += fcolor;
-	float3 accol = accumulation_buffer[i + j * max_x] / frameidx;
+	accumulation_buffer[i + j * max_x] += sampled_radiance;
+	float3 estimated_radiance = accumulation_buffer[i + j * max_x] / frameidx;
+
 	//post processing
 	if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE || scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
 	{
-		if (scenedata.RenderSettings.tone_mapping)accol = toneMapping(accol, cam->exposure);
-		if (scenedata.RenderSettings.gamma_correction)accol = gammaCorrection(accol);
+		if (scenedata.RenderSettings.tone_mapping)estimated_radiance = toneMapping(estimated_radiance, device_camera->exposure);
+		if (scenedata.RenderSettings.gamma_correction)estimated_radiance = gammaCorrection(estimated_radiance);
 	}
-	float4 color = { accol.x, accol.y, accol.z, 1 };
+	float4 color = { estimated_radiance.x, estimated_radiance.y, estimated_radiance.z, 1 };
 
 	surf2Dwrite(color, _surfobj, i * (int)sizeof(float4), j);//has to be uchar4/2/1 or float4/2/1; no 3 comp color
 };
 
 void InvokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
-	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
+	dim3 _blocks, dim3 _threads, Camera* device_camera, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
 {
 	SceneData scenedata;
 	scenedata.DeviceBVHNodesBuffer = thrust::raw_pointer_cast(scene.m_BVHNodes.data());
@@ -90,5 +91,5 @@ void InvokeRenderKernel(
 	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
 
-	kernel << < _blocks, _threads >> > (surfaceobj, width, height, cam, frameidx, accumulation_buffer, scenedata);
+	integratorKernel << < _blocks, _threads >> > (surfaceobj, width, height, device_camera, frameidx, accumulation_buffer, scenedata);
 }

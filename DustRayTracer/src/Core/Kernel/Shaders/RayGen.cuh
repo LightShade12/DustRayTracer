@@ -214,7 +214,6 @@ __device__ float3 normalMap(const Material& current_material,
 }
 
 //Its called a Monte Carlo estimator
-
 //TODO: maybe create a LaunchID struct instead of x,y?
 __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	const Camera* cam, uint32_t frameidx, const SceneData scenedata) {
@@ -316,34 +315,40 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				emissive_triangle->vertex2.position * barycentric.y;
 
 			float3 shadowray_dir = normalize(triangle_sample_point - next_ray_origin);
-			//float dist = length(triangle_sample_point - next_ray_origin);
+			float dist = length(triangle_sample_point - next_ray_origin);
+			float3 surfnorm = emissive_triangle->face_normal;
 			Ray shadow_ray(next_ray_origin, shadowray_dir);
-			shadow_ray.interval = Interval(-1, FLT_MAX);
-			//shadow_ray.interval = Interval(-1, length(triangle_sample_point - next_ray_origin) - 0.01);
 
+			shadow_ray.interval = Interval(-1, FLT_MAX);
 			HitPayload shadowray_payload = traceRay(shadow_ray, &scenedata);
 
+			//shadow_ray.interval = Interval(-1, dist - (dist * 0.5));
 			//bool occluded = rayTest(shadow_ray, &scenedata);
 
-				//if (!occluded)//guard against alpha test; pseudo visibility term
+			//if (!occluded)//guard against alpha test; pseudo visibility term
 			if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
 			{
 				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
-				float3 Le = scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveColor *
-					scenedata.DeviceMaterialBufferPtr[shadowray_payload.primitiveptr->material_idx].EmissiveScale;
+				float3 Le = scenedata.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveColor *
+					scenedata.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveScale;
 				float3 brdf_nee = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
 					payload.world_normal, scenedata, *current_material, texture_sample_uv);
 
 				float reciever_cosTheta = dot(shadow_ray.getDirection(), payload.world_normal);
 				reciever_cosTheta = fmaxf(0.0f, reciever_cosTheta);
 
-				float emitter_cosTheta = dot(shadowray_payload.world_normal, -1.f * shadow_ray.getDirection());
+				if (dot(emissive_triangle->face_normal, shadow_ray.getDirection()) > 0.f)
+				{
+					surfnorm = -1.f * emissive_triangle->face_normal;
+				}
+
+				float emitter_cosTheta = dot(surfnorm, -1.f * shadow_ray.getDirection());
 				emitter_cosTheta = fabs(emitter_cosTheta);
 
-				float distanceSquared = shadowray_payload.hit_distance * shadowray_payload.hit_distance;
+				float distanceSquared = dist * dist;
 
-				float3 edge1 = shadowray_payload.primitiveptr->vertex1.position - shadowray_payload.primitiveptr->vertex0.position;
-				float3 edge2 = shadowray_payload.primitiveptr->vertex2.position - shadowray_payload.primitiveptr->vertex0.position;
+				float3 edge1 = emissive_triangle->vertex1.position - emissive_triangle->vertex0.position;
+				float3 edge2 = emissive_triangle->vertex2.position - emissive_triangle->vertex0.position;
 				float lightArea = 0.5f * length(cross(edge1, edge2));
 
 				float pdf_light_nee = distanceSquared / (emitter_cosTheta * lightArea);
@@ -362,6 +367,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
 			Ray sunray = Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scenedata.RenderSettings.sun_size);
+			sunray.interval = Interval(-1, FLT_MAX);
 			if (!rayTest(sunray, &scenedata))
 				outgoing_light += suncol * cumulative_incoming_light_throughput *
 				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv) *

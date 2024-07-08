@@ -2,7 +2,7 @@
 
 __device__ HitPayload Debug()
 {
-	HitPayload payload;
-	payload.debug = true;
-	return payload;
+	HitPayload out_payload;
+	out_payload.debug = true;
+	return out_payload;
 }
