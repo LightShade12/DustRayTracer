@@ -1,78 +1,17 @@
 #include "RenderKernel.cuh"
 
-#include "Core/Ray.cuh"
-#include "Core/HitPayload.cuh"
-#include "Core/BVH/BVHNode.cuh"
 #include "Core/Scene/Scene.cuh"
-#include "Core/Scene/Camera.cuh"
-#include "Core/CudaMath/helper_math.cuh"//check if this requires definition activation
-#include "Core/CudaMath/Random.cuh"
-
+#include "Core/PostProcess.cuh"
 #include "Shaders/RayGen.cuh"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <thrust/device_vector.h>
 #define __CUDACC__ // used to get surf2d indirect functions;not how it should be done
 #include <surface_indirect_functions.h>
 
-__device__ static float3 uncharted2_tonemap_partial(float3 x)
-{
-	float A = 0.15f;
-	float B = 0.50f;
-	float C = 0.10f;
-	float D = 0.20f;
-	float E = 0.02f;
-	float F = 0.30f;
-	return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
-}
+__global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, int max_y, Camera* device_camera, uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata);
 
-__device__ static float3 uncharted2_filmic(float3 v, float exposure)
-{
-	float exposure_bias = exposure;
-	float3 curr = uncharted2_tonemap_partial(v * exposure_bias);
-
-	float3 W = make_float3(11.2f);
-	float3 white_scale = make_float3(1.0f) / uncharted2_tonemap_partial(W);
-	return curr * white_scale;
-}
-
-__device__ static float3 toneMapping(float3 HDR_color, float exposure = 2.f) {
-	float3 LDR_color = uncharted2_filmic(HDR_color, exposure);
-	return LDR_color;
-}
-
-__device__ static float3 gammaCorrection(const float3 linear_color) {
-	float3 gamma_space_color = { sqrtf(linear_color.x),sqrtf(linear_color.y) ,sqrtf(linear_color.z) };
-	return gamma_space_color;
-}
-
-//Render Kernel
-__global__ void integratorKernel(cudaSurfaceObject_t _surfobj, int max_x, int max_y, Camera* device_camera, uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata)
-{
-	int i = threadIdx.x + blockIdx.x * blockDim.x;
-	int j = threadIdx.y + blockIdx.y * blockDim.y;
-
-	if ((i >= max_x) || (j >= max_y)) return;
-
-	//raygen is the integration solver, the renderloop is integrator
-	float3 sampled_radiance = rayGen(i, j, max_x, max_y, device_camera, frameidx, scenedata);
-
-	accumulation_buffer[i + j * max_x] += sampled_radiance;
-	float3 estimated_radiance = accumulation_buffer[i + j * max_x] / frameidx;
-
-	//post processing
-	if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE || scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
-	{
-		if (scenedata.RenderSettings.tone_mapping)estimated_radiance = toneMapping(estimated_radiance, device_camera->exposure);
-		if (scenedata.RenderSettings.gamma_correction)estimated_radiance = gammaCorrection(estimated_radiance);
-	}
-	float4 color = { estimated_radiance.x, estimated_radiance.y, estimated_radiance.z, 1 };
-
-	surf2Dwrite(color, _surfobj, i * (int)sizeof(float4), j);//has to be uchar4/2/1 or float4/2/1; no 3 comp color
-};
-
-void InvokeRenderKernel(
+void invokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
 	dim3 _blocks, dim3 _threads, Camera* device_camera, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
 {
@@ -86,10 +25,40 @@ void InvokeRenderKernel(
 	//----
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
-	scenedata.DeviceMeshLightsBufferSize= scene.m_MeshLights.size();
+	scenedata.DeviceMeshLightsBufferSize = scene.m_MeshLights.size();
 	scenedata.DeviceBVHNodesBufferSize = scene.m_BVHNodes.size();
 	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
 
 	integratorKernel << < _blocks, _threads >> > (surfaceobj, width, height, device_camera, frameidx, accumulation_buffer, scenedata);
 }
+
+//Monte Carlo Render Kernel
+__global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, int max_y, Camera* device_camera, uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+	if ((i >= max_x) || (j >= max_y)) return;
+
+	//raygen is the integration solver, the renderloop is integrator
+	float3 sampled_radiance = rayGen(i, j, max_x, max_y, device_camera, frameidx, scenedata);//just some encapsulation; generally raygen is integrator
+
+	//Monte carlo
+	accumulation_buffer[i + j * max_x] += sampled_radiance;
+	float3 estimated_radiance = accumulation_buffer[i + j * max_x] / frameidx;
+
+	float3 processed_radiance = estimated_radiance;
+
+	//post processing
+	if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE || scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
+	{
+		//order matters
+		if (scenedata.RenderSettings.enable_tone_mapping)processed_radiance = toneMapping(processed_radiance, device_camera->exposure);
+		if (scenedata.RenderSettings.enable_gamma_correction)processed_radiance = gammaCorrection(processed_radiance);//inverse EOTF
+	}
+
+	float4 color = { processed_radiance.x, processed_radiance.y, processed_radiance.z, 1 };
+
+	surf2Dwrite(color, surface_object, i * (int)sizeof(float4), j);//has to be uchar4/2/1 or float4/2/1; no 3 comp color
+};

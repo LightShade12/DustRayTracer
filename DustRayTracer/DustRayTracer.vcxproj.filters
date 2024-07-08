@@ -112,6 +112,9 @@
     <ClInclude Include="src\Editor\Panels\RendererMetricsPanel.hpp" />
     <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
     <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
+    <ClInclude Include="src\Core\PostProcess.cuh" />
+    <ClInclude Include="src\Core\BRDF.cuh" />
+    <ClInclude Include="src\Core\ImportanceSampler.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\private\Application.cpp">
@@ -151,5 +154,7 @@
     <CudaCompile Include="src\Core\CudaMath\Random.cu" />
     <CudaCompile Include="src\Editor\EditorLayer.cpp" />
     <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
+    <CudaCompile Include="src\Core\BRDF.cu" />
+    <CudaCompile Include="src\Core\ImportanceSampler.cu" />
   </ItemGroup>
 </Project>

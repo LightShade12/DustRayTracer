@@ -97,7 +97,7 @@ void Renderer::Render(Camera* cam, const Scene& scene, float* delta)
 	cudaEventRecord(start);
 
 	//printf("acc buffer size: %d", m_AccumulationFrameBuffer->ColorDataBuffer.size());
-	InvokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight,
+	invokeRenderKernel(viewCudaSurfaceObject, m_BufferWidth, m_BufferHeight,
 		blocks, threads, cam, scene, m_RendererSettings, m_FrameIndex,
 		thrust::raw_pointer_cast(m_AccumulationFrameBuffer->ColorDataBuffer.data()));
 	checkCudaErrors(cudaGetLastError());

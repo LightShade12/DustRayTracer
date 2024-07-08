@@ -118,9 +118,9 @@ void EditorLayer::OnUIRender()
 
 				if ((RendererSettings::RenderModes)renderer_mode == RendererSettings::RenderModes::NORMALMODE) {
 					if (ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight)))m_Renderer.clearAccumulation();
-					if (ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.gamma_correction)))m_Renderer.clearAccumulation();
+					if (ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.enable_gamma_correction)))m_Renderer.clearAccumulation();
 					if (ImGui::Checkbox("Enable MIS", &(m_Renderer.m_RendererSettings.useMIS)))m_Renderer.clearAccumulation();
-					if (ImGui::Checkbox("Tone mapping", &(m_Renderer.m_RendererSettings.tone_mapping)))m_Renderer.clearAccumulation();
+					if (ImGui::Checkbox("Tone mapping", &(m_Renderer.m_RendererSettings.enable_tone_mapping)))m_Renderer.clearAccumulation();
 					ImGui::Text("Ray bounce limit:"); ImGui::SameLine();
 					if (ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit)))m_Renderer.clearAccumulation();
 					ImGui::Text("Max samples limit:"); ImGui::SameLine();

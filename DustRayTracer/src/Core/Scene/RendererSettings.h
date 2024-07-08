@@ -22,8 +22,8 @@ struct RendererSettings
 	bool UseMaterialOverride = false;
 	Material OverrideMaterial;
 
-	bool gamma_correction = true;
-	bool tone_mapping = true;
+	bool enable_gamma_correction = true;
+	bool enable_tone_mapping = true;
 	bool enableSunlight = false;
 	bool useMIS = false;
 	int max_samples = 500;

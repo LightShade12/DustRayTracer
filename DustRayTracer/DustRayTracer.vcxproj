@@ -139,8 +139,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\DustRayTracer.hpp" />
+    <ClInclude Include="src\Core\BRDF.cuh" />
     <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
     <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
+    <ClInclude Include="src\Core\ImportanceSampler.cuh" />
+    <ClInclude Include="src\Core\PostProcess.cuh" />
     <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
     <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
@@ -185,6 +188,8 @@
     <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\Core\BRDF.cu" />
+    <CudaCompile Include="src\Core\ImportanceSampler.cu" />
     <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
     <ClCompile Include="src\Core\Scene\RendererSettings.cpp" />
     <ClCompile Include="src\Application\private\Application.cpp" />

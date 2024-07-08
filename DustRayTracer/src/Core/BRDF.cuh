@@ -1,25 +1,10 @@
 #pragma once
 #include <vector_types.h>
-#include <cstdint>
 
 class Material;
 class SceneData;
 
-class BRDF {
-public:
+__device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
+	const Material& material, const float2& texture_uv);
 
-	__device__ BRDF(const SceneData* scene_data) :m_scene_data(scene_data) {};
-
-	__device__ void setMaterial(const Material* material) {
-		m_material = material;
-	};
-
-	__device__ float3 evaluateContribution(const float3& wi, const float3& wo,
-		const float3& normal, float2 texcoords);
-
-	__device__ float3 importanceSample(const float3& wo, const float3& normal, uint32_t& seed, float& pdf);
-
-private:
-	const Material* m_material = nullptr;
-	const SceneData* m_scene_data = nullptr;
-};
+__device__ float D_GGX(float NoH, float roughness);
