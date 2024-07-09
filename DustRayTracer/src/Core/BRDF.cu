@@ -11,6 +11,18 @@
 #include "Common/physical_units.hpp"
 #include <thrust/device_vector.h>
 
+__device__ float fresnelSchlick90(float cosTheta, float F0, float F90) {
+	return F0 + (F90 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+__device__ float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roughness) {
+	float alpha = roughness * roughness;
+	float F90 = 0.5 + 2.0 * alpha * VoH * VoH;
+	float F_in = fresnelSchlick90(NoL, 1.0, F90);
+	float F_out = fresnelSchlick90(NoV, 1.0, F90);
+	return F_in * F_out;
+}
+
 __device__ float3 fresnelSchlick(float cosTheta, float3 F0) {
 	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
@@ -31,18 +43,6 @@ __device__ float G1_GGX_Schlick(float NoV, float roughness) {
 
 __device__ float G_Smith(float NoV, float NoL, float roughness) {
 	return G1_GGX_Schlick(NoL, roughness) * G1_GGX_Schlick(NoV, roughness);
-}
-
-__device__ float fresnelSchlick90(float cosTheta, float F0, float F90) {
-	return F0 + (F90 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-__device__ float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roughness) {
-	float alpha = roughness * roughness;
-	float F90 = 0.5 + 2.0 * alpha * VoH * VoH;
-	float F_in = fresnelSchlick90(NoL, 1.0, F90);
-	float F_out = fresnelSchlick90(NoV, 1.0, F90);
-	return F_in * F_out;
 }
 
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
@@ -87,14 +87,11 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	float3 rhoD = baseColor;
 
-	//rhoD *= (1.0 - F);//F=Ks
-	// optionally for less AO
-	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
-	metallicity = 0;
+	rhoD *= (1.0 - F);//F=Ks
+	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);	// optionally for less AO
 	rhoD *= (1.0 - metallicity);
 
 	float3 diff = rhoD / PI;
 
 	return diff + spec;
-	//return diff;
 }

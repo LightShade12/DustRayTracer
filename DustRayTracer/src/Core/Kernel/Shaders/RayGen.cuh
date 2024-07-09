@@ -145,7 +145,9 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 lightdir = next_ray_dir;
 
 		//Direct light sampling----------------------------------------------------
-		const Triangle* emissive_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
+		const Triangle* emissive_triangle = nullptr;
+		if (scenedata.DeviceMeshLightsBufferSize > 0)
+			emissive_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
 		if (payload.primitiveptr != emissive_triangle && scenedata.RenderSettings.useMIS)
 		{
 			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
