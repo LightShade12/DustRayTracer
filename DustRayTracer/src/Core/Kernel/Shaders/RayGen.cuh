@@ -114,7 +114,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//TODO: fix smooth normals and triangle face normal situation
 		//smooth shading
 		payload.world_normal = normalize(payload.UVW.x * hit_triangle->vertex0.normal + payload.UVW.y * hit_triangle->vertex1.normal + payload.UVW.z * hit_triangle->vertex2.normal);
-		if (!payload.front_face)payload.world_normal = -payload.world_normal;
+		if (!payload.front_face)payload.world_normal = -1.f * payload.world_normal;
 
 		//normal map
 		if (current_material->NormalTextureIndex >= 0) {
@@ -141,14 +141,16 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float pdf_brdf_brdf = 1;
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
 		float3 viewdir = -1.f * ray.getDirection();
-		float3 next_ray_dir = importanceSampleBRDF(payload.world_normal, viewdir, *current_material, seed, pdf_brdf_brdf, scenedata, texture_sample_uv);
+		ImportanceSampleData importancedata = importanceSampleBRDF(payload.world_normal, viewdir,
+			*current_material, seed, pdf_brdf_brdf);
+		float3 next_ray_dir = importancedata.sampleDir;
 		float3 lightdir = next_ray_dir;
 
 		//Direct light sampling----------------------------------------------------
 		const Triangle* emissive_triangle = nullptr;
 		if (scenedata.DeviceMeshLightsBufferSize > 0)
 			emissive_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
-		if (payload.primitiveptr != emissive_triangle && scenedata.RenderSettings.useMIS)
+		if (payload.primitiveptr != emissive_triangle && scenedata.RenderSettings.useMIS)//it will crash
 		{
 			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
 
@@ -194,7 +196,9 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				float light_area_nee = 0.5f * length(cross(edge1, edge2));
 
 				float pdf_light_nee = (hit_distance_nee * hit_distance_nee) / (emitter_cos_theta_nee * light_area_nee);
-				float pdf_brdf_nee = dot(payload.world_normal, shadow_ray.getDirection()) * (1.0f / PI);//lambertian diffuse only
+				//float pdf_brdf_nee = dot(payload.world_normal, shadow_ray.getDirection()) * (1.0f / PI);//lambertian diffuse only
+				float pdf_brdf_nee = getPDF(-1.f * ray.getDirection(), shadow_ray.getDirection(), payload.world_normal, current_material->Roughness,
+					importancedata.halfVector, importancedata.specular);
 
 				float MIS_nee_weight = pdf_light_nee / (pdf_light_nee + pdf_brdf_nee);
 

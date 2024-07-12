@@ -94,4 +94,5 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float3 diff = rhoD / PI;
 
 	return diff + spec;
+	//return diff;
 }

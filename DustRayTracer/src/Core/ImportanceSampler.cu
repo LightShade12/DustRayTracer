@@ -45,11 +45,30 @@ __device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi) {
 	return normalize(tangent * H.x + bitangent * H.y + normal * H.z);
 }
 
+__device__ float getPDF(float3 out_dir, float3 in_dir, float3 normal, float roughness, float3 halfvector, bool specular) {
+	//float VoH = fmaxf(dot(out_dir, halfvector), 0.0f);
+	//float NoH = fmaxf(dot(normal, halfvector), 0.0f);
+	//float D = D_GGX(NoH, roughness);
+	//float s_pdf = D * NoH / (4.0f * VoH);
+	//float d_pdf = fmaxf(dot(normal, in_dir), 0.0f) / PI;
+	//return s_pdf + d_pdf;
+
+	if (specular) {
+		float VoH = fmaxf(dot(out_dir, halfvector), 0.0f);
+		float NoH = fmaxf(dot(normal, halfvector), 0.0f);
+		float D = D_GGX(NoH, roughness);
+		return  NoH / (4.0f * VoH);
+	}
+	else {
+		return fmaxf(dot(normal, in_dir), 0.0f) / PI;
+	}
+}
+
 __device__ static float luma(float3 color) {
 	return dot(color, make_float3(0.2126f, 0.7152f, 0.0722f));
 }
 
-__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf, const SceneData& scene_data, float2 texture_uv) {
+__device__ ImportanceSampleData importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf) {
 	float roughness = material.Roughness;
 	float metallicity = material.Metallicity;
 	float3 sampleDir;
@@ -64,23 +83,27 @@ __device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Mate
 	float3 F_trans_blend = 1 - F_refl_blend;//may cause problem with metals
 
 	float random_probability = randomFloat(seed);
-	float specular_probability = luma(F_refl_blend) / luma(F_refl_blend + F_trans_blend);
+	float specular_probability = (1 - roughness) * luma(F_refl_blend);// / (luma(F_refl_blend) + luma(F_trans_blend));
 
-	if (specular_probability > random_probability) {
+	bool specular = false;
+	//if (specular_probability > random_probability)
+	if (false)
+	{
 		// Specular sample using GGX
-		sampleDir = reflect(-1.f * viewDir, specular_H);
-
+		specular = true;
+		sampleDir = reflect(-1.f * viewDir, specular_H);//refl expects dir toward nrm
 		float D = D_GGX(NoH, roughness);
-		pdf = D * NoH / (4.0f * VoH);
+		pdf = (D * NoH) / (4.0f * VoH);
+		pdf *= specular_probability;
 	}
 	else {
 		// Diffuse sample using cosine-weighted hemisphere
 		sampleDir = sampleCosineWeightedHemisphere(normal, xi);
-
-		pdf = max(dot(normal, sampleDir), 0.0) / PI;
+		pdf = fmaxf(dot(normal, sampleDir), 0.0f) / PI;
+		//pdf *= (1.0f - specular_probability);
 	}
 
-	return normalize(sampleDir);
+	return ImportanceSampleData(sampleDir, specular_H, specular);
 }
 //__device__ float3 importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf, const SceneData& scene_data, float2 texture_uv) {
 //	float roughness = material.Roughness;
