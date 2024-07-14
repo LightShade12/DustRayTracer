@@ -2,6 +2,7 @@
 #include <vector_types.h>
 #include <string>
 
+//Add POM, porosity, sss, alpha
 struct Material
 {
 public:

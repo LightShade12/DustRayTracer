@@ -34,6 +34,21 @@ __device__ static float3 skyModel(const Ray& ray, const SceneData& scenedata) {
 	return fcol;
 }
 
+__device__ static bool checknan(const float3& vec) {
+	return isnan(vec.x) || isnan(vec.y) || isnan(vec.z);
+}
+__device__ static bool checkinf(const float3& vec) {
+	return isinf(vec.x) || isinf(vec.y) || isinf(vec.z);
+}
+
+__device__ float3 clamp_output(float3 c)
+{
+	if ((checknan(c)) || (checkinf(c)))
+		return make_float3(0);
+	else
+		return clamp(c, 0, 1000);
+}
+
 __device__ float3 normalMap(const Material& current_material,
 	const Triangle* triangle, float3 normal, const SceneData& scene_data,
 	float2 texture_sample_uv) {
@@ -132,7 +147,8 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float lightArea = 0.5f * length(cross(edge1, edge2));
 			pdf_light_brdf = distanceSquared / lightArea * emitter_cosTheta;
 		}
-		float MIS_brdf_weight = (bounce_depth > 0 && scenedata.RenderSettings.useMIS) ? (last_pdf_brdf_brdf / (last_pdf_brdf_brdf + pdf_light_brdf)) : 1;
+		float MIS_brdf_weight = (bounce_depth > 0 && scenedata.RenderSettings.useMIS) ?
+			clamp(last_pdf_brdf_brdf / (last_pdf_brdf_brdf + pdf_light_brdf), 0.f, 1.f) : 1;
 
 		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
 			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv))
@@ -200,9 +216,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				float pdf_brdf_nee = getPDF(-1.f * ray.getDirection(), shadow_ray.getDirection(), payload.world_normal, current_material->Roughness,
 					importancedata.halfVector, importancedata.specular);
 
-				float MIS_nee_weight = pdf_light_nee / (pdf_light_nee + pdf_brdf_nee);
+				float MIS_nee_weight = clamp(pdf_light_nee / (pdf_light_nee + pdf_brdf_nee), 0.f, 1.f);
 
-				outgoing_light += brdf_nee * Le * cumulative_incoming_light_throughput * reciever_cos_theta_nee *
+				//TODO: the lightsbuffersize factor is probably linked to pdf; implement properly
+				//TODO: consider specular component only if visible AND if misWeight is greater than 0
+				outgoing_light += brdf_nee * Le * cumulative_incoming_light_throughput * /*reciever_cos_theta_nee **/
 					scenedata.DeviceMeshLightsBufferSize * (MIS_nee_weight / pdf_light_nee);
 			}
 		}
@@ -214,16 +232,19 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			sunray.interval = Interval(-1, FLT_MAX);
 			if (!rayTest(sunray, &scenedata))
 				outgoing_light += suncol * cumulative_incoming_light_throughput *
-				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv) *
-				fmaxf(0, dot(normalize(sunpos), payload.world_normal));
+				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
+				/** fmaxf(0, dot(normalize(sunpos), payload.world_normal)*/;
 		}
 
 		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
 			(BRDF(lightdir, viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
-				* fmaxf(0, dot(lightdir, payload.world_normal))) / pdf_brdf_brdf;
+				/** fmaxf(0, dot(lightdir, payload.world_normal)))*/ / pdf_brdf_brdf);
+		cumulative_incoming_light_throughput = clamp_output(cumulative_incoming_light_throughput);
 
 		//BOUNCE RAY---------------------------------------------------------------------------------------
+		if (checknan(cumulative_incoming_light_throughput) || checkinf(cumulative_incoming_light_throughput) ||
+			checknan(next_ray_dir) || checkinf(next_ray_dir))break;
 
 		last_pdf_brdf_brdf = pdf_brdf_brdf;
 		last_pdf_light_brdf = pdf_light_brdf;

@@ -28,7 +28,7 @@ struct RendererSettings
 	bool useMIS = false;
 	int max_samples = 500;
 	int ray_bounce_limit = 2;
-	RenderModes RenderMode = RenderModes::NORMALMODE;
+	RenderModes RenderMode = RenderModes::DEBUGMODE;
 	DebugModes DebugMode = DebugModes::ALBEDO_DEBUG;
 	float sun_size = 1.5;
 	float2 sunlight_dir = { -0.803f,0.681f };
