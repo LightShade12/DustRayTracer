@@ -158,7 +158,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
 		float3 viewdir = -1.f * ray.getDirection();
 		ImportanceSampleData importancedata = importanceSampleBRDF(payload.world_normal, viewdir,
-			*current_material, seed, pdf_brdf_brdf);
+			*current_material, seed, pdf_brdf_brdf, cumulative_incoming_light_throughput);
 		float3 next_ray_dir = importancedata.sampleDir;
 		float3 lightdir = next_ray_dir;
 

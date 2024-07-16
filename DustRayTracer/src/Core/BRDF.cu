@@ -24,7 +24,7 @@ __device__ float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roug
 }
 
 __device__ float3 fresnelSchlick(float VoH, float3 F0) {
-	float3 F = F0 + (1.0 - F0) * pow(1.0 - VoH, 5.0);
+	float3 F = F0 + (1.0 - F0) * powf(1.0 - VoH, 5.0);
 	return clamp(F, 0, 1);
 }
 
@@ -45,6 +45,19 @@ __device__ float G1_GGX_Schlick(float NoV, float roughness) {
 	return NoV / (NoV * (1.0 - k) + k);
 }
 
+__device__ float G2_Smith(float3 wo, float3 wi, float3 normal, float roughness)
+{
+	float a2 = powf(roughness, 4);
+
+	float dotNL = fmaxf(0, dot(normal, wi));
+	float dotNV = fmaxf(0, dot(normal, wo));
+
+	float denomA = dotNV * sqrtf(a2 + (1.0f - a2) * dotNL * dotNL);
+	float denomB = dotNL * sqrtf(a2 + (1.0f - a2) * dotNV * dotNV);
+
+	return 2.0f * dotNL * dotNV / (denomA + denomB);
+}
+
 __device__ float G_Smith(float NoV, float NoL, float roughness) {
 	return G1_GGX_Schlick(NoL, roughness) * G1_GGX_Schlick(NoV, roughness);
 }
@@ -58,6 +71,7 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float NoV = clamp(dot(normal, outgoing_viewdir), 0.0, 1.0);//TODO:change to maxf
 	float NoL = clamp(dot(normal, incoming_lightdir), 0.0, 1.0);
 	float NoH = clamp(dot(normal, H), 0.0, 1.0);
+	float LoH = clamp(dot(incoming_lightdir, H), 0.0, 1.0);
 	float VoH = clamp(dot(outgoing_viewdir, H), 0.0, 1.0);
 
 	float reflectance = material.Reflectance;
@@ -73,6 +87,8 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 		metallicity = col.z;
 	}
 
+	roughness = clamp(roughness, 0.001f, 1.f);
+
 	if (scene_data.RenderSettings.UseMaterialOverride)
 	{
 		reflectance = scene_data.RenderSettings.OverrideMaterial.Reflectance;
@@ -83,42 +99,27 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	float3 f0 = make_float3(0.16 * (reflectance * reflectance));//f0=0.04 for most mats
 	f0 = lerp(f0, baseColor, metallicity);
-	float3 F = fresnelSchlick(VoH, f0);
+	float3 F = fresnelSchlick(LoH, f0);
 
 	float3 spec = make_float3(0);
 
 	if (NoL > 0 && VoH > 0) {
-		float G = G_Smith(NoV, NoL, roughness);
+		//float G = G_Smith(NoV, NoL, roughness);
+		float G = G2_Smith(outgoing_viewdir, incoming_lightdir, normal, roughness);
 		float D = D_GGX(NoH, roughness);
 		spec = (F * D * G) / (4.0 * fmaxf(NoV, 0.0001) * NoL);//maybe clamp NOV?
 	}
 
 	float3 rhoD = baseColor;
 
-	rhoD *= (1.0 - F);//F=Ks
+	//rhoD *= (1.0 - F);//F=Ks
+	spec *= NoL;
+	rhoD *= (1.f - spec);
 	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);	// optionally for less AO
 	rhoD *= (1.0 - metallicity);
 
 	float3 diff = rhoD / PI;
 	diff *= NoL;//NoL is lambert falloff
 	return diff + spec;
-	//return diff;
-}
-
-__device__ float ImportanceSampleGGX_VNDF_PDF(float roughness, float3 N, float3 V, float3 L)
-{
-	float clamped_roughness = fmaxf(roughness, 0.01);
-	float3 H = normalize(L + V);
-	float NoH = clamp(dot(N, H), 0.f, 1.f);
-	float VoH = clamp(dot(V, H), 0.f, 1.f);
-	float alpha = clamped_roughness * clamped_roughness;
-	float alpha2 = alpha * alpha;
-	float NoH2 = NoH * NoH;
-
-	//float b = (NoH2 * (alpha2 - 1.0) + 1.0);
-	float b = NoH2 * alpha2 + (1 - NoH2);
-
-	float D = alpha2 / (PI * (b * b));
-
-	return (VoH > 0.0) ? D / (4.0 * VoH) : 0.0;
+	//return spec;
 }
