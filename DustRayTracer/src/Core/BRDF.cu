@@ -28,9 +28,10 @@ __device__ float3 fresnelSchlick(float VoH, float3 F0) {
 	return clamp(F, 0, 1);
 }
 
+//clamped roughness
 __device__ float D_GGX(float NoH, float roughness) {
-	float clamp_rough = fmaxf(roughness, 0.02f);
-	float alpha = clamp_rough * clamp_rough;
+	roughness = fmaxf(roughness, MAT_MIN_ROUGHNESS);//needed
+	float alpha = roughness * roughness;
 	float alpha2 = alpha * alpha;
 	float NoH2 = NoH * NoH;
 	float b = (NoH2 * (alpha2 - 1.0) + 1.0);//alt: NoH2 * alpha2 + (1 - NoH2)
@@ -43,6 +44,9 @@ __device__ float G1_GGX_Schlick(float NoV, float roughness) {
 	float alpha = roughness * roughness;
 	float k = alpha / 2.0;
 	return NoV / (NoV * (1.0 - k) + k);
+}
+__device__ float G_Smith(float NoV, float NoL, float roughness) {
+	return G1_GGX_Schlick(NoL, roughness) * G1_GGX_Schlick(NoV, roughness);
 }
 
 __device__ float G2_Smith(float3 wo, float3 wi, float3 normal, float roughness)
@@ -58,11 +62,7 @@ __device__ float G2_Smith(float3 wo, float3 wi, float3 normal, float roughness)
 	return 2.0f * dotNL * dotNV / (denomA + denomB);
 }
 
-__device__ float G_Smith(float NoV, float NoL, float roughness) {
-	return G1_GGX_Schlick(NoL, roughness) * G1_GGX_Schlick(NoV, roughness);
-}
-
-//combined diffuse+specular brdf
+//combined diffuse+specular brdf; clamped roughness
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
 	const Material& material, const float2& texture_uv)
 {
@@ -86,8 +86,6 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 		roughness = col.y;
 		metallicity = col.z;
 	}
-
-	roughness = clamp(roughness, 0.001f, 1.f);
 
 	if (scene_data.RenderSettings.UseMaterialOverride)
 	{
@@ -113,13 +111,13 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float3 rhoD = baseColor;
 
 	//rhoD *= (1.0 - F);//F=Ks
-	spec *= NoL;
 	rhoD *= (1.f - spec);
 	//rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);	// optionally for less AO
 	rhoD *= (1.0 - metallicity);
 
 	float3 diff = rhoD / PI;
+	spec *= NoL;
 	diff *= NoL;//NoL is lambert falloff
 	return diff + spec;
-	//return spec;
+	//return diff;
 }

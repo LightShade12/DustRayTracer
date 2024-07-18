@@ -12,5 +12,6 @@
 __constant__ const float TRIANGLE_EPSILON = 0.000001;
 __constant__ const float PI = 3.141592;
 __constant__ const float HIT_EPSILON = 0.001;
+__constant__ const float MAT_MIN_ROUGHNESS = 0.045f;
 //TODO: add system wide math constants here that are not std supplied
 //-Infinity, PI, EPSILON etc

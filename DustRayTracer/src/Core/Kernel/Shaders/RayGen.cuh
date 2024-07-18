@@ -77,12 +77,12 @@ __device__ float3 normalMap(const Material& current_material,
 
 //TODO: maybe create a LaunchID struct instead of x,y?
 __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* device_camera, uint32_t frameidx, const SceneData scenedata) {
+	const Camera* device_camera, uint32_t frameidx, const SceneData scene_data) {
 	float3 sunpos = make_float3(
-		sin(scenedata.RenderSettings.sunlight_dir.x) * (1 - sin(scenedata.RenderSettings.sunlight_dir.y)),
-		sin(scenedata.RenderSettings.sunlight_dir.y),
-		cos(scenedata.RenderSettings.sunlight_dir.x) * (1 - sin(scenedata.RenderSettings.sunlight_dir.y))) * 100;
-	float3 suncol = scenedata.RenderSettings.sunlight_color * scenedata.RenderSettings.sunlight_intensity;
+		sin(scene_data.RenderSettings.sunlight_dir.x) * (1 - sin(scene_data.RenderSettings.sunlight_dir.y)),
+		sin(scene_data.RenderSettings.sunlight_dir.y),
+		cos(scene_data.RenderSettings.sunlight_dir.x) * (1 - sin(scene_data.RenderSettings.sunlight_dir.y))) * 100;
+	float3 suncol = scene_data.RenderSettings.sunlight_color * scene_data.RenderSettings.sunlight_intensity;
 
 	uint32_t seed = x + y * max_x;
 	seed *= frameidx;
@@ -94,7 +94,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 	float3 outgoing_light = { 0,0,0 };
 	float3 cumulative_incoming_light_throughput = { 1,1,1 };//Transport operator
-	int max_bounces = scenedata.RenderSettings.ray_bounce_limit;
+	int max_bounces = scene_data.RenderSettings.ray_bounce_limit;
 	float last_pdf_brdf_brdf = 1;
 	float last_pdf_light_brdf = 1;
 
@@ -104,24 +104,24 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 	//operator formulation for rendering equation
 	for (int bounce_depth = 0; bounce_depth <= max_bounces; bounce_depth++)
 	{
-		payload = traceRay(ray, &scenedata);
+		payload = traceRay(ray, &scene_data);
 		seed += bounce_depth;
 
 		//SHADING--------------------------------------------------------------------------
 		//SKY SHADING----------------------------------
 		if (payload.primitiveptr == nullptr)
 		{
-			if (scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG &&
-				scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)outgoing_light = payload.color;
+			if (scene_data.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG &&
+				scene_data.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)outgoing_light = payload.color;
 			else {
-				float3 sky_integral_eval = skyModel(ray, scenedata) * scenedata.RenderSettings.sky_intensity;
+				float3 sky_integral_eval = skyModel(ray, scene_data) * scene_data.RenderSettings.sky_intensity;
 				outgoing_light += sky_integral_eval * cumulative_incoming_light_throughput;
 			}
 			break;
 		}
 
 		//SURFACE SHADING-------------------------------------------------------------------
-		const Material* current_material = &(scenedata.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
+		const Material* current_material = &(scene_data.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
 		const Triangle* hit_triangle = payload.primitiveptr;
 		const float2 texture_sample_uv = payload.UVW.x * hit_triangle->vertex0.UV + payload.UVW.y * hit_triangle->vertex1.UV + payload.UVW.z * hit_triangle->vertex2.UV;
 		//--------------------
@@ -134,7 +134,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		//normal map
 		if (current_material->NormalTextureIndex >= 0) {
 			payload.world_normal = normalMap(*current_material, hit_triangle,
-				payload.world_normal, scenedata, texture_sample_uv);
+				payload.world_normal, scene_data, texture_sample_uv);
 		}
 
 		//Indirect Emission;
@@ -147,26 +147,26 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			float lightArea = 0.5f * length(cross(edge1, edge2));
 			pdf_light_brdf = distanceSquared / lightArea * emitter_cosTheta;
 		}
-		float MIS_brdf_weight = (bounce_depth > 0 && scenedata.RenderSettings.useMIS) ?
+		float MIS_brdf_weight = (bounce_depth > 0 && scene_data.RenderSettings.useMIS) ?
 			clamp(last_pdf_brdf_brdf / (last_pdf_brdf_brdf + pdf_light_brdf), 0.f, 1.f) : 1;
 
 		outgoing_light += ((current_material->EmissionTextureIndex < 0) ? current_material->EmissiveColor :
-			scenedata.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv))
+			scene_data.DeviceTextureBufferPtr[current_material->EmissionTextureIndex].getPixel(texture_sample_uv))
 			* current_material->EmissiveScale * cumulative_incoming_light_throughput * MIS_brdf_weight;
 
 		float pdf_brdf_brdf = 1;
 		float3 next_ray_origin = payload.world_position + (payload.world_normal * HIT_EPSILON);
 		float3 viewdir = -1.f * ray.getDirection();
 		ImportanceSampleData importancedata = importanceSampleBRDF(payload.world_normal, viewdir,
-			*current_material, seed, pdf_brdf_brdf, cumulative_incoming_light_throughput);
+			*current_material, seed, pdf_brdf_brdf, cumulative_incoming_light_throughput, scene_data, texture_sample_uv);
 		float3 next_ray_dir = importancedata.sampleDir;
 		float3 lightdir = next_ray_dir;
 
 		//Direct light sampling----------------------------------------------------
 		const Triangle* emissive_triangle = nullptr;
-		if (scenedata.DeviceMeshLightsBufferSize > 0)
-			emissive_triangle = &scenedata.DevicePrimitivesBuffer[scenedata.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scenedata.DeviceMeshLightsBufferSize)]];
-		if (payload.primitiveptr != emissive_triangle && scenedata.RenderSettings.useMIS)//it will crash
+		if (scene_data.DeviceMeshLightsBufferSize > 0)
+			emissive_triangle = &scene_data.DevicePrimitivesBuffer[scene_data.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scene_data.DeviceMeshLightsBufferSize)]];
+		if (payload.primitiveptr != emissive_triangle && scene_data.RenderSettings.useMIS)//it will crash
 		{
 			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
 
@@ -186,7 +186,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			Ray shadow_ray(next_ray_origin, nee_sample_dir);
 
 			shadow_ray.interval = Interval(-1, FLT_MAX);
-			HitPayload shadowray_payload = traceRay(shadow_ray, &scenedata);
+			HitPayload shadowray_payload = traceRay(shadow_ray, &scene_data);
 
 			//shadow_ray.interval = Interval(-1, dist - (dist * 0.5));
 			//bool occluded = rayTest(shadow_ray, &scenedata);
@@ -195,11 +195,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
 			{
 				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
-				float3 Le = scenedata.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveColor *
-					scenedata.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveScale;
+				float3 Le = scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveColor *
+					scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveScale;
 
 				float3 brdf_nee = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
-					payload.world_normal, scenedata, *current_material, texture_sample_uv);
+					payload.world_normal, scene_data, *current_material, texture_sample_uv);
 
 				float reciever_cos_theta_nee = fmaxf(0, dot(shadow_ray.getDirection(), payload.world_normal));
 
@@ -213,32 +213,32 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 				float pdf_light_nee = (hit_distance_nee * hit_distance_nee) / (emitter_cos_theta_nee * light_area_nee);
 				//float pdf_brdf_nee = dot(payload.world_normal, shadow_ray.getDirection()) * (1.0f / PI);//lambertian diffuse only
-				float pdf_brdf_nee = getPDF(-1.f * ray.getDirection(), shadow_ray.getDirection(), payload.world_normal, current_material->Roughness,
-					importancedata.halfVector, importancedata.specular);
+				float pdf_brdf_nee = getPDF(importancedata, viewdir, payload.world_normal,
+					*current_material, scene_data, texture_sample_uv);
 
 				float MIS_nee_weight = clamp(pdf_light_nee / (pdf_light_nee + pdf_brdf_nee), 0.f, 1.f);
 
 				//TODO: the lightsbuffersize factor is probably linked to pdf; implement properly
 				//TODO: consider specular component only if visible AND if misWeight is greater than 0
 				outgoing_light += brdf_nee * Le * cumulative_incoming_light_throughput * /*reciever_cos_theta_nee **/
-					scenedata.DeviceMeshLightsBufferSize * (MIS_nee_weight / pdf_light_nee);
+					scene_data.DeviceMeshLightsBufferSize * (MIS_nee_weight / pdf_light_nee);
 			}
 		}
 
 		//shadow ray for sunlight
-		if (scenedata.RenderSettings.enableSunlight && scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
+		if (scene_data.RenderSettings.enableSunlight && scene_data.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
 		{
-			Ray sunray = Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scenedata.RenderSettings.sun_size);
+			Ray sunray = Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scene_data.RenderSettings.sun_size);
 			sunray.interval = Interval(-1, FLT_MAX);
-			if (!rayTest(sunray, &scenedata))
+			if (!rayTest(sunray, &scene_data))
 				outgoing_light += suncol * cumulative_incoming_light_throughput *
-				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
+				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scene_data, *current_material, texture_sample_uv)
 				/** fmaxf(0, dot(normalize(sunpos), payload.world_normal)*/;
 		}
 
 		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
-			(BRDF(lightdir, viewdir, payload.world_normal, scenedata, *current_material, texture_sample_uv)
+			(BRDF(lightdir, viewdir, payload.world_normal, scene_data, *current_material, texture_sample_uv)
 				/** fmaxf(0, dot(lightdir, payload.world_normal)))*/ / pdf_brdf_brdf);
 		cumulative_incoming_light_throughput = clamp_output(cumulative_incoming_light_throughput);
 
@@ -252,9 +252,9 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		ray.setDir(next_ray_dir);
 
 		//Debug Views------------------------------------------------------------------------------------
-		if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
+		if (scene_data.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)
 		{
-			switch (scenedata.RenderSettings.DebugMode)
+			switch (scene_data.RenderSettings.DebugMode)
 			{
 			case RendererSettings::DebugModes::ALBEDO_DEBUG:
 				outgoing_light = cumulative_incoming_light_throughput; break;
@@ -279,5 +279,5 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		}
 	}
 
-	return outgoing_light;
+	return clamp_output(outgoing_light);
 };
