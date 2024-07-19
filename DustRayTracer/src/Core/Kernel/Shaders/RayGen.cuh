@@ -69,7 +69,7 @@ __device__ float3 normalMap(const Material& current_material,
 
 	float3 alteredNormal = (scene_data.DeviceTextureBufferPtr[current_material.NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1);
 	alteredNormal.x *= current_material.NormalMapScale;
-	alteredNormal.y *= current_material.NormalMapScale;
+	alteredNormal.y *= current_material.NormalMapScale * (scene_data.RenderSettings.invert_normal_map) ? -1 : 1;
 	alteredNormal = normalize(alteredNormal);
 	alteredNormal = normalize(TBN * alteredNormal);
 	return alteredNormal;
@@ -194,9 +194,12 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 			//if (!occluded)//guard against alpha test; pseudo visibility term
 			if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
 			{
+				float2 texcoord = (1.0f - barycentric.x - barycentric.y) * hit_triangle->vertex0.UV
+					+ barycentric.x * hit_triangle->vertex1.UV
+					+ barycentric.y * hit_triangle->vertex2.UV;
+				const auto mat = scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx];
 				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
-				float3 Le = scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveColor *
-					scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx].EmissiveScale;
+				float3 Le = (mat.EmissionTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[mat.EmissionTextureIndex].getPixel(texcoord) * mat.EmissiveScale : (mat.EmissiveColor * mat.EmissiveScale);
 
 				float3 brdf_nee = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
 					payload.world_normal, scene_data, *current_material, texture_sample_uv);
@@ -212,7 +215,6 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 				float light_area_nee = 0.5f * length(cross(edge1, edge2));
 
 				float pdf_light_nee = (hit_distance_nee * hit_distance_nee) / (emitter_cos_theta_nee * light_area_nee);
-				//float pdf_brdf_nee = dot(payload.world_normal, shadow_ray.getDirection()) * (1.0f / PI);//lambertian diffuse only
 				float pdf_brdf_nee = getPDF(importancedata, viewdir, payload.world_normal,
 					*current_material, scene_data, texture_sample_uv);
 

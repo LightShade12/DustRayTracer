@@ -15,6 +15,7 @@ public:
 	int width, height = 0;
 	int componentCount = 0;
 	int ChannelBitDepth = 0;
+	float emission_weight = 1;
 	//bool isfloatingPoint=false;
 	unsigned char* d_data = nullptr;//device resident
 private:

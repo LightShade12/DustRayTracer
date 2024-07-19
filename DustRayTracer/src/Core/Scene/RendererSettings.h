@@ -26,6 +26,7 @@ struct RendererSettings
 	bool enable_tone_mapping = true;
 	bool enableSunlight = false;
 	bool useMIS = false;
+	bool invert_normal_map = false;
 	int max_samples = 500;
 	int ray_bounce_limit = 2;
 	RenderModes RenderMode = RenderModes::DEBUGMODE;

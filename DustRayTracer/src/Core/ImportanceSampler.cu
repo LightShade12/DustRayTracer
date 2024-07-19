@@ -37,7 +37,7 @@ __device__ float getPDF(ImportanceSampleData importancedata, float3 out_dir, flo
 		//roughness-metallic texture
 		if (material.RoughnessTextureIndex >= 0) {
 			float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
-			roughness = col.y;
+			roughness = col.y * material.Roughness;
 		}
 		float3 H = normalize(out_dir + importancedata.sampleDir);
 		float VoH = fmaxf(dot(out_dir, H), 0.0f);
@@ -142,8 +142,8 @@ __device__ ImportanceSampleData importanceSampleBRDF(float3 normal, float3 viewD
 	//roughness-metallic texture
 	if (material.RoughnessTextureIndex >= 0) {
 		float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
-		roughness = col.y;
-		metallicity = col.z;
+		roughness = col.y * material.Roughness;
+		metallicity = col.z * material.Metallicity;
 	}
 
 	float3 f0 = make_float3(0.16f * (material.Reflectance * material.Reflectance));//f0=0.04 for most mats

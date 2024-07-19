@@ -74,8 +74,8 @@ bool Scene::loadMaterials(const tinygltf::Model& model)
 		drt_material.NormalTextureIndex = gltf_material.normalTexture.index;
 		drt_material.NormalMapScale = gltf_material.normalTexture.scale;
 		drt_material.EmissionTextureIndex = gltf_material.emissiveTexture.index;
-		drt_material.Metallicity = PBR_data.metallicFactor;
-		drt_material.Roughness = PBR_data.roughnessFactor;
+		drt_material.Metallicity = (PBR_data.metallicRoughnessTexture.index >= 0) ? 1 : PBR_data.metallicFactor;
+		drt_material.Roughness = (PBR_data.metallicRoughnessTexture.index >= 0) ? 0.6f : PBR_data.roughnessFactor;
 		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);
 		m_Materials.push_back(drt_material);
 	}

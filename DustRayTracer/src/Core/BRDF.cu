@@ -83,8 +83,8 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	//roughness-metallic texture
 	if (material.RoughnessTextureIndex >= 0) {
 		float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
-		roughness = col.y;
-		metallicity = col.z;
+		roughness = col.y * material.Roughness;
+		metallicity = col.z * material.Metallicity;
 	}
 
 	if (scene_data.RenderSettings.UseMaterialOverride)
