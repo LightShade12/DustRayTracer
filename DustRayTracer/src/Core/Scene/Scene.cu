@@ -69,11 +69,11 @@ bool Scene::loadMaterials(const tinygltf::Model& model)
 		drt_material.Name[gltf_material.name.size()] = '\0';
 		drt_material.Albedo = make_float3(PBR_data.baseColorFactor[0], PBR_data.baseColorFactor[1], PBR_data.baseColorFactor[2]);//We just use RGB material albedo for now
 		drt_material.EmissiveColor = make_float3(gltf_material.emissiveFactor[0], gltf_material.emissiveFactor[1], gltf_material.emissiveFactor[2]);
-		drt_material.AlbedoTextureIndex = PBR_data.baseColorTexture.index;//should be -1 when empty
-		drt_material.RoughnessTextureIndex = PBR_data.metallicRoughnessTexture.index;
-		drt_material.NormalTextureIndex = gltf_material.normalTexture.index;
+		if (PBR_data.baseColorTexture.index >= 0)drt_material.AlbedoTextureIndex = model.textures[PBR_data.baseColorTexture.index].source;
+		if (PBR_data.metallicRoughnessTexture.index >= 0)drt_material.RoughnessTextureIndex = model.textures[PBR_data.metallicRoughnessTexture.index].source;
+		if (gltf_material.normalTexture.index >= 0)drt_material.NormalTextureIndex = model.textures[gltf_material.normalTexture.index].source;
 		drt_material.NormalMapScale = gltf_material.normalTexture.scale;
-		drt_material.EmissionTextureIndex = gltf_material.emissiveTexture.index;
+		if (gltf_material.emissiveTexture.index >= 0)drt_material.EmissionTextureIndex = model.textures[gltf_material.emissiveTexture.index].source;
 		drt_material.Metallicity = (PBR_data.metallicRoughnessTexture.index >= 0) ? 1 : PBR_data.metallicFactor;
 		drt_material.Roughness = (PBR_data.metallicRoughnessTexture.index >= 0) ? 0.6f : PBR_data.roughnessFactor;
 		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);

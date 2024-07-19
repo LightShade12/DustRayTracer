@@ -45,9 +45,9 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
-	m_Scene->loadGLTFmodel("../models/small_light.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/source/cs16_dust2.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/test/mis_veach_test.glb", &m_device_Camera);
+	m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb", &m_device_Camera);
 	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
 	m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
 	m_device_Camera->m_movement_speed = 10.0;
