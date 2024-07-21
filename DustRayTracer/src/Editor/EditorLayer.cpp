@@ -4,7 +4,7 @@
 
 #include "Theme/EditorTheme.hpp"
 #include "Application/Application.hpp"
-#include "Timer.hpp"
+#include "Editor/Common/Timer.hpp"
 
 #include "Core/Scene/Scene.cuh"
 #include "Core/Scene/Camera.cuh"
@@ -15,6 +15,8 @@
 #include <imgui.h>
 
 #include <stb_image_write.h>
+
+
 
 /*
 TODO:add denoiser settings
@@ -45,11 +47,11 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/source/cs16_dust2.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/test/mis_veach_test.glb", &m_device_Camera);
-	m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb", &m_device_Camera);
+	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb", &m_device_Camera);
 	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
-	m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
+	//m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
 	m_device_Camera->m_movement_speed = 10.0;
 	m_device_Camera->defocus_angle = 0.f;
 	m_device_Camera->focus_dist = 10.f;
@@ -174,7 +176,7 @@ void EditorLayer::OnUIRender()
 		ImGui::End();
 	}
 
-	ImGui::SetNextWindowSize(ImVec2(640 + 16, 360 + 47), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(960 + 13, 500 + 45), ImGuiCond_Once);
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
 
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();

@@ -4,7 +4,7 @@
 #include "Core/BRDF.cuh"
 #include "Core/ImportanceSampler.cuh"
 
-#include "Common/physical_units.hpp"
+#include "Core/CudaMath/physical_units.hpp"
 #include "Core/CudaMath/helper_math.cuh"
 #include "Core/CudaMath/Random.cuh"
 #include "Core/CudaMath/cuda_mat.cuh"
@@ -75,9 +75,109 @@ __device__ float3 normalMap(const Material& current_material,
 	return alteredNormal;
 }
 
+//multiply radiance with throughput
+__device__ void getSunlight(float3 position, float3 view_direction, float3 normal,
+	float3 ubo_sun_direction, float3 ubo_sun_color, float3 albedo,
+	float roughness, float3  f0, float metallicity,
+	const Material& material, const SceneData& scene_data, uint32_t& seed, float3& out_radiance) {
+	//shadow ray for sunlight
+
+	Ray sunray = Ray((position), (ubo_sun_direction)+randomUnitFloat3(seed) * scene_data.RenderSettings.sun_size);
+	sunray.interval = Interval(-1, FLT_MAX);
+	if (!rayTest(sunray, &scene_data))
+		out_radiance = ubo_sun_color *
+		BRDF(normalize(sunray.getDirection()),
+			view_direction, normal, scene_data, albedo, roughness, f0, metallicity)
+		/** fmaxf(0, dot(normalize(sunpos), normal)*/;
+}
+
+//multiply radiance by throughput
+__device__ void getDirectIllumination(float3 view_direction, float3 position, float3 normal,
+	const Material& material, float3 ubo_sun_color, float3 ubo_sun_direction, float3 albedo,
+	float roughness, float3  f0, float metallicity, const Triangle* hit_triangle,
+	float3& out_radiance, const SceneData& scene_data, uint32_t& seed, bool specular)
+{
+	//Direct light sampling----------------------------------------------------
+	float3 direct_radiance = make_float3(0);
+
+	if (scene_data.RenderSettings.useMIS && scene_data.DeviceMeshLightsBufferSize > 0)
+	{
+		const Triangle* emissive_triangle = nullptr;
+		emissive_triangle = &scene_data.DevicePrimitivesBuffer[scene_data.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scene_data.DeviceMeshLightsBufferSize)]];
+		float2 barycentric = { randomFloat(seed), randomFloat(seed) };
+		if (hit_triangle != emissive_triangle) {
+			// Ensure that barycentric coordinates sum to 1
+			if (barycentric.x + barycentric.y > 1.0f) {
+				barycentric.x = 1.0f - barycentric.x;
+				barycentric.y = 1.0f - barycentric.y;
+			}
+
+			float3 triangle_sample_point = emissive_triangle->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
+				emissive_triangle->vertex1.position * barycentric.x +
+				emissive_triangle->vertex2.position * barycentric.y;
+
+			float3 nee_sample_dir = normalize(triangle_sample_point - position);
+			float hit_distance_nee = length(triangle_sample_point - position);
+			float3 normal_geo = emissive_triangle->face_normal;
+			Ray shadow_ray(position, nee_sample_dir);
+
+			shadow_ray.interval = Interval(-1, FLT_MAX);
+			HitPayload shadowray_payload = traceRay(shadow_ray, &scene_data);
+
+			//shadow_ray.interval = Interval(-1, hit_distance_nee-0.01);
+			//bool occluded = emissive_triangle != rayTest(shadow_ray, &scene_data);
+
+			//if (!occluded)//guard against alpha test; pseudo visibility term
+			if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
+			{
+				float2 texcoord = (1.0f - barycentric.x - barycentric.y) * hit_triangle->vertex0.UV
+					+ barycentric.x * hit_triangle->vertex1.UV
+					+ barycentric.y * hit_triangle->vertex2.UV;
+				const auto mat = scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx];
+				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
+				float3 Le = (mat.EmissionTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[mat.EmissionTextureIndex].getPixel(texcoord) * mat.EmissiveScale : (mat.EmissiveColor * mat.EmissiveScale);
+
+				float3 brdf_nee = BRDF(shadow_ray.getDirection(), view_direction,
+					normal, scene_data, albedo, roughness, f0, metallicity);
+
+				float reciever_cos_theta_nee = fmaxf(0, dot(shadow_ray.getDirection(), normal));
+
+				if (dot(emissive_triangle->face_normal, shadow_ray.getDirection()) > 0.f) normal_geo = -1.f * emissive_triangle->face_normal;
+
+				float emitter_cos_theta_nee = fabs(dot(normal_geo, -1.f * shadow_ray.getDirection()));
+
+				float3 edge1 = emissive_triangle->vertex1.position - emissive_triangle->vertex0.position;
+				float3 edge2 = emissive_triangle->vertex2.position - emissive_triangle->vertex0.position;
+				float light_area_nee = 0.5f * length(cross(edge1, edge2));
+
+				float pdf_light_nee = (hit_distance_nee * hit_distance_nee) / (emitter_cos_theta_nee * light_area_nee);
+				float pdf_brdf_nee = getPDF(shadow_ray.getDirection(), specular, view_direction, normal, roughness);
+
+				float MIS_nee_weight = clamp(pdf_light_nee / (pdf_light_nee + pdf_brdf_nee), 0.f, 1.f);
+
+				//TODO: the lightsbuffersize factor is probably linked to pdf; implement properly
+				//TODO: consider specular component only if visible AND if misWeight is greater than 0
+				direct_radiance = brdf_nee * Le *
+					scene_data.DeviceMeshLightsBufferSize * (MIS_nee_weight / pdf_light_nee);//multiply throughput
+			}
+		}
+	}
+	out_radiance += direct_radiance;
+
+	if (scene_data.RenderSettings.enableSunlight && scene_data.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
+	{
+		float3 direct_sun_radiance = make_float3(0);
+		getSunlight(position, view_direction, normal, ubo_sun_direction,
+			ubo_sun_color, albedo, roughness, f0, metallicity,
+			material, scene_data, seed, direct_sun_radiance);
+		out_radiance += direct_sun_radiance;
+	}
+}
+
 //TODO: maybe create a LaunchID struct instead of x,y?
 __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* device_camera, uint32_t frameidx, const SceneData scene_data) {
+	const Camera* device_camera, uint32_t frameidx, const SceneData scene_data)
+{
 	float3 sunpos = make_float3(
 		sin(scene_data.RenderSettings.sunlight_dir.x) * (1 - sin(scene_data.RenderSettings.sunlight_dir.y)),
 		sin(scene_data.RenderSettings.sunlight_dir.y),
@@ -124,6 +224,11 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		const Material* current_material = &(scene_data.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
 		const Triangle* hit_triangle = payload.primitiveptr;
 		const float2 texture_sample_uv = payload.UVW.x * hit_triangle->vertex0.UV + payload.UVW.y * hit_triangle->vertex1.UV + payload.UVW.z * hit_triangle->vertex2.UV;
+		float3 albedo = (current_material->AlbedoTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv) : current_material->Albedo;
+		float roughness = (current_material->RoughnessTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->RoughnessTextureIndex].getPixel(texture_sample_uv).y * current_material->Roughness : current_material->Roughness;
+		float metallicity = (current_material->RoughnessTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->RoughnessTextureIndex].getPixel(texture_sample_uv).z * current_material->Metallicity : current_material->Metallicity;
+		float3 F0 = make_float3(0.16 * (current_material->Reflectance * current_material->Reflectance));//f0=0.04 for most mats
+		F0 = lerp(F0, albedo, metallicity);
 		//--------------------
 
 		//TODO: fix smooth normals and triangle face normal situation
@@ -162,85 +267,19 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 next_ray_dir = importancedata.sampleDir;
 		float3 lightdir = next_ray_dir;
 
-		//Direct light sampling----------------------------------------------------
-		const Triangle* emissive_triangle = nullptr;
-		if (scene_data.DeviceMeshLightsBufferSize > 0)
-			emissive_triangle = &scene_data.DevicePrimitivesBuffer[scene_data.DeviceMeshLightsBufferPtr[int(randomFloat(seed) * scene_data.DeviceMeshLightsBufferSize)]];
-		if (payload.primitiveptr != emissive_triangle && scene_data.RenderSettings.useMIS)//it will crash
-		{
-			float2 barycentric = { randomFloat(seed), randomFloat(seed) };
+		float3 direct_radiance = make_float3(0);
 
-			// Ensure that barycentric coordinates sum to 1
-			if (barycentric.x + barycentric.y > 1.0f) {
-				barycentric.x = 1.0f - barycentric.x;
-				barycentric.y = 1.0f - barycentric.y;
-			}
-			// Calculate the triangle_sample_point position on the mesh light
-			float3 triangle_sample_point = emissive_triangle->vertex0.position * (1.0f - barycentric.x - barycentric.y) +
-				emissive_triangle->vertex1.position * barycentric.x +
-				emissive_triangle->vertex2.position * barycentric.y;
+		getDirectIllumination(viewdir, next_ray_origin, payload.world_normal,
+			*current_material, suncol, sunpos,
+			albedo, roughness, F0, metallicity,
+			hit_triangle, direct_radiance, scene_data,
+			seed, importancedata.specular);
 
-			float3 nee_sample_dir = normalize(triangle_sample_point - next_ray_origin);
-			float hit_distance_nee = length(triangle_sample_point - next_ray_origin);
-			float3 surfnorm = emissive_triangle->face_normal;
-			Ray shadow_ray(next_ray_origin, nee_sample_dir);
-
-			shadow_ray.interval = Interval(-1, FLT_MAX);
-			HitPayload shadowray_payload = traceRay(shadow_ray, &scene_data);
-
-			//shadow_ray.interval = Interval(-1, dist - (dist * 0.5));
-			//bool occluded = rayTest(shadow_ray, &scenedata);
-
-			//if (!occluded)//guard against alpha test; pseudo visibility term
-			if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
-			{
-				float2 texcoord = (1.0f - barycentric.x - barycentric.y) * hit_triangle->vertex0.UV
-					+ barycentric.x * hit_triangle->vertex1.UV
-					+ barycentric.y * hit_triangle->vertex2.UV;
-				const auto mat = scene_data.DeviceMaterialBufferPtr[emissive_triangle->material_idx];
-				// Emission from the potential light triangle; handles non-light appropriately; pseudo visibility term
-				float3 Le = (mat.EmissionTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[mat.EmissionTextureIndex].getPixel(texcoord) * mat.EmissiveScale : (mat.EmissiveColor * mat.EmissiveScale);
-
-				float3 brdf_nee = BRDF(shadow_ray.getDirection(), -1.f * ray.getDirection(),
-					payload.world_normal, scene_data, *current_material, texture_sample_uv);
-
-				float reciever_cos_theta_nee = fmaxf(0, dot(shadow_ray.getDirection(), payload.world_normal));
-
-				if (dot(emissive_triangle->face_normal, shadow_ray.getDirection()) > 0.f) surfnorm = -1.f * emissive_triangle->face_normal;
-
-				float emitter_cos_theta_nee = fabs(dot(surfnorm, -1.f * shadow_ray.getDirection()));
-
-				float3 edge1 = emissive_triangle->vertex1.position - emissive_triangle->vertex0.position;
-				float3 edge2 = emissive_triangle->vertex2.position - emissive_triangle->vertex0.position;
-				float light_area_nee = 0.5f * length(cross(edge1, edge2));
-
-				float pdf_light_nee = (hit_distance_nee * hit_distance_nee) / (emitter_cos_theta_nee * light_area_nee);
-				float pdf_brdf_nee = getPDF(importancedata, viewdir, payload.world_normal,
-					*current_material, scene_data, texture_sample_uv);
-
-				float MIS_nee_weight = clamp(pdf_light_nee / (pdf_light_nee + pdf_brdf_nee), 0.f, 1.f);
-
-				//TODO: the lightsbuffersize factor is probably linked to pdf; implement properly
-				//TODO: consider specular component only if visible AND if misWeight is greater than 0
-				outgoing_light += brdf_nee * Le * cumulative_incoming_light_throughput * /*reciever_cos_theta_nee **/
-					scene_data.DeviceMeshLightsBufferSize * (MIS_nee_weight / pdf_light_nee);
-			}
-		}
-
-		//shadow ray for sunlight
-		if (scene_data.RenderSettings.enableSunlight && scene_data.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE)
-		{
-			Ray sunray = Ray((next_ray_origin), (sunpos)+randomUnitFloat3(seed) * scene_data.RenderSettings.sun_size);
-			sunray.interval = Interval(-1, FLT_MAX);
-			if (!rayTest(sunray, &scene_data))
-				outgoing_light += suncol * cumulative_incoming_light_throughput *
-				BRDF(normalize(sunray.getDirection()), viewdir, payload.world_normal, scene_data, *current_material, texture_sample_uv)
-				/** fmaxf(0, dot(normalize(sunpos), payload.world_normal)*/;
-		}
+		outgoing_light += direct_radiance * cumulative_incoming_light_throughput;
 
 		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
-			(BRDF(lightdir, viewdir, payload.world_normal, scene_data, *current_material, texture_sample_uv)
+			(BRDF(lightdir, viewdir, payload.world_normal, scene_data, albedo, roughness, F0, metallicity)
 				/** fmaxf(0, dot(lightdir, payload.world_normal)))*/ / pdf_brdf_brdf);
 		cumulative_incoming_light_throughput = clamp_output(cumulative_incoming_light_throughput);
 

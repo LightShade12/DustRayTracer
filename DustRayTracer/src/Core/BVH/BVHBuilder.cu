@@ -1,5 +1,5 @@
 #include "BVHBuilder.cuh"
-#include "Common/dbg_macros.hpp"
+#include "Editor/Common/dbg_macros.hpp"
 #include <stack>
 #include <thrust/partition.h>
 #include <algorithm>
@@ -305,7 +305,7 @@ void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, Par
 }
 
 int BVHBuilder::costHeursitic(const BVHNode& left_node, const BVHNode& right_node, const Bounds3f& parent_bbox) {
-	return m_RayAABBIntersectionCost + 
+	return m_RayAABBIntersectionCost +
 		((left_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * left_node.primitives_count * m_RayPrimitiveIntersectionCost) +
 		((right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * right_node.primitives_count * m_RayPrimitiveIntersectionCost);
 }

@@ -29,7 +29,7 @@ struct RendererSettings
 	bool invert_normal_map = false;
 	int max_samples = 500;
 	int ray_bounce_limit = 2;
-	RenderModes RenderMode = RenderModes::DEBUGMODE;
+	RenderModes RenderMode = RenderModes::NORMALMODE;
 	DebugModes DebugMode = DebugModes::ALBEDO_DEBUG;
 	float sun_size = 1.5;
 	float2 sunlight_dir = { -0.803f,0.681f };

@@ -32,7 +32,7 @@ __device__ HitPayload traceRay(const Ray& ray, const SceneData* scenedata) {
 }
 
 //does not support glass material; cuz no mat processing
-__device__ bool rayTest(const Ray& ray, const SceneData* scenedata)
+__device__ const Triangle* rayTest(const Ray& ray, const SceneData* scenedata)
 {
 	return traverseBVH_raytest(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, scenedata);
 }

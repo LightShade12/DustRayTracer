@@ -8,7 +8,7 @@
 #include "Scene/SceneData.cuh"
 
 #include "Core/CudaMath/helper_math.cuh"
-#include "Common/physical_units.hpp"
+#include "Core/CudaMath/physical_units.hpp"
 #include <thrust/device_vector.h>
 
 __device__ float fresnelSchlick90(float cosTheta, float F0, float F90) {
@@ -64,7 +64,7 @@ __device__ float G2_Smith(float3 wo, float3 wi, float3 normal, float roughness)
 
 //combined diffuse+specular brdf; clamped roughness
 __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3 normal, const SceneData& scene_data,
-	const Material& material, const float2& texture_uv)
+	float3 albedo, float roughness, float3 F0, float metallicity)
 {
 	float3 H = normalize(outgoing_viewdir + incoming_lightdir);
 
@@ -74,30 +74,15 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 	float LoH = clamp(dot(incoming_lightdir, H), 0.0, 1.0);
 	float VoH = clamp(dot(outgoing_viewdir, H), 0.0, 1.0);
 
-	float reflectance = material.Reflectance;
-	float roughness = material.Roughness;
-	float metallicity = material.Metallicity;
-	float3 baseColor = material.Albedo;
-
-	if (material.AlbedoTextureIndex >= 0)baseColor = scene_data.DeviceTextureBufferPtr[material.AlbedoTextureIndex].getPixel(texture_uv);
-	//roughness-metallic texture
-	if (material.RoughnessTextureIndex >= 0) {
-		float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
-		roughness = col.y * material.Roughness;
-		metallicity = col.z * material.Metallicity;
-	}
-
 	if (scene_data.RenderSettings.UseMaterialOverride)
 	{
-		reflectance = scene_data.RenderSettings.OverrideMaterial.Reflectance;
-		roughness = scene_data.RenderSettings.OverrideMaterial.Roughness;
+		albedo = scene_data.RenderSettings.OverrideMaterial.Albedo;
 		metallicity = scene_data.RenderSettings.OverrideMaterial.Metallicity;
-		baseColor = scene_data.RenderSettings.OverrideMaterial.Albedo;
+		F0 = lerp(make_float3(0.16 * scene_data.RenderSettings.OverrideMaterial.Reflectance * scene_data.RenderSettings.OverrideMaterial.Reflectance), albedo, metallicity);
+		roughness = scene_data.RenderSettings.OverrideMaterial.Roughness;
 	}
 
-	float3 f0 = make_float3(0.16 * (reflectance * reflectance));//f0=0.04 for most mats
-	f0 = lerp(f0, baseColor, metallicity);
-	float3 F = fresnelSchlick(LoH, f0);
+	float3 F = fresnelSchlick(LoH, F0);
 
 	float3 spec = make_float3(0);
 
@@ -108,7 +93,7 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 		spec = (F * D * G) / (4.0 * fmaxf(NoV, 0.0001) * NoL);//maybe clamp NOV?
 	}
 
-	float3 rhoD = baseColor;
+	float3 rhoD = albedo;
 
 	//rhoD *= (1.0 - F);//F=Ks
 	rhoD *= (1.f - spec);
@@ -117,7 +102,7 @@ __device__ float3 BRDF(float3 incoming_lightdir, float3 outgoing_viewdir, float3
 
 	float3 diff = rhoD / PI;
 	spec *= NoL;
-	diff *= NoL;//NoL is lambert falloff
+	diff *= NoL;//NoL is lambert falloff //TODO:put this outside in rendering loop
 	return diff + spec;
 	//return diff;
 }

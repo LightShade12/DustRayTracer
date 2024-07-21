@@ -2,7 +2,7 @@
 //TODO: apparently this must exist on the device: its the standard
 //#define STB_IMAGE_IMPLEMENTATION
 #include "Camera.cuh"
-#include "Common/dbg_macros.hpp"
+#include "Editor/Common/dbg_macros.hpp"
 #include "Editor/Common/CudaCommon.cuh"
 
 #include "Core/BVH/BVHNode.cuh"
@@ -11,6 +11,12 @@
 #include <tiny_gltf.h>
 
 #include <thrust/host_vector.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+
 //TODO: texture reuse doesnt work
 static std::string GetFilePathExtension(const std::string& FileName) {
 	if (FileName.find_last_of(".") != std::string::npos)
@@ -200,8 +206,18 @@ bool Scene::loadGLTFmodel(const char* filepath, Camera** camera)
 			printToConsole("found camera\n");
 			tinygltf::Camera gltf_camera = loadedmodel.cameras[gltf_node.camera];
 			float3 cpos = { gltf_node.translation[0] ,gltf_node.translation[1] ,gltf_node.translation[2] };
+			float qx = gltf_node.rotation[0];
+			float qy = gltf_node.rotation[1];
+			float qz = gltf_node.rotation[2];
+			float qw = gltf_node.rotation[3];
+			glm::quat quaternion(qw, qx, qy, qz);
+			glm::mat4 rotationMatrix = glm::toMat4(quaternion);
+			glm::vec3 forwardDir = -glm::vec3(rotationMatrix[2]);
+			float3 lookDir = make_float3(forwardDir.x, forwardDir.y, forwardDir.z);
+
 			*camera = new Camera(cpos);
 			(*camera)->vfov_rad = gltf_camera.perspective.yfov;
+			(*camera)->m_Forward_dir = lookDir;
 		}
 		if (gltf_node.mesh < 0)continue;//TODO: crude fix
 		tinygltf::Mesh gltf_mesh = loadedmodel.meshes[gltf_node.mesh];

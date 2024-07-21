@@ -3,10 +3,11 @@
 #include <cuda_runtime.h>
 #include <float.h>
 
+//TODO: min interval doest work
 class Interval
 {
 public:
-	float min = FLT_MAX, max = -FLT_MAX;
+	float min = -1, max = FLT_MAX;
 
 	Interval() = default;
 

@@ -50,7 +50,6 @@ __global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, 
 
 	float3 processed_radiance = estimated_radiance;
 
-	//post processing
 	if (scenedata.RenderSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE || scenedata.RenderSettings.DebugMode == RendererSettings::DebugModes::ALBEDO_DEBUG)
 	{
 		//order matters

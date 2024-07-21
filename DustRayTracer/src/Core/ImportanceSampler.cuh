@@ -14,8 +14,7 @@ struct ImportanceSampleData {
 
 __device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi);
 
-__device__ float getPDF(ImportanceSampleData importancedata, float3 out_dir, float3 normal, const Material& material,
-	const SceneData& scene_data, float2 texture_uv);
+__device__ float getPDF(float3 in_dir, bool specular, float3 out_dir, float3 normal, float roughness);
 
 //returns normalized direction
 __device__ ImportanceSampleData importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf,

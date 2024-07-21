@@ -29,7 +29,7 @@ public:
 
 public:
 	//std::string name;
-	float exposure = 1;
+	float exposure = 1.5;
 	float vfov_rad = deg2rad(60);//y_fov
 	float zfar = 0;
 	float znear = 0;

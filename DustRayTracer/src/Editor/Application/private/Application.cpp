@@ -1,4 +1,4 @@
-#include "Application/Application.hpp"
+#include "Editor/Application/Application.hpp"
 
 #include <glad/glad.h>//make sure this is included before cudaGlInterop.h and glfw3.h
 #include <GLFW/glfw3.h>

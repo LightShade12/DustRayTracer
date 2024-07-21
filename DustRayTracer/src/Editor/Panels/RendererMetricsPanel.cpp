@@ -1,6 +1,6 @@
 #include "RendererMetricsPanel.hpp"
 
-#include "Application/Application.hpp"
+#include "Editor/Application/Application.hpp"
 #include "Core/Renderer.hpp"
 #include "Core/Scene/Camera.cuh"
 

@@ -16,9 +16,9 @@ class BVHNode
 public:
 	BVHNode() = default;
 
-	bool m_IsLeaf = false;
 	Bounds3f m_BoundingBox;
-	int dev_child1_idx = -1;//left
+	bool m_IsLeaf = false;
+	int dev_child1_idx = -1;//left	//TODO:make them uint?
 	int dev_child2_idx = -1;//right
 	int primitives_count = 0;
 	int primitive_start_idx = -1;

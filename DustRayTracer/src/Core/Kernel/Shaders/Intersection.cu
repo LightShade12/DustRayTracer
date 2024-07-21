@@ -1,5 +1,5 @@
 #include "Intersection.cuh"
-#include "Common/physical_units.hpp"
+#include "Core/CudaMath/physical_units.hpp"
 
 __device__ ShortHitPayload Intersection(const Ray& ray, const Triangle* triangle)
 {

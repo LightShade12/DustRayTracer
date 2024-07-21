@@ -4,7 +4,7 @@
 #include "Scene/SceneData.cuh"
 #include "Scene/Texture.cuh"
 #include "Scene/Material.cuh"
-#include "Common/physical_units.hpp"
+#include "CudaMath/physical_units.hpp"
 
 #include "Core/CudaMath/Random.cuh"
 #include "Core/CudaMath/helper_math.cuh"
@@ -30,23 +30,17 @@ __device__ float3 sampleCosineWeightedHemisphere(float3 normal, float2 xi) {
 }
 
 //clamped roughness
-__device__ float getPDF(ImportanceSampleData importancedata, float3 out_dir, float3 normal, const Material& material,
-	const SceneData& scene_data, float2 texture_uv) {
-	if (importancedata.specular) {
-		float roughness = material.Roughness;
+__device__ float getPDF(float3 in_dir, bool specular, float3 out_dir, float3 normal, float roughness) {
+	if (specular) {
 		//roughness-metallic texture
-		if (material.RoughnessTextureIndex >= 0) {
-			float3 col = scene_data.DeviceTextureBufferPtr[material.RoughnessTextureIndex].getPixel(texture_uv, true);
-			roughness = col.y * material.Roughness;
-		}
-		float3 H = normalize(out_dir + importancedata.sampleDir);
+		float3 H = normalize(out_dir + in_dir);
 		float VoH = fmaxf(dot(out_dir, H), 0.0f);
 		float NoH = fmaxf(dot(normal, H), 0.0f);
 		float D = D_GGX(NoH, roughness);
 		return (VoH > 0.0) ? (D * NoH) / (4.0f * VoH) : 0.0;
 	}
 	else {
-		return fmaxf(dot(normal, importancedata.sampleDir), 0.0f) / PI;
+		return fmaxf(dot(normal, in_dir), 0.0f) / PI;
 	}
 }
 
