@@ -17,15 +17,15 @@ public:
 	BVHNode() = default;
 
 	Bounds3f m_BoundingBox;
-	bool m_IsLeaf = false;
+	//bool m_IsLeaf = false;
 	int dev_child1_idx = -1;//left	//TODO:make them uint?
-	int dev_child2_idx = -1;//right
-	int primitives_count = 0;
-	int primitive_start_idx = -1;
+	//int dev_child2_idx = -1;//right
+	int primitives_indices_count = 0;
+	int primitive_indices_start_idx = -1;
 
 	float getSurfaceArea() const
 	{
-		if (primitives_count == 0)
+		if (primitives_indices_count == 0)
 			return 0;
 
 		return m_BoundingBox.getSurfaceArea();

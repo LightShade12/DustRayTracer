@@ -17,6 +17,7 @@ struct SceneData
 	const Texture* DeviceTextureBufferPtr = nullptr;
 	const Material* DeviceMaterialBufferPtr = nullptr;
 	const Triangle* DevicePrimitivesBuffer = nullptr;
+	const unsigned int* DeviceBVHPrimitiveIndicesBuffer = nullptr;
 	const int* DeviceMeshLightsBufferPtr = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
 	const BVHNode* DeviceBVHTreeRootPtr = nullptr;
@@ -29,5 +30,6 @@ struct SceneData
 	size_t DeviceMaterialBufferSize = 0;//unused
 	size_t DeviceMeshBufferSize = 0;
 	size_t DevicePrimitivesBufferSize = 0;
+	size_t DeviceBVHPrimitiveIndicesBufferSize = 0;
 	size_t DeviceMeshLightsBufferSize = 0;
 };

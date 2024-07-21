@@ -64,7 +64,8 @@ void EditorLayer::OnAttach()
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 32;
-	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer, m_Scene->m_BVHNodes);
+	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer,
+		m_Scene->m_BVHTrianglesIndices, m_Scene->m_BVHNodes);
 
 	for (size_t i = 0; i < m_Scene->m_PrimitivesBuffer.size(); i++)
 	{

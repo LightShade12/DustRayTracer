@@ -1,6 +1,7 @@
 #include "RenderKernel.cuh"
 
 #include "Core/Scene/Scene.cuh"
+#include "Core/Scene/SceneData.cuh"
 #include "Core/PostProcess.cuh"
 #include "Shaders/RayGen.cuh"
 
@@ -11,20 +12,23 @@
 
 __global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, int max_y, Camera* device_camera, uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata);
 
+//TODO: fix inconsistent buffer and primitive-triangle naming
 void invokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
 	dim3 _blocks, dim3 _threads, Camera* device_camera, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
 {
 	SceneData scenedata;
 	scenedata.DeviceBVHNodesBuffer = thrust::raw_pointer_cast(scene.m_BVHNodes.data());
-	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
-	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
-	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Materials.data());
+	scenedata.DeviceBVHPrimitiveIndicesBuffer = thrust::raw_pointer_cast(scene.m_BVHTrianglesIndices.data());
 	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_PrimitivesBuffer.data());
+	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
+	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Materials.data());
+	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
 	scenedata.DeviceMeshLightsBufferPtr = thrust::raw_pointer_cast(scene.m_MeshLights.data());
 	//----
 	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
 	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
+	scenedata.DeviceBVHPrimitiveIndicesBufferSize = scene.m_BVHTrianglesIndices.size();
 	scenedata.DeviceMeshLightsBufferSize = scene.m_MeshLights.size();
 	scenedata.DeviceBVHNodesBufferSize = scene.m_BVHNodes.size();
 	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
