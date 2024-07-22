@@ -32,7 +32,7 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 	float child1_hitdist = -1;
 	float child2_hitdist = -1;
 	const Triangle* primitive = nullptr;
-	
+
 	while (stackPtr > 0) {
 		stackTopNode = &(scenedata->DeviceBVHNodesBuffer[nodeIdxStack[--stackPtr]]);
 		current_node_hitdist = nodeHitDistStack[stackPtr];
@@ -46,9 +46,9 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 		closest_hitpayload->color += make_float3(1) * 0.05f;
 
 		//if leaf
-		if (stackTopNode->primitives_indices_count != 0) {
-			for (int primIndiceIdx = stackTopNode->primitive_indices_start_idx;
-				primIndiceIdx < stackTopNode->primitive_indices_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
+		if (stackTopNode->primitives_indices_count > 0) {
+			for (int primIndiceIdx = stackTopNode->left_start_idx;
+				primIndiceIdx < stackTopNode->left_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
 				int primIdx = scenedata->DeviceBVHPrimitiveIndicesBuffer[primIndiceIdx];
 				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
 				workinghitpayload = Intersection(ray, primitive);
@@ -62,16 +62,16 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 			}
 		}
 		else {
-			child1_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox.intersect(ray);
-			child2_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx + 1]).m_BoundingBox.intersect(ray);
+			child1_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->left_start_idx]).m_BoundingBox.intersect(ray);
+			child2_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->left_start_idx + 1]).m_BoundingBox.intersect(ray);
 			//TODO:implement early cull properly see discord for ref
 			if (child1_hitdist > child2_hitdist) {
-				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
-				if (child2_hitdist >= 0 && child2_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child2_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx + 1; }
+				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx; }
+				if (child2_hitdist >= 0 && child2_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child2_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx + 1; }
 			}
 			else {
-				if (child2_hitdist >= 0 && child2_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child2_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx + 1; }
-				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
+				if (child2_hitdist >= 0 && child2_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child2_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx + 1; }
+				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx; }
 			}
 		}
 	}
@@ -107,8 +107,8 @@ __device__ const Triangle* traverseBVH_raytest(const Ray& ray, const int root_no
 
 		//if leaf
 		if (stackTopNode->primitives_indices_count != 0) {
-			for (int primIndiceIdx = stackTopNode->primitive_indices_start_idx;
-				primIndiceIdx < stackTopNode->primitive_indices_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
+			for (int primIndiceIdx = stackTopNode->left_start_idx;
+				primIndiceIdx < stackTopNode->left_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
 				int primIdx = scenedata->DeviceBVHPrimitiveIndicesBuffer[primIndiceIdx];
 				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
 				workinghitpayload = Intersection(ray, primitive);
@@ -121,16 +121,16 @@ __device__ const Triangle* traverseBVH_raytest(const Ray& ray, const int root_no
 			}
 		}
 		else {
-			hit1 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx]).m_BoundingBox.intersect(ray);
-			hit2 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->dev_child1_idx + 1]).m_BoundingBox.intersect(ray);
+			hit1 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->left_start_idx]).m_BoundingBox.intersect(ray);
+			hit2 = (scenedata->DeviceBVHNodesBuffer[stackTopNode->left_start_idx + 1]).m_BoundingBox.intersect(ray);
 
 			if (hit1 > hit2) {
-				if (hit1 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
-				if (hit2 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx + 1; }
+				if (hit1 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx; }
+				if (hit2 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx + 1; }
 			}
 			else {
-				if (hit2 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx + 1; }
-				if (hit1 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->dev_child1_idx; }
+				if (hit2 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx + 1; }
+				if (hit1 >= 0) { nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx; }
 			}
 		}
 	}
