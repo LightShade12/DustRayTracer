@@ -14,12 +14,12 @@ public:
 	BVHNode() = default;
 
 	Bounds3f m_BoundingBox;
-	int left_start_idx = -1;//can be left child idx or tris start idx	//TODO:make them uint?
-	int primitives_indices_count = 0;
+	int left_child_or_triangle_indices_start_idx = -1;	//TODO:make them uint?
+	int triangle_indices_count = 0;
 
 	float getSurfaceArea() const
 	{
-		if (primitives_indices_count == 0)
+		if (triangle_indices_count == 0)
 			return 0;
 
 		return m_BoundingBox.getSurfaceArea();

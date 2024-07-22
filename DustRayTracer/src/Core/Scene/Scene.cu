@@ -83,9 +83,9 @@ bool Scene::loadMaterials(const tinygltf::Model& model)
 		drt_material.Metallicity = (PBR_data.metallicRoughnessTexture.index >= 0) ? 1 : PBR_data.metallicFactor;
 		drt_material.Roughness = (PBR_data.metallicRoughnessTexture.index >= 0) ? 0.6f : PBR_data.roughnessFactor;
 		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);
-		m_Materials.push_back(drt_material);
+		m_MaterialsBuffer.push_back(drt_material);
 	}
-	//printf("loaded materials count: %d \n\n", m_Materials.size());
+	//printf("loaded materials count: %d \n\n", m_MaterialsBuffer.size());
 
 	return true;
 }
@@ -116,7 +116,7 @@ bool Scene::loadTextures(const tinygltf::Model& model, bool is_binary)
 			drt_texture = Texture((image_reference_directory + gltf_image.uri).c_str());
 		}
 		if (drt_texture.d_data == nullptr)return false;
-		m_Textures.push_back(drt_texture);//whitespace will be incorrectly parsed
+		m_TexturesBuffer.push_back(drt_texture);//whitespace will be incorrectly parsed
 	}
 	return true;
 }
@@ -230,7 +230,7 @@ bool Scene::loadGLTFmodel(const char* filepath, Camera** camera)
 		drt_mesh.Name[gltf_mesh.name.size()] = '\0';
 		printToConsole("\nprocessing mesh:%s\n", gltf_mesh.name.c_str());
 
-		drt_mesh.m_primitives_offset = m_PrimitivesBuffer.size();
+		drt_mesh.m_primitives_offset = m_TrianglesBuffer.size();
 
 		parseMesh(gltf_mesh, loadedmodel, loadedMeshPositions,
 			loadedMeshNormals, loadedMeshUVs, loadedMeshPrimitiveMatIdx);
@@ -306,28 +306,28 @@ bool Scene::loadGLTFmodel(const char* filepath, Camera** camera)
 
 			float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
 
-			m_PrimitivesBuffer.push_back(Triangle(
+			m_TrianglesBuffer.push_back(Triangle(
 				Vertex(loadedMeshPositions[i], loadedMeshNormals[i], loadedMeshUVs[i]),
 				Vertex(loadedMeshPositions[i + 1], loadedMeshNormals[i + 1], loadedMeshUVs[i + 1]),
 				Vertex(loadedMeshPositions[i + 2], loadedMeshNormals[i + 2], loadedMeshUVs[i + 2]),
 				normalize(surface_normal),
 				loadedMeshPrimitiveMatIdx[i / 3]));
 
-			/*if (m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissionTextureIndex >= 0 ||
-				!(m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.x == 0 &&
-					m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.y == 0 &&
-					m_Materials[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.z == 0)) {
-				m_MeshLights.push_back(m_PrimitivesBuffer.size() - 1);
+			/*if (m_MaterialsBuffer[loadedMeshPrimitiveMatIdx[i / 3]].EmissionTextureIndex >= 0 ||
+				!(m_MaterialsBuffer[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.x == 0 &&
+					m_MaterialsBuffer[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.y == 0 &&
+					m_MaterialsBuffer[loadedMeshPrimitiveMatIdx[i / 3]].EmissiveColor.z == 0)) {
+				m_TriangleLightsIndicesBuffer.push_back(m_TrianglesBuffer.size() - 1);
 			}*/
 		}
 
-		drt_mesh.m_trisCount = m_PrimitivesBuffer.size() - drt_mesh.m_primitives_offset;
+		drt_mesh.m_trisCount = m_TrianglesBuffer.size() - drt_mesh.m_primitives_offset;
 
-		m_Meshes.push_back(drt_mesh);
+		m_MeshesBuffer.push_back(drt_mesh);
 		printToConsole("\rloaded mesh:%zu/%zu", nodeIdx + 1, loadedmodel.nodes.size());
 	}
 
-	//printToConsole("meshlights:%zu\n", m_MeshLights.size());
+	//printToConsole("meshlights:%zu\n", m_TriangleLightsIndicesBuffer.size());
 	printToConsole("\n");
 
 	return true;
@@ -337,7 +337,7 @@ Scene::~Scene()
 {
 	cudaDeviceSynchronize();
 
-	thrust::host_vector<BVHNode>nodes = m_BVHNodes;
+	thrust::host_vector<BVHNode>nodes = m_BVHNodesBuffer;
 
 	for (BVHNode node : nodes) {
 		//printf("node freed\n");
@@ -346,7 +346,7 @@ Scene::~Scene()
 
 	checkCudaErrors(cudaGetLastError());
 
-	for (Texture texture : m_Textures)
+	for (Texture texture : m_TexturesBuffer)
 	{
 		texture.Cleanup();
 	}

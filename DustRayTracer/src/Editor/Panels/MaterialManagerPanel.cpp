@@ -16,23 +16,23 @@ bool MaterialManagerPanel::OnUIRender()
 	static int selected_material_idx = 0;
 	if (ImGui::BeginListBox("###Materials", ImVec2(ImGui::GetContentRegionAvail().x / 4, ImGui::GetContentRegionAvail().y)))
 	{
-		for (int n = 0; n < m_Scene->m_Materials.size(); n++)
+		for (int n = 0; n < m_Scene->m_MaterialsBuffer.size(); n++)
 		{
 			const bool is_selected = (selected_material_idx == n);
-			if (ImGui::Selectable(m_Scene->m_Materials[n].Name, is_selected)) {
+			if (ImGui::Selectable(m_Scene->m_MaterialsBuffer[n].Name, is_selected)) {
 				selected_material_idx = n;
 				glDeleteTextures(1, &(albedothumbnail.gl_texture_name));
 				glDeleteTextures(1, &(emissionthumbnail.gl_texture_name));
 				glDeleteTextures(1, &(normalthumbnail.gl_texture_name));
 				glDeleteTextures(1, &(roughnessthumbnail.gl_texture_name));
-				if (m_Scene->m_Materials[selected_material_idx].AlbedoTextureIndex >= 0)
-					albedothumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Materials[selected_material_idx].AlbedoTextureIndex]));
-				if (m_Scene->m_Materials[selected_material_idx].EmissionTextureIndex >= 0)
-					emissionthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Materials[selected_material_idx].EmissionTextureIndex]));
-				if (m_Scene->m_Materials[selected_material_idx].NormalTextureIndex >= 0)
-					normalthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Materials[selected_material_idx].NormalTextureIndex]));
-				if (m_Scene->m_Materials[selected_material_idx].RoughnessTextureIndex >= 0)
-					roughnessthumbnail = makeThumbnail((m_Scene->m_Textures[m_Scene->m_Materials[selected_material_idx].RoughnessTextureIndex]));
+				if (m_Scene->m_MaterialsBuffer[selected_material_idx].AlbedoTextureIndex >= 0)
+					albedothumbnail = makeThumbnail((m_Scene->m_TexturesBuffer[m_Scene->m_MaterialsBuffer[selected_material_idx].AlbedoTextureIndex]));
+				if (m_Scene->m_MaterialsBuffer[selected_material_idx].EmissionTextureIndex >= 0)
+					emissionthumbnail = makeThumbnail((m_Scene->m_TexturesBuffer[m_Scene->m_MaterialsBuffer[selected_material_idx].EmissionTextureIndex]));
+				if (m_Scene->m_MaterialsBuffer[selected_material_idx].NormalTextureIndex >= 0)
+					normalthumbnail = makeThumbnail((m_Scene->m_TexturesBuffer[m_Scene->m_MaterialsBuffer[selected_material_idx].NormalTextureIndex]));
+				if (m_Scene->m_MaterialsBuffer[selected_material_idx].RoughnessTextureIndex >= 0)
+					roughnessthumbnail = makeThumbnail((m_Scene->m_TexturesBuffer[m_Scene->m_MaterialsBuffer[selected_material_idx].RoughnessTextureIndex]));
 			}
 
 			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -45,7 +45,7 @@ bool MaterialManagerPanel::OnUIRender()
 	ImGui::BeginChild("proppanel", ImGui::GetContentRegionAvail());
 	ImGui::Text("Material Properties");
 	ImGui::Separator();
-	Material& selected_material = m_Scene->m_Materials[selected_material_idx];
+	Material& selected_material = m_Scene->m_MaterialsBuffer[selected_material_idx];
 
 	ImGui::Text(selected_material.Name);
 	if (selected_material.AlbedoTextureIndex >= 0)

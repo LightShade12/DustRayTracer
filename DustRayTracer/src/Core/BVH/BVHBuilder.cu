@@ -76,9 +76,9 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 		minextent);
 
 	hostBVHroot->m_BoundingBox = Bounds3f(minextent, minextent + extent);
-	hostBVHroot->left_start_idx = 0;//as leaf
-	hostBVHroot->primitives_indices_count = host_prim_indices.size();
-	printToConsole("root prim count:%zu \n", hostBVHroot->primitives_indices_count);
+	hostBVHroot->left_child_or_triangle_indices_start_idx = 0;//as leaf
+	hostBVHroot->triangle_indices_count = host_prim_indices.size();
+	printToConsole("root prim count:%zu \n", hostBVHroot->triangle_indices_count);
 
 	const int MAX_STACK_SIZE = 512; // Adjust this value as needed as per expected depth
 	BVHNode* nodesToBeBuilt[MAX_STACK_SIZE]{};//max postponed nodes //TODO:make this node indices to avoid host_bvh_nodes preallocation limitation
@@ -91,13 +91,13 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 	host_bvh_nodes.reserve(nodecount);
 
 	// If leaf candidate
-	if (hostBVHroot->primitives_indices_count <= m_TargetLeafPrimitivesCount)
+	if (hostBVHroot->triangle_indices_count <= m_TargetLeafPrimitivesCount)
 	{
 		//hostBVHroot->m_IsLeaf = true;
 
 		bvh_nodes.push_back(*hostBVHroot);
 		delete hostBVHroot;
-		printToConsole("<<!! -- made ROOT leaf with %d prims -- !!>>\n", hostBVHroot->primitives_indices_count);
+		printToConsole("<<!! -- made ROOT leaf with %d prims -- !!>>\n", hostBVHroot->triangle_indices_count);
 
 		return thrust::raw_pointer_cast(&(bvh_nodes.back()));
 	}
@@ -111,9 +111,9 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 		currentNode = nodesToBeBuilt[--stackPtr];
 
 		// If the current node is a leaf candidate
-		if (currentNode->primitives_indices_count <= m_TargetLeafPrimitivesCount)
+		if (currentNode->triangle_indices_count <= m_TargetLeafPrimitivesCount)
 		{
-			printToConsole(">>> made a leaf node with %d prims --------------->\n", currentNode->primitives_indices_count);
+			printToConsole(">>> made a leaf node with %d prims --------------->\n", currentNode->triangle_indices_count);
 			//currentNode->m_IsLeaf = true;
 			continue;
 		}
@@ -123,25 +123,25 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 		BVHNode* rightNode = new BVHNode();
 
 		makePartition(primitives, host_prim_indices,
-			currentNode->left_start_idx, currentNode->left_start_idx + currentNode->primitives_indices_count,//as leaf
+			currentNode->left_child_or_triangle_indices_start_idx, currentNode->left_child_or_triangle_indices_start_idx + currentNode->triangle_indices_count,//as leaf
 			*leftNode, *rightNode);
-		currentNode->primitives_indices_count = 0;//mark as not leaf
+		currentNode->triangle_indices_count = 0;//mark as not leaf
 
 		printToConsole("size before child1pushback: %zu\n", host_bvh_nodes.size());
 		host_bvh_nodes.push_back(*leftNode); delete leftNode;
-		currentNode->left_start_idx = host_bvh_nodes.size() - 1;//as node
+		currentNode->left_child_or_triangle_indices_start_idx = host_bvh_nodes.size() - 1;//as node
 		printToConsole("size after child1pushback: %zu\n", host_bvh_nodes.size());
 
 		host_bvh_nodes.push_back(*rightNode); delete rightNode;
 		//currentNode->dev_child2_idx = host_bvh_nodes.size() - 1;
 		printToConsole("size after child2pushback: %zu\n", host_bvh_nodes.size());
 
-		printToConsole("child1 idx %d\n", currentNode->left_start_idx);
-		printToConsole("child2 idx %d\n", currentNode->left_start_idx + 1);
+		printToConsole("child1 idx %d\n", currentNode->left_child_or_triangle_indices_start_idx);
+		printToConsole("child2 idx %d\n", currentNode->left_child_or_triangle_indices_start_idx + 1);
 
 		// Push the child nodes onto the stack
-		nodesToBeBuilt[stackPtr++] = &host_bvh_nodes[currentNode->left_start_idx];
-		nodesToBeBuilt[stackPtr++] = &host_bvh_nodes[currentNode->left_start_idx + 1];
+		nodesToBeBuilt[stackPtr++] = &host_bvh_nodes[currentNode->left_child_or_triangle_indices_start_idx];
+		nodesToBeBuilt[stackPtr++] = &host_bvh_nodes[currentNode->left_child_or_triangle_indices_start_idx + 1];
 	}
 
 	host_bvh_nodes.push_back(*hostBVHroot); delete hostBVHroot;
@@ -178,12 +178,12 @@ BVHNode* BVHBuilder::BuildBVH(const thrust::universal_vector<Triangle>& primitiv
 	//if leaf candidate
 	if (primitives.size() <= m_TargetLeafPrimitivesCount)
 	{
-		host_BVH_root->primitives_indices_count = primitives.size();
+		host_BVH_root->triangle_indices_count = primitives.size();
 		//host_BVH_root->m_IsLeaf = true;
-		host_BVH_root->left_start_idx = 0;//as leaf
+		host_BVH_root->left_child_or_triangle_indices_start_idx = 0;//as leaf
 
 		bvh_nodes.push_back(*host_BVH_root);
-		printToConsole("-----made RootNode leaf with %d prims-----\n", host_BVH_root->primitives_indices_count);
+		printToConsole("-----made RootNode leaf with %d prims-----\n", host_BVH_root->triangle_indices_count);
 
 		return thrust::raw_pointer_cast(&(bvh_nodes.back()));
 	}
@@ -198,7 +198,7 @@ BVHNode* BVHBuilder::BuildBVH(const thrust::universal_vector<Triangle>& primitiv
 	recursiveBuild(*right, bvh_nodes, primitives, host_prim_indices);
 
 	bvh_nodes.push_back(*left);
-	host_BVH_root->left_start_idx = bvh_nodes.size() - 1;//as node
+	host_BVH_root->left_child_or_triangle_indices_start_idx = bvh_nodes.size() - 1;//as node
 
 	bvh_nodes.push_back(*right);
 	//host_BVH_root->dev_child2_idx = bvh_nodes.size() - 1;
@@ -212,13 +212,13 @@ BVHNode* BVHBuilder::BuildBVH(const thrust::universal_vector<Triangle>& primitiv
 void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes,
 	const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitive_indices)
 {
-	printToConsole("> recursive child build,input prim count: %d \n", node.primitives_indices_count);
+	printToConsole("> recursive child build,input prim count: %d \n", node.triangle_indices_count);
 
-	if (node.primitives_indices_count <= m_TargetLeafPrimitivesCount)
+	if (node.triangle_indices_count <= m_TargetLeafPrimitivesCount)
 	{
 		//mark as leaf
-		printToConsole("made a leaf node with %d prims---------------<\n", node.primitives_indices_count);
-		//node.left_start_idx = -1;// , node.dev_child2_idx = -1;//redundant?
+		printToConsole("made a leaf node with %d prims---------------<\n", node.triangle_indices_count);
+		//node.left_child_or_triangle_indices_start_idx = -1;// , node.dev_child2_idx = -1;//redundant?
 		//node.m_IsLeaf = true; return;
 	}
 	else
@@ -227,22 +227,22 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 		std::shared_ptr<BVHNode>right_node = std::make_shared<BVHNode>();
 
 		makePartition(primitives, primitive_indices,
-			node.left_start_idx, node.left_start_idx + node.primitives_indices_count,//as leaf
+			node.left_child_or_triangle_indices_start_idx, node.left_child_or_triangle_indices_start_idx + node.triangle_indices_count,//as leaf
 			*left_node, *right_node);
-		node.primitives_indices_count = 0;//mark as not leaf
+		node.triangle_indices_count = 0;//mark as not leaf
 
 		recursiveBuild(*left_node, bvh_nodes, primitives, primitive_indices);
 		recursiveBuild(*right_node, bvh_nodes, primitives, primitive_indices);
 
 		bvh_nodes.push_back(*left_node);
-		node.left_start_idx = bvh_nodes.size() - 1;
+		node.left_child_or_triangle_indices_start_idx = bvh_nodes.size() - 1;
 
 		bvh_nodes.push_back(*right_node);
 		//node.dev_child2_idx = bvh_nodes.size() - 1;
 	}
 }
 
-//left_start_idx will be overwritten to nodes from the caller
+//left_child_or_triangle_indices_start_idx will be overwritten to nodes from the caller
 __host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, PartitionAxis axis,
 	const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitives_indices, size_t start_idx, size_t end_idx)
 {
@@ -267,18 +267,18 @@ __host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, P
 	}
 
 	int partition_start_idx = std::distance(primitives_indices.begin(), partition_iterator);
-	left.left_start_idx = start_idx;//as leaf
-	left.primitives_indices_count = partition_start_idx - start_idx;
+	left.left_child_or_triangle_indices_start_idx = start_idx;//as leaf
+	left.triangle_indices_count = partition_start_idx - start_idx;
 	float3 leftminextent;
-	float3 leftextent = get_Absolute_Extent(primitives, primitives_indices, left.left_start_idx,
-		left.left_start_idx + left.primitives_indices_count, leftminextent);
+	float3 leftextent = get_Absolute_Extent(primitives, primitives_indices, left.left_child_or_triangle_indices_start_idx,
+		left.left_child_or_triangle_indices_start_idx + left.triangle_indices_count, leftminextent);
 	left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
-	right.left_start_idx = partition_start_idx;
-	right.primitives_indices_count = end_idx - partition_start_idx;
+	right.left_child_or_triangle_indices_start_idx = partition_start_idx;
+	right.triangle_indices_count = end_idx - partition_start_idx;
 	float3 rightminextent;
-	float3 rightextent = get_Absolute_Extent(primitives, primitives_indices, right.left_start_idx,
-		right.left_start_idx + right.primitives_indices_count, rightminextent);
+	float3 rightextent = get_Absolute_Extent(primitives, primitives_indices, right.left_child_or_triangle_indices_start_idx,
+		right.left_child_or_triangle_indices_start_idx + right.triangle_indices_count, rightminextent);
 	right.m_BoundingBox = Bounds3f(rightminextent, rightminextent + rightextent);
 }
 
@@ -312,21 +312,21 @@ void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, Par
 		}
 	}
 
-	left.primitives_indices_count = left_prim_ptrs.size();
+	left.triangle_indices_count = left_prim_ptrs.size();
 	float3 leftminextent;
 	float3 leftextent = get_Absolute_Extent(left_prim_ptrs, 0, left_prim_ptrs.size(), leftminextent);
 	left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
-	right.primitives_indices_count = right_prim_ptrs.size();
+	right.triangle_indices_count = right_prim_ptrs.size();
 	float3 rightminextent;
-	float3 rightextent = get_Absolute_Extent(right_prim_ptrs, 0, right.primitives_indices_count, rightminextent);
+	float3 rightextent = get_Absolute_Extent(right_prim_ptrs, 0, right.triangle_indices_count, rightminextent);
 	right.m_BoundingBox = Bounds3f(rightminextent, rightminextent + rightextent);
 }
 
 int BVHBuilder::costHeursitic(const BVHNode& left_node, const BVHNode& right_node, const Bounds3f& parent_bbox) {
 	return m_RayAABBIntersectionCost +
-		((left_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * left_node.primitives_indices_count * m_RayPrimitiveIntersectionCost) +
-		((right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * right_node.primitives_indices_count * m_RayPrimitiveIntersectionCost);
+		((left_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * left_node.triangle_indices_count * m_RayPrimitiveIntersectionCost) +
+		((right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * right_node.triangle_indices_count * m_RayPrimitiveIntersectionCost);
 }
 
 void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitives_indices, size_t start_idx,
@@ -420,5 +420,5 @@ void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primiti
 	printToConsole(">> made a partition, bin: %.3f, axis: %d, cost: %d <<---\n", lowest_cost_partition_pt, best_partition_axis, lowest_cost);
 	binToNodes(left_node, right_node, lowest_cost_partition_pt,
 		best_partition_axis, primitives, primitives_indices, start_idx, end_idx);
-	printToConsole("left node prim count:%d | right node prim count: %d\n", left_node.primitives_indices_count, right_node.primitives_indices_count);
+	printToConsole("left node prim count:%d | right node prim count: %d\n", left_node.triangle_indices_count, right_node.triangle_indices_count);
 }

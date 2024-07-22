@@ -18,19 +18,19 @@ void invokeRenderKernel(
 	dim3 _blocks, dim3 _threads, Camera* device_camera, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer)
 {
 	SceneData scenedata;
-	scenedata.DeviceBVHNodesBuffer = thrust::raw_pointer_cast(scene.m_BVHNodes.data());
-	scenedata.DeviceBVHPrimitiveIndicesBuffer = thrust::raw_pointer_cast(scene.m_BVHTrianglesIndices.data());
-	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_PrimitivesBuffer.data());
-	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_Textures.data());
-	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_Materials.data());
-	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_Meshes.data());
-	scenedata.DeviceMeshLightsBufferPtr = thrust::raw_pointer_cast(scene.m_MeshLights.data());
+	scenedata.DeviceBVHNodesBuffer = thrust::raw_pointer_cast(scene.m_BVHNodesBuffer.data());
+	scenedata.DeviceBVHPrimitiveIndicesBuffer = thrust::raw_pointer_cast(scene.m_BVHTrianglesIndicesBuffer.data());
+	scenedata.DevicePrimitivesBuffer = thrust::raw_pointer_cast(scene.m_TrianglesBuffer.data());
+	scenedata.DeviceTextureBufferPtr = thrust::raw_pointer_cast(scene.m_TexturesBuffer.data());
+	scenedata.DeviceMaterialBufferPtr = thrust::raw_pointer_cast(scene.m_MaterialsBuffer.data());
+	scenedata.DeviceMeshBufferPtr = thrust::raw_pointer_cast(scene.m_MeshesBuffer.data());
+	scenedata.DeviceMeshLightsBufferPtr = thrust::raw_pointer_cast(scene.m_TriangleLightsIndicesBuffer.data());
 	//----
-	scenedata.DeviceMeshBufferSize = scene.m_Meshes.size();
-	scenedata.DevicePrimitivesBufferSize = scene.m_PrimitivesBuffer.size();
-	scenedata.DeviceBVHPrimitiveIndicesBufferSize = scene.m_BVHTrianglesIndices.size();
-	scenedata.DeviceMeshLightsBufferSize = scene.m_MeshLights.size();
-	scenedata.DeviceBVHNodesBufferSize = scene.m_BVHNodes.size();
+	scenedata.DeviceMeshBufferSize = scene.m_MeshesBuffer.size();
+	scenedata.DevicePrimitivesBufferSize = scene.m_TrianglesBuffer.size();
+	scenedata.DeviceBVHPrimitiveIndicesBufferSize = scene.m_BVHTrianglesIndicesBuffer.size();
+	scenedata.DeviceMeshLightsBufferSize = scene.m_TriangleLightsIndicesBuffer.size();
+	scenedata.DeviceBVHNodesBufferSize = scene.m_BVHNodesBuffer.size();
 	scenedata.DeviceBVHTreeRootPtr = scene.d_BVHTreeRoot;
 	scenedata.RenderSettings = settings;
 

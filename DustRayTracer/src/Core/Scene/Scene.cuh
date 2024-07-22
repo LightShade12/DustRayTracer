@@ -18,14 +18,14 @@ class BVHNode;
 
 struct Scene
 {
-	thrust::universal_vector<Mesh> m_Meshes;
-	thrust::universal_vector<Material> m_Materials;
-	thrust::device_vector<Texture>m_Textures;
-	thrust::device_vector<BVHNode>m_BVHNodes;
+	thrust::universal_vector<Mesh> m_MeshesBuffer;
+	thrust::universal_vector<Material> m_MaterialsBuffer;
+	thrust::device_vector<Texture>m_TexturesBuffer;
+	thrust::device_vector<BVHNode>m_BVHNodesBuffer;
 	//lights vector
-	thrust::device_vector<int>m_MeshLights;
-	thrust::universal_vector<unsigned int>m_BVHTrianglesIndices;
-	thrust::universal_vector<Triangle>m_PrimitivesBuffer;
+	thrust::device_vector<int>m_TriangleLightsIndicesBuffer;
+	thrust::universal_vector<unsigned int>m_BVHTrianglesIndicesBuffer;
+	thrust::universal_vector<Triangle>m_TrianglesBuffer;
 	BVHNode* d_BVHTreeRoot = nullptr;//TODO: Why???
 	bool loadGLTFmodel(const char* filepath, Camera** camera);
 

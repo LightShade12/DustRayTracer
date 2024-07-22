@@ -47,9 +47,9 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/source/cs16_poolday.glb", &m_device_Camera);
+	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
 	//m_Scene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
-	m_Scene->loadGLTFmodel("../models/test/feature_map.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/test/feature_map.glb", &m_device_Camera);
 	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
 	//m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
 	m_device_Camera->m_movement_speed = 10.0;
@@ -64,32 +64,32 @@ void EditorLayer::OnAttach()
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 32;
-	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_PrimitivesBuffer,
-		m_Scene->m_BVHTrianglesIndices, m_Scene->m_BVHNodes);
+	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_TrianglesBuffer,
+		m_Scene->m_BVHTrianglesIndicesBuffer, m_Scene->m_BVHNodesBuffer);
 
-	for (size_t i = 0; i < m_Scene->m_PrimitivesBuffer.size(); i++)
+	for (size_t i = 0; i < m_Scene->m_TrianglesBuffer.size(); i++)
 	{
-		const Triangle* tri = &m_Scene->m_PrimitivesBuffer[i];
+		const Triangle* tri = &m_Scene->m_TrianglesBuffer[i];
 		int mtid = tri->material_idx;
-		if (m_Scene->m_Materials[mtid].EmissionTextureIndex >= 0 ||
-			!(m_Scene->m_Materials[mtid].EmissiveColor.x == 0 &&
-				m_Scene->m_Materials[mtid].EmissiveColor.y == 0 &&
-				m_Scene->m_Materials[mtid].EmissiveColor.z == 0)) {
-			m_Scene->m_MeshLights.push_back(i);
+		if (m_Scene->m_MaterialsBuffer[mtid].EmissionTextureIndex >= 0 ||
+			!(m_Scene->m_MaterialsBuffer[mtid].EmissiveColor.x == 0 &&
+				m_Scene->m_MaterialsBuffer[mtid].EmissiveColor.y == 0 &&
+				m_Scene->m_MaterialsBuffer[mtid].EmissiveColor.z == 0)) {
+			m_Scene->m_TriangleLightsIndicesBuffer.push_back(i);
 		}
 	}
-	printf("mesh lights %zu \n", m_Scene->m_MeshLights.size());
+	printf("mesh lights %zu \n", m_Scene->m_TriangleLightsIndicesBuffer.size());
 	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
 
-	m_RendererMetricsPanel.m_DevMetrics.m_ObjectsCount = m_Scene->m_Meshes.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_ObjectsCount = m_Scene->m_MeshesBuffer.size();
 
-	for (Mesh mesh : m_Scene->m_Meshes)
+	for (Mesh mesh : m_Scene->m_MeshesBuffer)
 	{
 		m_RendererMetricsPanel.m_DevMetrics.m_TrianglesCount += mesh.m_trisCount;
 	}
 
-	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_Scene->m_Materials.size();
-	m_RendererMetricsPanel.m_DevMetrics.m_TexturesCount = m_Scene->m_Textures.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_Scene->m_MaterialsBuffer.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_TexturesCount = m_Scene->m_TexturesBuffer.size();
 
 	stbi_flip_vertically_on_write(true);
 
@@ -204,7 +204,7 @@ void EditorLayer::OnUIRender()
 
 	static int selection_mask = (1 << 2);
 	static int node_clicked = 0;
-	Mesh& selected_mesh = m_Scene->m_Meshes[node_clicked];
+	Mesh& selected_mesh = m_Scene->m_MeshesBuffer[node_clicked];
 	static bool savesuccess = false;
 
 	{
@@ -239,7 +239,7 @@ void EditorLayer::OnUIRender()
 	   // 'node_clicked' is temporary storage of what node we have clicked to process selection at the end
 	   /// of the loop. May be a pointer to your own node type, etc.
 
-		for (int i = 0; i < m_Scene->m_Meshes.size(); i++)
+		for (int i = 0; i < m_Scene->m_MeshesBuffer.size(); i++)
 		{
 			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 			// Disable the default "open on single-click behavior" + set Selected flag according to our selection.
@@ -250,7 +250,7 @@ void EditorLayer::OnUIRender()
 				node_flags |= ImGuiTreeNodeFlags_Selected;
 
 			node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
-			ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, m_Scene->m_Meshes[i].Name);
+			ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, m_Scene->m_MeshesBuffer[i].Name);
 			if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
 				node_clicked = i;
 		}
