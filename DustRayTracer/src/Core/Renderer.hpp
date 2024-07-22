@@ -32,6 +32,9 @@ public:
 private:
 	uint32_t m_BufferWidth = 0, m_BufferHeight = 0;//specify as RenderBufferWidth/Height?
 	GLuint m_RenderTargetTexture_name = NULL;//null init val important for triggering init
+	GLuint m_ColorBufferTargetTexture_name = NULL; 
+	GLuint m_NormalBufferTargetTexture_name = NULL;
+	GLuint m_DepthBufferTargetTexture_name = NULL; 
 
 	cudaGraphicsResource_t m_viewCudaResource;
 	cudaEvent_t start, stop;

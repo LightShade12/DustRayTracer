@@ -1,14 +1,14 @@
 #pragma once
 #include "Core/CudaMath/helper_math.cuh"
 
-__device__ HitPayload ClosestHit(const Ray& ray, const HitPayload* in_payload) {
-	const Triangle* triangle = in_payload->primitiveptr;
+__device__ HitPayload ClosestHit(const Ray& ray, const HitPayload* in_payload, const SceneData* scene_data) {
+	const Triangle* triangle = &(scene_data->DevicePrimitivesBuffer[in_payload->triangle_idx]);
 
 	HitPayload out_payload;
 
 	out_payload.UVW = in_payload->UVW;
 	//out_payload.triangle_idx = triangleIdx;
-	out_payload.primitiveptr = in_payload->primitiveptr;
+	out_payload.triangle_idx = in_payload->triangle_idx;
 	out_payload.hit_distance = in_payload->hit_distance;
 	out_payload.world_position = ray.getOrigin() + ray.getDirection() * in_payload->hit_distance;
 	out_payload.color = in_payload->color;

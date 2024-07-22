@@ -139,6 +139,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\DustRayTracer.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\Core\BRDF.cuh" />
     <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
     <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
@@ -231,6 +232,12 @@
     <ProjectReference Include="thirdparty\imgui\ImGui.vcxproj">
       <Project>{C0FF640D-2C14-8DBE-F595-301E616989EF}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DustRayTracer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\subha\Downloads\animeascii256.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
-
+#include <stb_image.h>
 //#include <glm/glm.hpp>
 
 //hungarian for global and static floating vars
@@ -153,7 +153,10 @@ void Application::Init()
 	m_WindowHandle = glfwCreateWindow(m_Specification.Width, m_Specification.Height, m_Specification.Name.c_str(), NULL, NULL);
 	glfwMakeContextCurrent(m_WindowHandle);
 	gladLoadGL();
-
+	GLFWimage appicon;
+	int numch;
+	appicon.pixels = stbi_load("animeascii32.png", &(appicon.width), &(appicon.height), &numch, 4);
+	glfwSetWindowIcon(m_WindowHandle, 1, &appicon);
 	// imgui init stuff-------------
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

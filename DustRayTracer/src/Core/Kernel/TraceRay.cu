@@ -23,16 +23,16 @@ __device__ HitPayload traceRay(const Ray& ray, const SceneData* scenedata) {
 		//return Debug();
 
 	//Have not hit
-	if (workingPayload.primitiveptr == nullptr)
+	if (workingPayload.triangle_idx == -1)
 	{
 		return Miss(ray, workingPayload.color);
 	}
 
-	return ClosestHit(ray, &workingPayload);
+	return ClosestHit(ray, &workingPayload, scenedata);
 }
 
 //does not support glass material; cuz no mat processing
-__device__ const Triangle* rayTest(const Ray& ray, const SceneData* scenedata)
+__device__ int rayTest(const Ray& ray, const SceneData* scenedata)
 {
 	return traverseBVH_raytest(ray, (scenedata->DeviceBVHNodesBufferSize) - 1, scenedata);
 }

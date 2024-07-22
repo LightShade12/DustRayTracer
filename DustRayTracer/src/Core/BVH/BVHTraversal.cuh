@@ -41,27 +41,13 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 		if (!(ray.interval.surrounds(current_node_hitdist)))continue;//TODO: can put this in triangle looping part to get inner clipping working
 
 		//skip nodes farther than closest triangle; redundant
-		if (closest_hitpayload->primitiveptr != nullptr && closest_hitpayload->hit_distance < current_node_hitdist)continue;
+		if (closest_hitpayload->triangle_idx != -1 && closest_hitpayload->hit_distance < current_node_hitdist)continue;
 
 		closest_hitpayload->color += make_float3(1) * 0.05f;
 
-		//if leaf
-		if (stackTopNode->primitives_indices_count > 0) {
-			for (int primIndiceIdx = stackTopNode->left_start_idx;
-				primIndiceIdx < stackTopNode->left_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
-				int primIdx = scenedata->DeviceBVHPrimitiveIndicesBuffer[primIndiceIdx];
-				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
-				workinghitpayload = Intersection(ray, primitive);
-
-				if (workinghitpayload.primitiveptr != nullptr && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {
-					if (!AnyHit(ray, scenedata, &workinghitpayload))continue;
-					closest_hitpayload->hit_distance = workinghitpayload.hit_distance;
-					closest_hitpayload->primitiveptr = workinghitpayload.primitiveptr;
-					closest_hitpayload->UVW = workinghitpayload.UVW;
-				}
-			}
-		}
-		else {
+		//if interior
+		if (stackTopNode->primitives_indices_count <= 0)
+		{
 			child1_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->left_start_idx]).m_BoundingBox.intersect(ray);
 			child2_hitdist = (scenedata->DeviceBVHNodesBuffer[stackTopNode->left_start_idx + 1]).m_BoundingBox.intersect(ray);
 			//TODO:implement early cull properly see discord for ref
@@ -74,11 +60,27 @@ __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload*
 				if (child1_hitdist >= 0 && child1_hitdist < closest_hitpayload->hit_distance) { nodeHitDistStack[stackPtr] = child1_hitdist; nodeIdxStack[stackPtr++] = stackTopNode->left_start_idx; }
 			}
 		}
+		else
+		{
+			for (int primIndiceIdx = stackTopNode->left_start_idx;
+				primIndiceIdx < stackTopNode->left_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
+				int primIdx = scenedata->DeviceBVHPrimitiveIndicesBuffer[primIndiceIdx];
+				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
+				workinghitpayload = Intersection(ray, primitive, primIdx);
+
+				if (workinghitpayload.triangle_idx != -1 && workinghitpayload.hit_distance < closest_hitpayload->hit_distance) {
+					if (!AnyHit(ray, scenedata, &workinghitpayload))continue;
+					closest_hitpayload->hit_distance = workinghitpayload.hit_distance;
+					closest_hitpayload->triangle_idx = workinghitpayload.triangle_idx;
+					closest_hitpayload->UVW = workinghitpayload.UVW;
+				}
+			}
+		}
 	}
 }
 
 //apparently do not bother sorting nodes for shadow rays and do an early out
-__device__ const Triangle* traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
+__device__ const int traverseBVH_raytest(const Ray& ray, const int root_node_idx, const SceneData* scenedata) {
 	if (root_node_idx < 0) return false;//empty scene
 
 	const uint8_t maxStackSize = 64;//TODO: make this const for all
@@ -111,11 +113,11 @@ __device__ const Triangle* traverseBVH_raytest(const Ray& ray, const int root_no
 				primIndiceIdx < stackTopNode->left_start_idx + stackTopNode->primitives_indices_count; primIndiceIdx++) {
 				int primIdx = scenedata->DeviceBVHPrimitiveIndicesBuffer[primIndiceIdx];
 				primitive = &(scenedata->DevicePrimitivesBuffer[primIdx]);
-				workinghitpayload = Intersection(ray, primitive);
+				workinghitpayload = Intersection(ray, primitive, primIdx);
 
-				if (workinghitpayload.primitiveptr != nullptr) {
+				if (workinghitpayload.triangle_idx != -1) {
 					if (AnyHit(ray, scenedata, &workinghitpayload)) {
-						return workinghitpayload.primitiveptr; // Intersection found, return true immediately
+						return workinghitpayload.triangle_idx; // Intersection found, return true immediately
 					}
 				}
 			}

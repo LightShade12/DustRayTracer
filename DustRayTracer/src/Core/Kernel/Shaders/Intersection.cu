@@ -1,7 +1,7 @@
 #include "Intersection.cuh"
 #include "Core/CudaMath/physical_units.hpp"
 
-__device__ ShortHitPayload Intersection(const Ray& ray, const Triangle* triangle)
+__device__ ShortHitPayload Intersection(const Ray& ray, const Triangle* triangle, int triangle_idx)
 {
 	ShortHitPayload payload;
 
@@ -27,7 +27,7 @@ __device__ ShortHitPayload Intersection(const Ray& ray, const Triangle* triangle
 	float t = invDet * dot(v0v2, qvec);
 	if (t > TRIANGLE_EPSILON) { // ray intersection
 		payload.hit_distance = t;
-		payload.primitiveptr = triangle;
+		payload.triangle_idx = triangle_idx;
 		payload.UVW = { 1.0f - u - v, u, v };
 		return payload;
 	}

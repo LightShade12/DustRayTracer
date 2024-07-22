@@ -206,18 +206,20 @@ bool Scene::loadGLTFmodel(const char* filepath, Camera** camera)
 			printToConsole("found camera\n");
 			tinygltf::Camera gltf_camera = loadedmodel.cameras[gltf_node.camera];
 			float3 cpos = { gltf_node.translation[0] ,gltf_node.translation[1] ,gltf_node.translation[2] };
-			float qx = gltf_node.rotation[0];
-			float qy = gltf_node.rotation[1];
-			float qz = gltf_node.rotation[2];
-			float qw = gltf_node.rotation[3];
-			glm::quat quaternion(qw, qx, qy, qz);
-			glm::mat4 rotationMatrix = glm::toMat4(quaternion);
-			glm::vec3 forwardDir = -glm::vec3(rotationMatrix[2]);
-			float3 lookDir = make_float3(forwardDir.x, forwardDir.y, forwardDir.z);
-
 			*camera = new Camera(cpos);
 			(*camera)->vfov_rad = gltf_camera.perspective.yfov;
-			(*camera)->m_Forward_dir = lookDir;
+
+			if (gltf_node.rotation.size() > 0) {
+				float qx = gltf_node.rotation[0];
+				float qy = gltf_node.rotation[1];
+				float qz = gltf_node.rotation[2];
+				float qw = gltf_node.rotation[3];
+				glm::quat quaternion(qw, qx, qy, qz);
+				glm::mat4 rotationMatrix = glm::toMat4(quaternion);
+				glm::vec3 forwardDir = -glm::vec3(rotationMatrix[2]);
+				float3 lookDir = make_float3(forwardDir.x, forwardDir.y, forwardDir.z);
+				(*camera)->m_Forward_dir = lookDir;
+			}
 		}
 		if (gltf_node.mesh < 0)continue;//TODO: crude fix
 		tinygltf::Mesh gltf_mesh = loadedmodel.meshes[gltf_node.mesh];

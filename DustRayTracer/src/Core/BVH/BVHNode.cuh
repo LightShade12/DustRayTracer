@@ -7,10 +7,7 @@
 
 #include <stdio.h>
 
-/// <summary>
-/// Will reside on gpu memory.
-/// Create ptr values FOR GPU, variables will be COPIED from cpu
-/// </summary>
+// Will reside on gpu memory.
 class BVHNode
 {
 public:

@@ -116,6 +116,7 @@
     <ClInclude Include="src\Core\BRDF.cuh" />
     <ClInclude Include="src\Core\ImportanceSampler.cuh" />
     <ClInclude Include="src\Editor\Common\dbg_macros.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Editor\Application\private\Application.cpp">
@@ -157,5 +158,11 @@
     <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
     <CudaCompile Include="src\Core\BRDF.cu" />
     <CudaCompile Include="src\Core\ImportanceSampler.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DustRayTracer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\subha\Downloads\animeascii256.ico" />
   </ItemGroup>
 </Project>

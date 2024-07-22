@@ -14,4 +14,6 @@ namespace ImGuiThemes {
 	void OldSteam();
 
 	void Photoshop();
+
+	void RedOni();
 }

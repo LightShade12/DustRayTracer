@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/Interval.cuh"
 #include "Core/CudaMath/helper_math.cuh"
+
 //TODO: interval logic is shit
 struct Ray {
 	Ray() = default;

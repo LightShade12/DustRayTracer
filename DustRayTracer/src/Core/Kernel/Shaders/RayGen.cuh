@@ -128,7 +128,7 @@ __device__ void getDirectIllumination(float3 view_direction, float3 position, fl
 			//bool occluded = emissive_triangle != rayTest(shadow_ray, &scene_data);
 
 			//if (!occluded)//guard against alpha test; pseudo visibility term
-			if (shadowray_payload.primitiveptr == emissive_triangle)//guard against alpha test; pseudo visibility term
+			if (&(scene_data.DevicePrimitivesBuffer[shadowray_payload.triangle_idx]) == emissive_triangle)//guard against alpha test; pseudo visibility term
 			{
 				float2 texcoord = (1.0f - barycentric.x - barycentric.y) * hit_triangle->vertex0.UV
 					+ barycentric.x * hit_triangle->vertex1.UV
@@ -209,7 +209,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		//SHADING--------------------------------------------------------------------------
 		//SKY SHADING----------------------------------
-		if (payload.primitiveptr == nullptr)
+		if (payload.triangle_idx == -1)
 		{
 			if (scene_data.RenderSettings.DebugMode == RendererSettings::DebugModes::MESHBVH_DEBUG &&
 				scene_data.RenderSettings.RenderMode == RendererSettings::RenderModes::DEBUGMODE)outgoing_light = payload.color;
@@ -221,8 +221,8 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		}
 
 		//SURFACE SHADING-------------------------------------------------------------------
-		const Material* current_material = &(scene_data.DeviceMaterialBufferPtr[payload.primitiveptr->material_idx]);
-		const Triangle* hit_triangle = payload.primitiveptr;
+		const Triangle* hit_triangle = &scene_data.DevicePrimitivesBuffer[payload.triangle_idx];
+		const Material* current_material = &(scene_data.DeviceMaterialBufferPtr[hit_triangle->material_idx]);
 		const float2 texture_sample_uv = payload.UVW.x * hit_triangle->vertex0.UV + payload.UVW.y * hit_triangle->vertex1.UV + payload.UVW.z * hit_triangle->vertex2.UV;
 		float3 albedo = (current_material->AlbedoTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv) : current_material->Albedo;
 		float roughness = (current_material->RoughnessTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->RoughnessTextureIndex].getPixel(texture_sample_uv).y * current_material->Roughness : current_material->Roughness;

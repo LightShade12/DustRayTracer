@@ -47,9 +47,9 @@ void EditorLayer::OnAttach()
 
 	//------------------------------------------------------------------------
 	//m_Scene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
-	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
+	//m_Scene->loadGLTFmodel("../models/source/cs16_poolday.glb", &m_device_Camera);
 	//m_Scene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/test/cornell_box_v2.glb", &m_device_Camera);
+	m_Scene->loadGLTFmodel("../models/test/feature_map.glb", &m_device_Camera);
 	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
 	//m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
 	m_device_Camera->m_movement_speed = 10.0;
@@ -93,8 +93,8 @@ void EditorLayer::OnAttach()
 
 	stbi_flip_vertically_on_write(true);
 
-	ImGuiThemes::modifiedDark();
-	//ImGuiThemes::OldSteam();
+	//ImGuiThemes::modifiedDark();
+	ImGuiThemes::RedOni();
 }
 
 void EditorLayer::OnUIRender()

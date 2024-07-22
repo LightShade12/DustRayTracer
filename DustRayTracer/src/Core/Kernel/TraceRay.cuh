@@ -6,5 +6,5 @@
 __device__ HitPayload traceRay(const Ray& ray,
 	const SceneData* scenedata);
 
-__device__ const Triangle* rayTest(const Ray& ray,
+__device__ int rayTest(const Ray& ray,
 	const SceneData* scenedata);
