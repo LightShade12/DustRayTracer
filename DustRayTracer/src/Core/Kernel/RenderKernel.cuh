@@ -5,10 +5,13 @@
 
 #include <cstdint>
 
-struct Scene;
-class Camera;
-struct RendererSettings;
+struct SceneData;
+namespace DustRayTracer {
+	struct CameraData;
+}
+struct RendererSettings;//why is this here
 
 void invokeRenderKernel(
 	cudaSurfaceObject_t surfaceobj, uint32_t width, uint32_t height,
-	dim3 _blocks, dim3 _threads, Camera* cam, const Scene& scene, const RendererSettings& settings, uint32_t frameidx, float3* accumulation_buffer);
+	dim3 _blocks, dim3 _threads, const DustRayTracer::CameraData* device_camera,
+	const SceneData& scene_data, uint32_t frameidx, float3* accumulation_buffer);

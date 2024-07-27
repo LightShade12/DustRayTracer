@@ -69,6 +69,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <OmitFramePointers>false</OmitFramePointers>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -138,7 +139,10 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\DustRayTracer.hpp" />
+    <ClInclude Include="src\Core\Scene\Scene.cuh" />
+    <ClInclude Include="src\Core\Scene\SceneData.cuh" />
+    <ClInclude Include="src\Editor\Importer.h" />
+    <ClInclude Include="src\Core\Public\DustRayTracer.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\Core\BRDF.cuh" />
     <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
@@ -152,13 +156,13 @@
     <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
     <ClInclude Include="src\Core\Interval.cuh" />
     <ClInclude Include="src\Core\Sampler.cuh" />
-    <ClInclude Include="src\Core\Scene\RendererSettings.h" />
+    <ClInclude Include="src\Core\Scene\RendererSettings.hpp" />
     <ClInclude Include="src\Editor\Application\Application.hpp" />
     <ClInclude Include="src\Editor\Application\private\Input.hpp" />
     <ClInclude Include="src\Editor\Application\private\KeyCodes.hpp" />
     <ClInclude Include="src\Editor\Application\private\Layer.hpp" />
-    <ClInclude Include="src\Editor\Common\CudaCommon.cuh" />
-    <ClInclude Include="src\Editor\Common\Managed.cuh" />
+    <ClInclude Include="src\Core\Common\CudaCommon.cuh" />
+    <ClInclude Include="src\Core\Common\Managed.cuh" />
     <ClInclude Include="src\Editor\Common\Timer.hpp" />
     <ClInclude Include="src\Editor\EditorLayer.hpp" />
     <ClInclude Include="src\Core\CudaMath\physical_units.hpp" />
@@ -173,16 +177,16 @@
     <ClInclude Include="src\Core\Kernel\Shaders\Intersection.cuh" />
     <ClInclude Include="src\Core\Kernel\Shaders\Miss.cuh" />
     <ClInclude Include="src\Core\Kernel\Shaders\RayGen.cuh" />
-    <ClInclude Include="src\Core\Scene\Texture.cuh" />
+    <ClInclude Include="src\Core\Scene\Texture.hpp" />
     <ClInclude Include="src\Core\Kernel\TraceRay.cuh" />
     <ClInclude Include="src\Core\Bounds.cuh" />
     <ClInclude Include="src\Core\Scene\Material.cuh" />
     <ClInclude Include="src\Core\Scene\Mesh.cuh" />
     <ClInclude Include="src\Core\Scene\Triangle.cuh" />
-    <ClInclude Include="src\Core\Scene\Scene.cuh" />
+    <ClInclude Include="src\Core\Scene\HostScene.hpp" />
     <ClInclude Include="src\Core\Scene\Vertex.cuh" />
     <ClInclude Include="src\Core\Renderer.hpp" />
-    <ClInclude Include="src\Core\Scene\Camera.cuh" />
+    <ClInclude Include="src\Core\Scene\Camera.hpp" />
     <ClInclude Include="src\Core\CudaMath\helper_math.cuh" />
     <ClInclude Include="src\Core\Kernel\RenderKernel.cuh" />
     <ClInclude Include="thirdparty\stb_image\stb_image.h" />
@@ -192,7 +196,8 @@
   <ItemGroup>
     <CudaCompile Include="src\Core\BRDF.cu" />
     <CudaCompile Include="src\Core\ImportanceSampler.cu" />
-    <CudaCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
+    <ClCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
+    <ClCompile Include="src\Editor\Importer.cpp" />
     <ClCompile Include="src\Core\Scene\RendererSettings.cpp" />
     <ClCompile Include="src\Editor\Application\private\Application.cpp" />
     <ClCompile Include="src\Editor\Application\private\Input.cpp" />
@@ -207,12 +212,12 @@
   <ItemGroup>
     <CudaCompile Include="src\Core\CudaMath\Random.cu" />
     <CudaCompile Include="src\Core\Interval.cu" />
-    <CudaCompile Include="src\Editor\EditorLayer.cpp" />
+    <ClCompile Include="src\Editor\EditorLayer.cpp" />
     <CudaCompile Include="src\Core\Renderer.cu" />
     <CudaCompile Include="src\Core\Scene\Camera.cu" />
     <CudaCompile Include="src\Core\Kernel\RenderKernel.cu" />
     <CudaCompile Include="reference\Cuda\kernel.cu" />
-    <CudaCompile Include="src\Editor\Common\CudaCommon.cu" />
+    <CudaCompile Include="src\Core\Common\CudaCommon.cu" />
     <CudaCompile Include="src\Core\BVH\BVHBuilder.cu" />
     <CudaCompile Include="src\Core\Kernel\Shaders\Intersection.cu" />
     <CudaCompile Include="src\Core\Scene\Texture.cu" />

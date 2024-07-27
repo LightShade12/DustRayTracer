@@ -12,7 +12,8 @@
 #include "Core/Ray.cuh"
 #include "Core/HitPayload.cuh"
 #include "Core/Scene/Scene.cuh"
-#include "Core/Scene/Camera.cuh"
+//#include "Core/Scene/Material.cuh"
+#include "Core/Scene/Camera.hpp"
 
 /*
 TODO: List of things:
@@ -49,7 +50,7 @@ __device__ float3 clamp_output(float3 c)
 		return clamp(c, 0, 1000);
 }
 
-__device__ float3 normalMap(const Material& current_material,
+__device__ float3 normalMap(const DustRayTracer::MaterialData& current_material,
 	const Triangle* triangle, float3 normal, const SceneData& scene_data,
 	float2 texture_sample_uv) {
 	float3 edge0 = triangle->vertex1.position - triangle->vertex0.position;
@@ -79,7 +80,7 @@ __device__ float3 normalMap(const Material& current_material,
 __device__ void getSunlight(float3 position, float3 view_direction, float3 normal,
 	float3 ubo_sun_direction, float3 ubo_sun_color, float3 albedo,
 	float roughness, float3  f0, float metallicity,
-	const Material& material, const SceneData& scene_data, uint32_t& seed, float3& out_radiance) {
+	const DustRayTracer::MaterialData& material, const SceneData& scene_data, uint32_t& seed, float3& out_radiance) {
 	//shadow ray for sunlight
 
 	Ray sunray = Ray((position), (ubo_sun_direction)+randomUnitFloat3(seed) * scene_data.RenderSettings.sun_size);
@@ -93,7 +94,7 @@ __device__ void getSunlight(float3 position, float3 view_direction, float3 norma
 
 //multiply radiance by throughput
 __device__ void getDirectIllumination(float3 view_direction, float3 position, float3 normal,
-	const Material& material, float3 ubo_sun_color, float3 ubo_sun_direction, float3 albedo,
+	const DustRayTracer::MaterialData& material, float3 ubo_sun_color, float3 ubo_sun_direction, float3 albedo,
 	float roughness, float3  f0, float metallicity, const Triangle* hit_triangle,
 	float3& out_radiance, const SceneData& scene_data, uint32_t& seed, bool specular)
 {
@@ -176,7 +177,7 @@ __device__ void getDirectIllumination(float3 view_direction, float3 position, fl
 
 //TODO: maybe create a LaunchID struct instead of x,y?
 __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
-	const Camera* device_camera, uint32_t frameidx, const SceneData scene_data)
+	const DustRayTracer::CameraData* device_camera, uint32_t frameidx, const SceneData scene_data)
 {
 	float3 sunpos = make_float3(
 		sin(scene_data.RenderSettings.sunlight_dir.x) * (1 - sin(scene_data.RenderSettings.sunlight_dir.y)),
@@ -222,7 +223,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		//SURFACE SHADING-------------------------------------------------------------------
 		const Triangle* hit_triangle = &scene_data.DevicePrimitivesBuffer[payload.triangle_idx];
-		const Material* current_material = &(scene_data.DeviceMaterialBufferPtr[hit_triangle->material_idx]);
+		const DustRayTracer::MaterialData* current_material = &(scene_data.DeviceMaterialBufferPtr[hit_triangle->material_idx]);
 		const float2 texture_sample_uv = payload.UVW.x * hit_triangle->vertex0.UV + payload.UVW.y * hit_triangle->vertex1.UV + payload.UVW.z * hit_triangle->vertex2.UV;
 		float3 albedo = (current_material->AlbedoTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv) : current_material->Albedo;
 		float roughness = (current_material->RoughnessTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->RoughnessTextureIndex].getPixel(texture_sample_uv).y * current_material->Roughness : current_material->Roughness;

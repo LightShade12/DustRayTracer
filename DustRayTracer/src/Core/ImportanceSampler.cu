@@ -2,7 +2,7 @@
 
 #include "BRDF.cuh"
 #include "Scene/SceneData.cuh"
-#include "Scene/Texture.cuh"
+#include "Scene/Texture.hpp"
 #include "Scene/Material.cuh"
 #include "CudaMath/physical_units.hpp"
 
@@ -123,7 +123,7 @@ __device__ float3 transformTangentToWorld(const float3& vec, const float3& norma
 }
 
 //clamped roughness
-__device__ ImportanceSampleData importanceSampleBRDF(float3 normal, float3 viewDir, const Material& material, uint32_t& seed, float& pdf,
+__device__ ImportanceSampleData importanceSampleBRDF(float3 normal, float3 viewDir, const DustRayTracer::MaterialData& material, uint32_t& seed, float& pdf,
 	float3& throughput, const SceneData& scene_data, float2 texture_uv)
 {
 	//TODO: bad weighting to balance both samples

@@ -12,7 +12,7 @@ struct HitPayload
 	float hit_distance = -1;//default: -1
 	float3 world_normal;
 	float3 world_position;
-	int triangle_idx=-1;
+	int triangle_idx = -1;
 	//const Triangle* primitiveptr = nullptr;//default: nullptr
 	float3 color = { 0,0,0 };
 	float3 UVW;
@@ -23,6 +23,6 @@ struct ShortHitPayload
 {
 	float hit_distance = -1;//default: -1
 	float3 UVW;
-	int triangle_idx=-1;
+	int triangle_idx = -1;
 	//const Triangle* primitiveptr = nullptr;//default: nullptr
 };

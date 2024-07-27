@@ -1,6 +1,6 @@
 #include "TraceRay.cuh"
 
-#include "Core/Scene/Scene.cuh"
+#include "Core/Scene/SceneData.cuh"
 #include "Core/BVH/BVHTraversal.cuh"
 
 #include "Shaders/ClosestHit.cuh"

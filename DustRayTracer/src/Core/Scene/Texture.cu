@@ -1,8 +1,8 @@
-#include "Texture.cuh"
+#include "Texture.hpp"
 
 #include "stb_image.h"
 
-#include "Editor/Common/CudaCommon.cuh"
+#include "Core/Common/CudaCommon.cuh"
 
 #include <cmath>
 
@@ -27,6 +27,16 @@ Texture::Texture(const unsigned char* data, size_t bytesize)
 	cudaMemcpy(d_data, imgdata, imgbuffersize, cudaMemcpyHostToDevice);
 	checkCudaErrors(cudaGetLastError());
 	stbi_image_free(imgdata);
+}
+
+void Texture::getPixelsData(unsigned char* pixels) const
+{
+	size_t imagebuffersize = sizeof(unsigned char) * width * height * componentCount;
+	pixels = (unsigned char*)malloc(imagebuffersize);
+
+	cudaDeviceSynchronize();
+	cudaMemcpy(pixels, d_data, imagebuffersize, cudaMemcpyDeviceToHost);
+	checkCudaErrors(cudaGetLastError());
 }
 
 //returns pink if numcolch < 3 or > 4

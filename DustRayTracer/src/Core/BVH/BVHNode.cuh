@@ -3,8 +3,6 @@
 #include "Core/Scene/Triangle.cuh"
 #include "Core/CudaMath/helper_math.cuh"
 
-#include "Editor/Common/CudaCommon.cuh"
-
 #include <stdio.h>
 
 // Will reside on gpu memory.
@@ -25,11 +23,8 @@ public:
 		return m_BoundingBox.getSurfaceArea();
 	}
 
+	//TODO: get rifd of this
 	void Cleanup()
 	{
-		/*if (dev_primitive_ptrs_buffer != nullptr)
-			cudaFree(dev_primitive_ptrs_buffer);*/
-		checkCudaErrors(cudaGetLastError());
-		//printf("node killed\n");
 	}
 };

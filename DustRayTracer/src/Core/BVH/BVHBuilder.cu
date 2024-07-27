@@ -1,4 +1,6 @@
 #include "BVHBuilder.cuh"
+
+#include "Core/Scene/Scene.cuh"
 #include "Editor/Common/dbg_macros.hpp"
 
 #include <stack>
@@ -59,20 +61,17 @@ float3 get_Absolute_Extent(const std::vector<const Triangle*>& primitives, size_
 	return extent;
 };
 
-//UNSABLE---------------------------------
-// FIX BEFORE USING----------------------------------
 // The build function initializes the root and uses a stack for iterative processing
 
-BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& primitives,
-	thrust::universal_vector<unsigned int>& primitive_indices, thrust::device_vector<BVHNode>& bvh_nodes)
+BVHNode* BVHBuilder::BuildIterative(DustRayTracer::HostScene& scene)
 {
 	//int MAX_STACK_SIZE = 2 * ((primitives.size() + primitives.size() / m_TargetLeafPrimitivesCount) / 2) - 1; // Adjust this value as needed
-	std::vector <unsigned int> host_prim_indices(primitives.size());
+	std::vector <unsigned int> host_prim_indices(scene.getTrianglesBufferSize());
 	std::iota(host_prim_indices.begin(), host_prim_indices.end(), 0);
 
 	BVHNode* hostBVHroot = new BVHNode();
 	float3 minextent;
-	float3 extent = get_Absolute_Extent(primitives, host_prim_indices, 0, host_prim_indices.size(),
+	float3 extent = get_Absolute_Extent(scene.m_Scene->m_TrianglesBuffer, host_prim_indices, 0, host_prim_indices.size(),
 		minextent);
 
 	hostBVHroot->m_BoundingBox = Bounds3f(minextent, minextent + extent);
@@ -95,11 +94,12 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 	{
 		//hostBVHroot->m_IsLeaf = true;
 
-		bvh_nodes.push_back(*hostBVHroot);
+		scene.m_Scene->m_BVHNodesBuffer.push_back(*hostBVHroot);
 		delete hostBVHroot;
 		printToConsole("<<!! -- made ROOT leaf with %d prims -- !!>>\n", hostBVHroot->triangle_indices_count);
 
-		return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+		//return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+		return nullptr;//TODO: tie up loose ends
 	}
 
 	// Static stack for iterative BVH construction
@@ -122,7 +122,7 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 		BVHNode* leftNode = new BVHNode();
 		BVHNode* rightNode = new BVHNode();
 
-		makePartition(primitives, host_prim_indices,
+		makePartition(scene, host_prim_indices,
 			currentNode->left_child_or_triangle_indices_start_idx, currentNode->left_child_or_triangle_indices_start_idx + currentNode->triangle_indices_count,//as leaf
 			*leftNode, *rightNode);
 		currentNode->triangle_indices_count = 0;//mark as not leaf
@@ -147,11 +147,12 @@ BVHNode* BVHBuilder::BuildIterative(const thrust::universal_vector<Triangle>& pr
 	host_bvh_nodes.push_back(*hostBVHroot); delete hostBVHroot;
 	host_bvh_nodes.shrink_to_fit();
 
-	primitive_indices = host_prim_indices;
-	
-	bvh_nodes = host_bvh_nodes;
+	scene.m_Scene->m_BVHTrianglesIndicesBuffer = host_prim_indices;
 
-	return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+	scene.m_Scene->m_BVHNodesBuffer = host_bvh_nodes;
+
+	//return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+	return nullptr;//TODO: fix loose ends
 }
 
 /*
@@ -160,57 +161,59 @@ Union of bbox in SAH bin computing
 */
 
 //TODO:copy tris to host for bvh, let tris be dev_vector
-BVHNode* BVHBuilder::BuildBVH(const thrust::universal_vector<Triangle>& primitives,
-	thrust::universal_vector<unsigned int>& primitive_indices, thrust::device_vector<BVHNode>& bvh_nodes)
+BVHNode* BVHBuilder::BuildBVH(DustRayTracer::HostScene& scene)
 {
 	std::shared_ptr<BVHNode>host_BVH_root = std::make_shared<BVHNode>();
 
-	printToConsole("<--bvh build input tris count:%zu -->\n", primitives.size());
+	std::vector<BVHNode>host_bvh_nodes;
+	printToConsole("<--bvh build input tris count:%zu -->\n", scene.getTrianglesBufferSize());
 
-	std::vector <unsigned int> host_prim_indices(primitives.size());
+	std::vector <unsigned int> host_prim_indices(scene.getTrianglesBufferSize());
 	std::iota(host_prim_indices.begin(), host_prim_indices.end(), 0);
 
 	float3 minextent;
-	float3 extent = get_Absolute_Extent(primitives, host_prim_indices,
-		0, primitives.size(), minextent);
+	float3 extent = get_Absolute_Extent(scene.m_Scene->m_TrianglesBuffer, host_prim_indices,
+		0, scene.m_Scene->m_TrianglesBuffer.size(), minextent);
 	host_BVH_root->m_BoundingBox = Bounds3f(minextent, minextent + extent);
 
 	//if leaf candidate
-	if (primitives.size() <= m_TargetLeafPrimitivesCount)
+	if (scene.getTrianglesBufferSize() <= m_TargetLeafPrimitivesCount)
 	{
-		host_BVH_root->triangle_indices_count = primitives.size();
+		host_BVH_root->triangle_indices_count = scene.getTrianglesBufferSize();
 		//host_BVH_root->m_IsLeaf = true;
 		host_BVH_root->left_child_or_triangle_indices_start_idx = 0;//as leaf
 
-		bvh_nodes.push_back(*host_BVH_root);
+		scene.m_Scene->m_BVHNodesBuffer.push_back(*host_BVH_root);
 		printToConsole("-----made RootNode leaf with %d prims-----\n", host_BVH_root->triangle_indices_count);
 
-		return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+		//return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+		return nullptr;
 	}
 
 	std::shared_ptr<BVHNode>left = std::make_shared<BVHNode>();
 	std::shared_ptr<BVHNode>right = std::make_shared<BVHNode>();
 
-	makePartition(primitives, host_prim_indices,
-		0, primitives.size(), *left, *right);
+	makePartition(scene, host_prim_indices,
+		0, scene.m_Scene->m_TrianglesBuffer.size(), *left, *right);
 
-	recursiveBuild(*left, bvh_nodes, primitives, host_prim_indices);
-	recursiveBuild(*right, bvh_nodes, primitives, host_prim_indices);
+	recursiveBuild(*left, host_bvh_nodes, scene, host_prim_indices);
+	recursiveBuild(*right, host_bvh_nodes, scene, host_prim_indices);
 
-	bvh_nodes.push_back(*left);
-	host_BVH_root->left_child_or_triangle_indices_start_idx = bvh_nodes.size() - 1;//as node
+	host_bvh_nodes.push_back(*left);
+	host_BVH_root->left_child_or_triangle_indices_start_idx = scene.m_Scene->m_BVHNodesBuffer.size() - 1;//as node
 
-	bvh_nodes.push_back(*right);
+	host_bvh_nodes.push_back(*right);
 	//host_BVH_root->dev_child2_idx = bvh_nodes.size() - 1;
 
-	primitive_indices = host_prim_indices;
-	bvh_nodes.push_back(*host_BVH_root);
-
-	return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+	scene.m_Scene->m_BVHTrianglesIndicesBuffer = host_prim_indices;
+	host_bvh_nodes.push_back(*host_BVH_root);
+	scene.m_Scene->m_BVHNodesBuffer = host_bvh_nodes;
+	//return thrust::raw_pointer_cast(&(bvh_nodes.back()));
+	return nullptr;
 }
 
-void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& bvh_nodes,
-	const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitive_indices)
+void BVHBuilder::recursiveBuild(BVHNode& node, std::vector<BVHNode>& bvh_nodes,
+	const DustRayTracer::HostScene& scene, std::vector<unsigned int>& primitive_indices)
 {
 	printToConsole("> recursive child build,input prim count: %d \n", node.triangle_indices_count);
 
@@ -226,13 +229,13 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 		std::shared_ptr<BVHNode>left_node = std::make_shared<BVHNode>();//TODO: candidate for raw ptr
 		std::shared_ptr<BVHNode>right_node = std::make_shared<BVHNode>();
 
-		makePartition(primitives, primitive_indices,
+		makePartition(scene, primitive_indices,
 			node.left_child_or_triangle_indices_start_idx, node.left_child_or_triangle_indices_start_idx + node.triangle_indices_count,//as leaf
 			*left_node, *right_node);
 		node.triangle_indices_count = 0;//mark as not leaf
 
-		recursiveBuild(*left_node, bvh_nodes, primitives, primitive_indices);
-		recursiveBuild(*right_node, bvh_nodes, primitives, primitive_indices);
+		recursiveBuild(*left_node, bvh_nodes, scene, primitive_indices);
+		recursiveBuild(*right_node, bvh_nodes, scene, primitive_indices);
 
 		bvh_nodes.push_back(*left_node);
 		node.left_child_or_triangle_indices_start_idx = bvh_nodes.size() - 1;
@@ -244,7 +247,7 @@ void BVHBuilder::recursiveBuild(BVHNode& node, thrust::device_vector<BVHNode>& b
 
 //left_child_or_triangle_indices_start_idx will be overwritten to nodes from the caller
 __host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, PartitionAxis axis,
-	const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitives_indices, size_t start_idx, size_t end_idx)
+	const DustRayTracer::HostScene& scene, std::vector<unsigned int>& primitives_indices, size_t start_idx, size_t end_idx)
 {
 	//sorting
 	std::vector<unsigned int>::iterator partition_iterator;
@@ -252,15 +255,15 @@ __host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, P
 	{
 	case BVHBuilder::PartitionAxis::X_AXIS:
 		partition_iterator = std::partition(primitives_indices.begin() + start_idx, primitives_indices.begin() + end_idx,
-			[bin, primitives](unsigned int prim_idx) { return primitives[prim_idx].centroid.x < bin; });
+			[bin, scene](unsigned int prim_idx) { return scene.m_Scene->m_TrianglesBuffer[prim_idx].centroid.x < bin; });
 		break;
 	case BVHBuilder::PartitionAxis::Y_AXIS:
 		partition_iterator = std::partition(primitives_indices.begin() + start_idx, primitives_indices.begin() + end_idx,
-			[bin, primitives](unsigned int prim_idx) { return primitives[prim_idx].centroid.y < bin; });
+			[bin, scene](unsigned int prim_idx) { return scene.m_Scene->m_TrianglesBuffer[prim_idx].centroid.y < bin; });
 		break;
 	case BVHBuilder::PartitionAxis::Z_AXIS:
 		partition_iterator = std::partition(primitives_indices.begin() + start_idx, primitives_indices.begin() + end_idx,
-			[bin, primitives](unsigned int prim_idx) { return primitives[prim_idx].centroid.z < bin; });
+			[bin, scene](unsigned int prim_idx) { return scene.m_Scene->m_TrianglesBuffer[prim_idx].centroid.z < bin; });
 		break;
 	default:
 		break;
@@ -270,20 +273,20 @@ __host__ void BVHBuilder::binToNodes(BVHNode& left, BVHNode& right, float bin, P
 	left.left_child_or_triangle_indices_start_idx = start_idx;//as leaf
 	left.triangle_indices_count = partition_start_idx - start_idx;
 	float3 leftminextent;
-	float3 leftextent = get_Absolute_Extent(primitives, primitives_indices, left.left_child_or_triangle_indices_start_idx,
+	float3 leftextent = get_Absolute_Extent(scene.m_Scene->m_TrianglesBuffer, primitives_indices, left.left_child_or_triangle_indices_start_idx,
 		left.left_child_or_triangle_indices_start_idx + left.triangle_indices_count, leftminextent);
 	left.m_BoundingBox = Bounds3f(leftminextent, leftminextent + leftextent);
 
 	right.left_child_or_triangle_indices_start_idx = partition_start_idx;
 	right.triangle_indices_count = end_idx - partition_start_idx;
 	float3 rightminextent;
-	float3 rightextent = get_Absolute_Extent(primitives, primitives_indices, right.left_child_or_triangle_indices_start_idx,
+	float3 rightextent = get_Absolute_Extent(scene.m_Scene->m_TrianglesBuffer, primitives_indices, right.left_child_or_triangle_indices_start_idx,
 		right.left_child_or_triangle_indices_start_idx + right.triangle_indices_count, rightminextent);
 	right.m_BoundingBox = Bounds3f(rightminextent, rightminextent + rightextent);
 }
 
-void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PartitionAxis axis,
-	const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitives_indices, size_t start_idx, size_t end_idx)
+void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, PartitionAxis axis, const DustRayTracer::HostScene& scene,
+	std::vector<unsigned int>& primitives_indices, size_t start_idx, size_t end_idx)
 {
 	//can make a single vector and run partition
 	std::vector<const Triangle*>left_prim_ptrs;
@@ -291,7 +294,7 @@ void BVHBuilder::binToShallowNodes(BVHNode& left, BVHNode& right, float bin, Par
 
 	for (size_t prim_indice_idx = start_idx; prim_indice_idx < end_idx; prim_indice_idx++)
 	{
-		const Triangle* triangle = &(primitives[primitives_indices[prim_indice_idx]]);
+		const Triangle* triangle = &(scene.m_Scene->m_TrianglesBuffer[primitives_indices[prim_indice_idx]]);
 
 		switch (axis)
 		{
@@ -329,8 +332,8 @@ int BVHBuilder::costHeursitic(const BVHNode& left_node, const BVHNode& right_nod
 		((right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * right_node.triangle_indices_count * m_RayPrimitiveIntersectionCost);
 }
 
-void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primitives, std::vector<unsigned int>& primitives_indices, size_t start_idx,
-	size_t end_idx, BVHNode& left_node, BVHNode& right_node)
+void BVHBuilder::makePartition(const DustRayTracer::HostScene& scene, std::vector<unsigned int>& primitives_indices,
+	size_t start_idx, size_t end_idx, BVHNode& leftnode, BVHNode& rightnode)
 {
 	printToConsole("---> making partition, input prim count:%zu <---\n", end_idx - start_idx);
 	float lowest_cost_partition_pt = 0;//best bin
@@ -339,7 +342,7 @@ void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primiti
 	int lowest_cost = INT_MAX;
 
 	float3 minextent = { FLT_MAX,FLT_MAX,FLT_MAX };
-	float3 extent = get_Absolute_Extent(primitives, primitives_indices, start_idx, end_idx, minextent);//TODO:can be replaced with caller node's bounds
+	float3 extent = get_Absolute_Extent(scene.m_Scene->m_TrianglesBuffer, primitives_indices, start_idx, end_idx, minextent);//TODO:can be replaced with caller node's bounds
 	Bounds3f parent_bbox(minextent, minextent + extent);
 
 	BVHNode temp_left_node, temp_right_node;
@@ -357,7 +360,7 @@ void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primiti
 		//printf("proc x bin %.3f\n", bin);
 		binToShallowNodes(temp_left_node, temp_right_node,
 			bin, PartitionAxis::X_AXIS,
-			primitives, primitives_indices, start_idx, end_idx);
+			scene, primitives_indices, start_idx, end_idx);
 		/*int cost = BVHNode::trav_cost + ((temp_left_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * temp_left_node.primitives_count * temp_left_node.rayint_cost) +
 			((temp_right_node.getSurfaceArea() / parent_bbox.getSurfaceArea()) * temp_right_node.primitives_count * temp_right_node.rayint_cost);*/
 		int cost = costHeursitic(temp_left_node, temp_right_node, parent_bbox);
@@ -382,7 +385,7 @@ void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primiti
 	{
 		//printf("proc y bin %.3f\n", bin);
 		binToShallowNodes(temp_left_node, temp_right_node, bin, PartitionAxis::Y_AXIS,
-			primitives, primitives_indices, start_idx, end_idx);
+			scene, primitives_indices, start_idx, end_idx);
 		int cost = costHeursitic(temp_left_node, temp_right_node, parent_bbox);
 		if (cost < lowest_cost)
 		{
@@ -405,7 +408,7 @@ void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primiti
 	{
 		//printf("proc z bin %.3f\n", bin);
 		binToShallowNodes(temp_left_node, temp_right_node, bin, PartitionAxis::Z_AXIS,
-			primitives, primitives_indices, start_idx, end_idx);
+			scene, primitives_indices, start_idx, end_idx);
 		int cost = costHeursitic(temp_left_node, temp_right_node, parent_bbox);
 		if (cost < lowest_cost)
 		{
@@ -418,7 +421,7 @@ void BVHBuilder::makePartition(const thrust::universal_vector<Triangle>& primiti
 	}
 
 	printToConsole(">> made a partition, bin: %.3f, axis: %d, cost: %d <<---\n", lowest_cost_partition_pt, best_partition_axis, lowest_cost);
-	binToNodes(left_node, right_node, lowest_cost_partition_pt,
-		best_partition_axis, primitives, primitives_indices, start_idx, end_idx);
-	printToConsole("left node prim count:%d | right node prim count: %d\n", left_node.triangle_indices_count, right_node.triangle_indices_count);
+	binToNodes(leftnode, rightnode, lowest_cost_partition_pt,
+		best_partition_axis, scene, primitives_indices, start_idx, end_idx);
+	printToConsole("left node prim count:%d | right node prim count: %d\n", leftnode.triangle_indices_count, rightnode.triangle_indices_count);
 }

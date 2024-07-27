@@ -1,19 +1,20 @@
 #pragma once
-#include "Core/Scene/Texture.cuh"
-
 #include <glad/glad.h>
 #include <stdint.h>
+namespace DustRayTracer {
+	struct HostScene;
+}
 
-class Scene;
+class Texture;
 
 class MaterialManagerPanel
 {
 public:
 
 	MaterialManagerPanel() = default;
-	MaterialManagerPanel(Scene* scene) :m_Scene(scene) {};
+	MaterialManagerPanel(DustRayTracer::HostScene* scene) :m_CurrentScene(scene) {};
 
-	void Initialize(Scene* scene);
+	void Initialize(DustRayTracer::HostScene* scene);
 
 	bool OnUIRender();
 
@@ -36,5 +37,5 @@ private:
 	DRTThumbnail emissionthumbnail;
 	DRTThumbnail normalthumbnail;
 	DRTThumbnail roughnessthumbnail;
-	Scene* m_Scene;//non owning
+	DustRayTracer::HostScene* m_CurrentScene;//non owning
 };

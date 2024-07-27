@@ -20,7 +20,7 @@ struct RendererSettings
 	};
 
 	bool UseMaterialOverride = false;
-	Material OverrideMaterial;
+	DustRayTracer::MaterialData OverrideMaterial;
 
 	bool enable_gamma_correction = true;
 	bool enable_tone_mapping = true;

@@ -5,18 +5,17 @@
 #include "Theme/EditorTheme.hpp"
 #include "Application/Application.hpp"
 #include "Editor/Common/Timer.hpp"
+#include "Editor/Importer.h"
 
-#include "Core/Scene/Scene.cuh"
-#include "Core/Scene/Camera.cuh"
-#include "Core/BVH/BVHBuilder.cuh"
+#include "Core/Scene/HostScene.hpp"
+//#include "Core/Scene/Camera.cuh"
+//#include "Core/BVH/BVHBuilder.cuh"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
 #include <stb_image_write.h>
-
-
 
 /*
 TODO:add denoiser settings
@@ -34,62 +33,41 @@ bool EditorLayer::saveImage(const char* filename, int _width, int _height, GLuby
 
 void EditorLayer::OnAttach()
 {
-	//m_Renderer.m_RendererSettings.sky_intensity = 0;
-	//m_device_Camera = new Camera(make_float3(-4.65, 1.8, -5));
-	//m_device_Camera = new Camera(make_float3(0, 1, 2.8));
-	//m_device_Camera = new Camera(make_float3(1.04, .175, .05));
-	m_Scene = std::make_shared<Scene>();
-
 	ConsoleLogs.push_back("-------------------console initialized--------------------");
 	ConsoleLogs.push_back("GLFW 3.4");
 	ConsoleLogs.push_back("CUDA 12.4");
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	//m_Scene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
-	m_Scene->loadGLTFmodel("../models/source/cs16_dust.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
-	//m_Scene->loadGLTFmodel("../models/test/feature_map.glb", &m_device_Camera);
-	if (m_device_Camera == nullptr) { m_device_Camera = new Camera(make_float3(0, 1, 2.8)); }
-	//m_device_Camera->m_Forward_dir = { .038,-.583,-.810 };
-	m_device_Camera->m_movement_speed = 10.0;
-	m_device_Camera->defocus_angle = 0.f;
-	m_device_Camera->focus_dist = 10.f;
-	m_device_Camera->exposure = 1.5f;
+	//m_CurrentScene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
+	//m_CurrentScene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
+	//m_CurrentScene->loadGLTFmodel("../models/test/feature_map.glb", &m_device_Camera);
 
-	m_RendererMetricsPanel.SetRenderer(m_Renderer);
-	m_RendererMetricsPanel.SetCamera(m_device_Camera);
-	m_MaterialManagerPanel.Initialize(m_Scene.get());
+	m_CurrentScene = std::make_shared<DustRayTracer::HostScene>();
+	m_CurrentScene->initialize();
+	Importer importer;
+	importer.loadGLTF("../models/test/cornell_box_v2.glb", *m_CurrentScene);
+
+	m_Renderer.initialize();
+	//m_Renderer.updateScene(*m_CurrentScene);
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;
 	bvhbuilder.m_BinCount = 32;
-	m_Scene->d_BVHTreeRoot = bvhbuilder.BuildIterative(m_Scene->m_TrianglesBuffer,
-		m_Scene->m_BVHTrianglesIndicesBuffer, m_Scene->m_BVHNodesBuffer);
+	bvhbuilder.BuildIterative(*m_CurrentScene);
 
-	for (size_t i = 0; i < m_Scene->m_TrianglesBuffer.size(); i++)
-	{
-		const Triangle* tri = &m_Scene->m_TrianglesBuffer[i];
-		int mtid = tri->material_idx;
-		if (m_Scene->m_MaterialsBuffer[mtid].EmissionTextureIndex >= 0 ||
-			!(m_Scene->m_MaterialsBuffer[mtid].EmissiveColor.x == 0 &&
-				m_Scene->m_MaterialsBuffer[mtid].EmissiveColor.y == 0 &&
-				m_Scene->m_MaterialsBuffer[mtid].EmissiveColor.z == 0)) {
-			m_Scene->m_TriangleLightsIndicesBuffer.push_back(i);
-		}
-	}
-	printf("mesh lights %zu \n", m_Scene->m_TriangleLightsIndicesBuffer.size());
-	//printToConsole("bvhtreeroot prims %zu\n", m_Scene->d_BVHTreeRoot->primitives_count);
+	m_Renderer.updateScene(*m_CurrentScene);
 
-	m_RendererMetricsPanel.m_DevMetrics.m_ObjectsCount = m_Scene->m_MeshesBuffer.size();
+	m_ActiveCamera = m_Renderer.getCameraPtr();
 
-	for (Mesh mesh : m_Scene->m_MeshesBuffer)
-	{
-		m_RendererMetricsPanel.m_DevMetrics.m_TrianglesCount += mesh.m_trisCount;
-	}
+	m_RendererMetricsPanel.SetRenderer(m_Renderer);
+	m_RendererMetricsPanel.SetCamera(m_ActiveCamera);
+	m_MaterialManagerPanel.Initialize(m_CurrentScene.get());
 
-	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_Scene->m_MaterialsBuffer.size();
-	m_RendererMetricsPanel.m_DevMetrics.m_TexturesCount = m_Scene->m_TexturesBuffer.size();
+	m_RendererMetricsPanel.m_DevMetrics.m_ObjectsCount = m_CurrentScene->getMeshesBufferSize();
+	m_RendererMetricsPanel.m_DevMetrics.m_TrianglesCount = m_CurrentScene->getTrianglesBufferSize();
+	m_RendererMetricsPanel.m_DevMetrics.m_MaterialsCount = m_CurrentScene->getMaterialsBufferSize();
+	m_RendererMetricsPanel.m_DevMetrics.m_TexturesCount = m_CurrentScene->getTexturesBufferSize();
 
 	stbi_flip_vertically_on_write(true);
 
@@ -110,70 +88,78 @@ void EditorLayer::OnUIRender()
 		ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
 		if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
 		{
+			bool refreshrender = false;
 			if (ImGui::BeginTabItem("Renderer"))
 			{
-				static int renderer_mode = (int)m_Renderer.m_RendererSettings.RenderMode;
-				static int debug_view = (int)m_Renderer.m_RendererSettings.DebugMode;
+				//static int renderer_mode = (int)m_Renderer.m_RendererSettings.RenderMode;
+				//static int debug_view = (int)m_Renderer.m_RendererSettings.DebugMode;
 				ImGui::Text("Renderer mode:"); ImGui::SameLine();
-				if (ImGui::Combo("###Renderer mode", &renderer_mode, "Normal\0Debug")) {
-					m_Renderer.m_RendererSettings.RenderMode = (RendererSettings::RenderModes)renderer_mode; m_Renderer.clearAccumulation();
-				}
+				refreshrender |= ImGui::Combo("###Renderer mode", (int*)&m_Renderer.m_RendererSettings.RenderMode, "Normal\0Debug");
+				//{
+				//	m_Renderer.m_RendererSettings.RenderMode = (RendererSettings::RenderModes)renderer_mode; m_Renderer.clearAccumulation();
+				//}
 
-				if ((RendererSettings::RenderModes)renderer_mode == RendererSettings::RenderModes::NORMALMODE) {
-					if (ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight)))m_Renderer.clearAccumulation();
-					if (ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.enable_gamma_correction)))m_Renderer.clearAccumulation();
-					if (ImGui::Checkbox("Enable MIS", &(m_Renderer.m_RendererSettings.useMIS)))m_Renderer.clearAccumulation();
-					if (ImGui::Checkbox("Invert Normal Map reading", &(m_Renderer.m_RendererSettings.invert_normal_map)))m_Renderer.clearAccumulation();
-					if (ImGui::Checkbox("Tone mapping", &(m_Renderer.m_RendererSettings.enable_tone_mapping)))m_Renderer.clearAccumulation();
+				//NORMAL RENDER MODE MENU
+				if ((RendererSettings::RenderModes)m_Renderer.m_RendererSettings.RenderMode == RendererSettings::RenderModes::NORMALMODE) {
+					refreshrender |= (ImGui::Checkbox("Sunlight(ShadowRays)", &(m_Renderer.m_RendererSettings.enableSunlight)));
+					refreshrender |= (ImGui::Checkbox("Gamma correction(2.0)", &(m_Renderer.m_RendererSettings.enable_gamma_correction)));
+					refreshrender |= (ImGui::Checkbox("Enable MIS", &(m_Renderer.m_RendererSettings.useMIS)));
+					refreshrender |= (ImGui::Checkbox("Invert Normal Map reading", &(m_Renderer.m_RendererSettings.invert_normal_map)));
+					refreshrender |= (ImGui::Checkbox("Tone mapping", &(m_Renderer.m_RendererSettings.enable_tone_mapping)));
 					ImGui::Text("Ray bounce limit:"); ImGui::SameLine();
-					if (ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit)))m_Renderer.clearAccumulation();
+					refreshrender |= (ImGui::InputInt("###Ray bounce limit:", &(m_Renderer.m_RendererSettings.ray_bounce_limit)));
 					ImGui::Text("Max samples limit:"); ImGui::SameLine();
-					if (ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples)))m_Renderer.clearAccumulation();
+					refreshrender |= (ImGui::InputInt("###Max samples limit:", &(m_Renderer.m_RendererSettings.max_samples)));
 
-					if (ImGui::Checkbox("Use Material Override: ", &(m_Renderer.m_RendererSettings.UseMaterialOverride)))m_Renderer.clearAccumulation();
+					refreshrender |= (ImGui::Checkbox("Use Material Override: ", &(m_Renderer.m_RendererSettings.UseMaterialOverride)));
+
 					if (m_Renderer.m_RendererSettings.UseMaterialOverride) {
 						ImGui::Indent();
-						if (ImGui::ColorEdit3("Global albedo: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Albedo.x)))m_Renderer.clearAccumulation();
-						if (ImGui::SliderFloat("Global metallic: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Metallicity), 0, 1))m_Renderer.clearAccumulation();
-						if (ImGui::SliderFloat("Global reflectance: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Reflectance), 0, 1))m_Renderer.clearAccumulation();
-						if (ImGui::SliderFloat("Global roughness: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Roughness), 0, 1))m_Renderer.clearAccumulation();
+						refreshrender |= (ImGui::ColorEdit3("Global albedo: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Albedo.x)));
+						refreshrender |= (ImGui::SliderFloat("Global metallic: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Metallicity), 0, 1));
+						refreshrender |= (ImGui::SliderFloat("Global reflectance: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Reflectance), 0, 1));
+						refreshrender |= (ImGui::SliderFloat("Global roughness: ", &(m_Renderer.m_RendererSettings.OverrideMaterial.Roughness), 0, 1));
 						ImGui::Unindent();
 						ImGui::Separator();
 					}
 				}
 				else {//DEBUG MODE
 					ImGui::Text("Debug view:"); ImGui::SameLine();
-					if (ImGui::Combo("###Debug view", &debug_view, "Albedo\0Normals\0Barycentric\0UVs\0BVH"))
-					{
-						m_Renderer.m_RendererSettings.DebugMode = (RendererSettings::DebugModes)debug_view; m_Renderer.clearAccumulation();
-					}
+					refreshrender |= (ImGui::Combo("###Debug view", (int*)&m_Renderer.m_RendererSettings.DebugMode, "Albedo\0Normals\0Barycentric\0UVs\0BVH"));
+					//{
+					//	m_Renderer.m_RendererSettings.DebugMode = (RendererSettings::DebugModes)debug_view; m_Renderer.clearAccumulation();
+					//}
 				}
 				ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_Leaf);
-				if (ImGui::InputFloat3("Position", &(m_device_Camera->m_Position.x)))m_Renderer.clearAccumulation();
-				if (ImGui::InputFloat3("Direction", &(m_device_Camera->m_Forward_dir.x)))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Speed", &(m_device_Camera->m_movement_speed), 0, 10, "%.3f", ImGuiSliderFlags_Logarithmic))m_Renderer.clearAccumulation();
-				if (ImGui::SliderAngle("Field-Of-View(Degrees)", &(m_device_Camera->vfov_rad), 5, 120))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Focus Distance(m)", &(m_device_Camera->focus_dist), 0, 50, "%.3f", ImGuiSliderFlags_Logarithmic))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Defocus Angle(Cone)", &(m_device_Camera->defocus_angle), 0, 2))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Exposure", &(m_device_Camera->exposure), 0, 10))m_Renderer.clearAccumulation();
+				//refreshrender |= (ImGui::InputFloat3("Position", (m_ActiveCamera->getPositionPtr())));
+				//refreshrender |= (ImGui::InputFloat3("Direction", m_ActiveCamera->getLookDirPtr()));
+				refreshrender |= (ImGui::SliderFloat("Speed", (m_ActiveCamera->getMovementSpeedPtr()), 0, 10, "%.3f", ImGuiSliderFlags_Logarithmic));
+				refreshrender |= (ImGui::SliderAngle("Field-Of-View(Degrees)", m_ActiveCamera->getVerticalFOVPtr(), 5, 120));
+				refreshrender |= (ImGui::SliderFloat("Focus Distance(m)", m_ActiveCamera->getFocusDistancePtr(), 0, 50, "%.3f", ImGuiSliderFlags_Logarithmic));
+				refreshrender |= (ImGui::SliderFloat("Defocus Angle(Cone)", m_ActiveCamera->getDefocusConeAnglePtr(), 0, 2));
+				refreshrender |= (ImGui::SliderFloat("Exposure", m_ActiveCamera->getExposurePtr(), 0, 10));
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem("Scene"))
 			{
 				ImGui::CollapsingHeader("Sun light", ImGuiTreeNodeFlags_Leaf);
-				if (ImGui::ColorEdit3("Sunlight color", (float*)&(m_Renderer.m_RendererSettings.sunlight_color)))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Sunlight size", &(m_Renderer.m_RendererSettings.sun_size), 0, 5))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10))m_Renderer.clearAccumulation();
-				if (ImGui::SliderAngle("Sunlight Y rotation", &(m_Renderer.m_RendererSettings.sunlight_dir.x)))m_Renderer.clearAccumulation();
-				if (ImGui::SliderAngle("Sunlight altitude", &(m_Renderer.m_RendererSettings.sunlight_dir.y), 0, 90))m_Renderer.clearAccumulation();
+				refreshrender |= (ImGui::ColorEdit3("Sunlight color", &(m_Renderer.m_RendererSettings.sunlight_color.x)));
+				refreshrender |= (ImGui::SliderFloat("Sunlight size", &(m_Renderer.m_RendererSettings.sun_size), 0, 5));
+				refreshrender |= (ImGui::SliderFloat("Sunlight intensity", &(m_Renderer.m_RendererSettings.sunlight_intensity), 0, 10));
+				refreshrender |= (ImGui::SliderAngle("Sunlight Y rotation", &(m_Renderer.m_RendererSettings.sunlight_dir.x)));
+				refreshrender |= (ImGui::SliderAngle("Sunlight altitude", &(m_Renderer.m_RendererSettings.sunlight_dir.y), 0, 90));
 				ImGui::CollapsingHeader("Sky light", ImGuiTreeNodeFlags_Leaf);
-				if (ImGui::ColorEdit3("Sky color", (float*)&(m_Renderer.m_RendererSettings.sky_color)))m_Renderer.clearAccumulation();
-				if (ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 10))m_Renderer.clearAccumulation();
+				refreshrender |= (ImGui::ColorEdit3("Sky color", &(m_Renderer.m_RendererSettings.sky_color.x)));
+				refreshrender |= (ImGui::SliderFloat("Sky intensity", &(m_Renderer.m_RendererSettings.sky_intensity), 0, 10));
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
+			if (refreshrender) {
+				m_Renderer.clearAccumulation();
+				m_ActiveCamera->updateDevice();
+				m_Renderer.updateRendererConfig(m_Renderer.m_RendererSettings);
+			};
 		}
-
 		ImGui::End();
 	}
 
@@ -182,15 +168,15 @@ void EditorLayer::OnUIRender()
 
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
 
-	if (m_Renderer.GetRenderTargetImage_name() != NULL)
-		ImGui::Image((void*)(uintptr_t)m_Renderer.GetRenderTargetImage_name(),
-			ImVec2(m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight()), { 0,1 }, { 1,0 });
+	if (m_Renderer.getRenderTargetImage_name() != NULL)
+		ImGui::Image((void*)(uintptr_t)m_Renderer.getRenderTargetImage_name(),
+			ImVec2(m_Renderer.getFrameWidth(), m_Renderer.getFrameHeight()), { 0,1 }, { 1,0 });
 
 	ImGui::BeginChild("statusbar", ImVec2(ImGui::GetContentRegionAvail().x, 14), 0);
 
 	//ImGui::SetCursorScreenPos({ ImGui::GetCursorScreenPos().x + 5, ImGui::GetCursorScreenPos().y + 4 });
 
-	ImGui::Text("dims: %d x %d px", m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight());
+	ImGui::Text("dims: %d x %d px", m_Renderer.getFrameWidth(), m_Renderer.getFrameHeight());
 	ImGui::SameLine();
 	ImGui::Text(" | RGBA32F");
 	ImGui::EndChild();
@@ -204,19 +190,19 @@ void EditorLayer::OnUIRender()
 
 	static int selection_mask = (1 << 2);
 	static int node_clicked = 0;
-	Mesh& selected_mesh = m_Scene->m_MeshesBuffer[node_clicked];
 	static bool savesuccess = false;
 
 	{
+		Mesh selected_mesh = m_CurrentScene->getMesh(node_clicked);
 		ImGui::Begin("Properties");
 		if (ImGui::Button("Save frame as PNG"))
 		{
-			std::vector<GLubyte> frame_data(m_Renderer.getBufferWidth() * m_Renderer.getBufferHeight() * 4);//RGBA8
-			glBindTexture(GL_TEXTURE_2D, m_Renderer.GetRenderTargetImage_name());
+			std::vector<GLubyte> frame_data(m_Renderer.getFrameWidth() * m_Renderer.getFrameHeight() * 4);//RGBA8
+			glBindTexture(GL_TEXTURE_2D, m_Renderer.getRenderTargetImage_name());
 			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_data.data());
 			glBindTexture(GL_TEXTURE_2D, 0);
 
-			savesuccess = saveImage("image", m_Renderer.getBufferWidth(), m_Renderer.getBufferHeight(), frame_data.data());
+			savesuccess = saveImage("image", m_Renderer.getFrameWidth(), m_Renderer.getFrameHeight(), frame_data.data());
 			ImGui::OpenPopup("savemsg");
 		}
 		ImGui::Separator();
@@ -239,7 +225,7 @@ void EditorLayer::OnUIRender()
 	   // 'node_clicked' is temporary storage of what node we have clicked to process selection at the end
 	   /// of the loop. May be a pointer to your own node type, etc.
 
-		for (int i = 0; i < m_Scene->m_MeshesBuffer.size(); i++)
+		for (int i = 0; i < m_CurrentScene->getMeshesBufferSize(); i++)
 		{
 			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 			// Disable the default "open on single-click behavior" + set Selected flag according to our selection.
@@ -250,7 +236,7 @@ void EditorLayer::OnUIRender()
 				node_flags |= ImGuiTreeNodeFlags_Selected;
 
 			node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
-			ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, m_Scene->m_MeshesBuffer[i].Name);
+			ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, m_CurrentScene->getMesh(i).Name);
 			if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
 				node_clicked = i;
 		}
@@ -270,8 +256,8 @@ void EditorLayer::OnUIRender()
 	ImGui::End();
 
 	if (vpdims.x > 14)vpdims.y -= 12;//TODO: make this sensible var; not a constant
-	m_Renderer.ResizeBuffer(uint32_t(vpdims.x), uint32_t(vpdims.y));
-	m_Renderer.Render(m_device_Camera, (*m_Scene), &m_LastRenderTime_ms);//make lastrendertime a member var of renderer and access it?
+	m_Renderer.resizeResolution(uint32_t(vpdims.x), uint32_t(vpdims.y));
+	m_Renderer.renderFrame(&m_LastRenderTime_ms);//make lastrendertime a member var of renderer and access it?
 
 	m_LastFrameTime_ms = timer.ElapsedMillis();
 
@@ -280,7 +266,7 @@ void EditorLayer::OnUIRender()
 }
 //TODO: make proper Cuda C++ interface and wrappers
 //general purpose input handler
-bool processInput(GLFWwindow* window, Camera* cam, float delta)
+bool processInput(GLFWwindow* window, DustRayTracer::HostCamera* cam, float delta)
 {
 	bool has_moved = false;
 	float sensitivity = 1;
@@ -379,11 +365,13 @@ void EditorLayer::OnUpdate(float ts)
 {
 	//m_LastApplicationFrameTime = ts;
 
-	if (processInput(Application::Get().GetWindowHandle(), m_device_Camera, ts))
-		m_Renderer.clearAccumulation();
+	if (processInput(Application::Get().GetWindowHandle(), m_ActiveCamera, ts)) {
+		m_Renderer.clearAccumulation(); m_ActiveCamera->updateDevice();
+	}
 }
 
 void EditorLayer::OnDetach()
 {
-	delete m_device_Camera;
+	printf("detaching app\n");
+	m_CurrentScene->Cleanup();
 }

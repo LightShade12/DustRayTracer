@@ -4,7 +4,6 @@
 #include "Ray.cuh"
 #include <float.h>
 
-
 struct Bounds3f
 {
 	Bounds3f() = default;

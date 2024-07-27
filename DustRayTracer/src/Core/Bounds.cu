@@ -14,7 +14,6 @@ float3 Bounds3f::getCentroid() const
 	return 0.5f * pMin + 0.5f * pMax;
 }
 
-//TODO: make it return a float not a 64byte struct
 __device__ float Bounds3f::intersect(const Ray& ray) const
 {
 	float3 t0 = (pMin - ray.getOrigin()) * ray.getInvDir();
@@ -36,6 +35,5 @@ __device__ float Bounds3f::intersect(const Ray& ray) const
 		return -1; // No intersection
 	}
 
-	//payload.hit_distance = tenter;
 	return tenter;
 }

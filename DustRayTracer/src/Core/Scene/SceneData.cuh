@@ -1,8 +1,13 @@
 #pragma once
-#include "RendererSettings.h"
+#include "RendererSettings.hpp"
+//#include "Camera.hpp"
+//Only for internal render call consumption
 
+namespace DustRayTracer {
+	struct CameraData;
+	class MaterialData;
+}
 class Texture;
-class Material;
 class Triangle;
 class Mesh;
 class BVHNode;
@@ -15,12 +20,12 @@ struct SceneData
 		:DeviceTextureBufferPtr(device_texture_buffer_ptr), DeviceTextureBufferSize(device_texture_buffer_size) {};
 
 	const Texture* DeviceTextureBufferPtr = nullptr;
-	const Material* DeviceMaterialBufferPtr = nullptr;
+	const DustRayTracer::MaterialData* DeviceMaterialBufferPtr = nullptr;
 	const Triangle* DevicePrimitivesBuffer = nullptr;
 	const unsigned int* DeviceBVHPrimitiveIndicesBuffer = nullptr;
 	const int* DeviceMeshLightsBufferPtr = nullptr;
 	const Mesh* DeviceMeshBufferPtr = nullptr;
-	const BVHNode* DeviceBVHTreeRootPtr = nullptr;
+	DustRayTracer::CameraData* DeviceCameraBufferPtr = nullptr;
 	const BVHNode* DeviceBVHNodesBuffer = nullptr;
 
 	RendererSettings RenderSettings;
@@ -32,4 +37,5 @@ struct SceneData
 	size_t DevicePrimitivesBufferSize = 0;
 	size_t DeviceBVHPrimitiveIndicesBufferSize = 0;
 	size_t DeviceMeshLightsBufferSize = 0;
+	size_t DeviceCameraBufferSize = 0;
 };

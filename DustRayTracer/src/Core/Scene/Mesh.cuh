@@ -1,16 +1,11 @@
 #pragma once
-#include "Triangle.cuh"
-
-#include<vector_types.h>
-
-#include <vector>
 
 class Mesh
 {
 public:
 	Mesh() = default;
 
-	char Name[32];
+	char Name[32] = "unnamed";
 	int* MaterialsIdx = nullptr;
 	int MaterialCount = 0;
 	int m_primitives_offset = -1;

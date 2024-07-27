@@ -1,8 +1,7 @@
 #include "RendererMetricsPanel.hpp"
 
 #include "Editor/Application/Application.hpp"
-#include "Core/Renderer.hpp"
-#include "Core/Scene/Camera.cuh"
+#include "Core/Public/DustRayTracer.hpp"
 
 #include <imgui.h>
 
@@ -44,7 +43,7 @@ void RendererMetricsPanel::OnUIRender(float last_frame_time_ms, float last_rende
 
 	//TODO: this is quite "regarded"
 	//if moving/rendering
-	if (m_Renderer->getSampleCount() < m_Renderer->m_RendererSettings.max_samples)
+	if (m_Renderer->getSampleIndex() < m_Renderer->m_RendererSettings.max_samples)
 	{
 		//if first frame/moving after render complete
 		if (skip) { skip = false; renderfreqavg = 0; framecounter = 0; rendercumulation = 0; }
@@ -58,7 +57,7 @@ void RendererMetricsPanel::OnUIRender(float last_frame_time_ms, float last_rende
 			renderfreqmax = fmaxf(renderfreq, renderfreqmax);
 		}
 	}
-	else if (m_Renderer->getSampleCount() == 0) { skip = true; printf("sample 0"); }
+	else if (m_Renderer->getSampleIndex() == 0) { skip = true; printf("sample 0"); }
 	else
 	{//render complete/not moving; stationary display
 		skip = true;
@@ -119,20 +118,20 @@ void RendererMetricsPanel::OnUIRender(float last_frame_time_ms, float last_rende
 	ImGui::TableSetColumnIndex(0);
 	ImGui::Text("Samples");
 	ImGui::TableSetColumnIndex(1);
-	ImGui::Text("%d", m_Renderer->getSampleCount());
+	ImGui::Text("%d", m_Renderer->getSampleIndex());
 
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex(0);
 	ImGui::Text("View position");
 	ImGui::TableSetColumnIndex(1);
-	float3 pos = DeviceCamera->GetPosition();
+	glm::vec3 pos = DeviceCamera->getPosition();
 	ImGui::Text("x: %.3f y: %.3f z: %.3f", pos.x, pos.y, pos.z);
 
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex(0);
 	ImGui::Text("View direction");
 	ImGui::TableSetColumnIndex(1);
-	float3 fdir = DeviceCamera->m_Forward_dir;
+	glm::vec3 fdir = DeviceCamera->getLookDir();
 	ImGui::Text("x: %.3f y: %.3f z: %.3f", fdir.x, fdir.y, fdir.z);
 
 	ImGui::EndTable();

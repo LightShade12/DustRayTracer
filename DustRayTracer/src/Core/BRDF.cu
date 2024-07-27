@@ -1,6 +1,6 @@
 #include "BRDF.cuh"
 
-#include "Scene/Texture.cuh"
+#include "Scene/Texture.hpp"
 #include "Scene/Triangle.cuh"
 #include "Scene/Mesh.cuh"
 #include "BVH/BVHNode.cuh"

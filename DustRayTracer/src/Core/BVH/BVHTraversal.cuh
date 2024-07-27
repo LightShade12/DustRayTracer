@@ -13,6 +13,8 @@
 //use grouped float structs instead of separate floats when possible
 //look for more early outs in traversal
 
+//TODO: swap bbox centre ray spawn intersections with conditionals
+
 //Traversal
 __device__ void traverseBVH(const Ray& ray, const int root_node_idx, HitPayload* closest_hitpayload, const SceneData* scenedata) {
 	if (root_node_idx < 0) return;//empty scene

@@ -2,14 +2,14 @@
 #include "Core/Scene/triangle.cuh"
 #include "Core/HitPayload.cuh"
 #include "Core/Ray.cuh"
-#include "Core/Scene/Mesh.cuh"
+#include "Core/Scene/Scene.cuh"
 #include "Core/CudaMath/helper_math.cuh"
 
 __device__ bool AnyHit(const Ray& ray, const SceneData* scene_data, const ShortHitPayload* in_payload)
 {
 	const Triangle& triangle = scene_data->DevicePrimitivesBuffer[in_payload->triangle_idx];
 
-	const Material* material = &(scene_data->DeviceMaterialBufferPtr[triangle.material_idx]);
+	const DustRayTracer::MaterialData* material = &(scene_data->DeviceMaterialBufferPtr[triangle.material_idx]);
 
 	if (material->AlbedoTextureIndex < 0)
 		return true;
