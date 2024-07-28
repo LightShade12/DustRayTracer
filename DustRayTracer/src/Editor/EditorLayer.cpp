@@ -5,7 +5,7 @@
 #include "Theme/EditorTheme.hpp"
 #include "Application/Application.hpp"
 #include "Editor/Common/Timer.hpp"
-#include "Editor/Importer.h"
+#include "Editor/Importer.hpp"
 
 #include "Core/Scene/HostScene.hpp"
 //#include "Core/Scene/Camera.cuh"
@@ -163,8 +163,8 @@ void EditorLayer::OnUIRender()
 		ImGui::End();
 	}
 
-	ImGui::SetNextWindowSize(ImVec2(960 + 13, 500 + 45), ImGuiCond_Once);
 	ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+	ImGui::SetNextWindowSize(ImVec2(640 + 13, 360 + 45));
 
 	ImVec2 vpdims = ImGui::GetContentRegionAvail();
 
@@ -255,7 +255,8 @@ void EditorLayer::OnUIRender()
 	};
 	ImGui::End();
 
-	if (vpdims.x > 14)vpdims.y -= 12;//TODO: make this sensible var; not a constant
+	if (vpdims.y > 14)vpdims.y -= 12;//TODO: make this sensible var; not a constant
+	if (vpdims.y < 5)vpdims.y = 10;
 	m_Renderer.resizeResolution(uint32_t(vpdims.x), uint32_t(vpdims.y));
 	m_Renderer.renderFrame(&m_LastRenderTime_ms);//make lastrendertime a member var of renderer and access it?
 

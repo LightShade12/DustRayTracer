@@ -7,7 +7,7 @@ public:
 	Texture() = default;
 	Texture(const char* filepath);
 	Texture(const unsigned char* data, size_t bytesize);
-	void getPixelsData(unsigned char* pixels) const;
+	void getPixelsData(unsigned char** pixels) const;
 	__device__ float3 getPixel(float2 UV, bool noncolor = false) const;
 	__device__ float getAlpha(float2 UV) const;
 	void Cleanup();

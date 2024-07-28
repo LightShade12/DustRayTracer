@@ -98,7 +98,7 @@ MaterialManagerPanel::DRTThumbnail MaterialManagerPanel::makeThumbnail(const Tex
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	unsigned char* data = nullptr;
-	drt_texture.getPixelsData(data);
+	drt_texture.getPixelsData(&data);
 
 	if (drt_texture.componentCount == 4)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, drt_texture.width, drt_texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);

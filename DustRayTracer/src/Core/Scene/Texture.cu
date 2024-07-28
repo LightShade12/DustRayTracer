@@ -29,13 +29,13 @@ Texture::Texture(const unsigned char* data, size_t bytesize)
 	stbi_image_free(imgdata);
 }
 
-void Texture::getPixelsData(unsigned char* pixels) const
+void Texture::getPixelsData(unsigned char** pixels) const
 {
 	size_t imagebuffersize = sizeof(unsigned char) * width * height * componentCount;
-	pixels = (unsigned char*)malloc(imagebuffersize);
+	*pixels = (unsigned char*)malloc(imagebuffersize);
 
 	cudaDeviceSynchronize();
-	cudaMemcpy(pixels, d_data, imagebuffersize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(*pixels, d_data, imagebuffersize, cudaMemcpyDeviceToHost);
 	checkCudaErrors(cudaGetLastError());
 }
 

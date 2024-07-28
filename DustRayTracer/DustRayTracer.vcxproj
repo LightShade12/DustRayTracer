@@ -141,7 +141,7 @@
   <ItemGroup>
     <ClInclude Include="src\Core\Scene\Scene.cuh" />
     <ClInclude Include="src\Core\Scene\SceneData.cuh" />
-    <ClInclude Include="src\Editor\Importer.h" />
+    <ClInclude Include="src\Editor\Importer.hpp" />
     <ClInclude Include="src\Core\Public\DustRayTracer.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\Core\BRDF.cuh" />

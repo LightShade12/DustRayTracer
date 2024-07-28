@@ -1,4 +1,4 @@
-#include "Importer.h"
+#include "Importer.hpp"
 #include "Common/dbg_macros.hpp"
 
 #include <tiny_gltf.h>

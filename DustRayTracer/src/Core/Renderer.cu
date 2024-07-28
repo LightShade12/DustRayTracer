@@ -107,9 +107,9 @@ namespace DustRayTracer {
 		cudaEventRecord(stop);
 		checkCudaErrors(cudaEventSynchronize(stop));
 
-		cudaEventElapsedTime(delta, start, stop);
-		//checkCudaErrors(cudaDeviceSynchronize());
-		//----
+	cudaEventElapsedTime(delta, start, stop);
+	checkCudaErrors(cudaDeviceSynchronize());
+	//----
 
 		//post render cuda---------------------------------------------------------------------------------
 		cudaDestroySurfaceObject(render_target_texture_surface_object);
