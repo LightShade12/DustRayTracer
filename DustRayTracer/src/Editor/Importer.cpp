@@ -62,7 +62,7 @@ bool Importer::loadMaterials(const tinygltf::Model& model)
 		printToConsole("loading material: %s\n", gltf_material.name.c_str());
 		tinygltf::PbrMetallicRoughness PBR_data = gltf_material.pbrMetallicRoughness;
 		memset(drt_material.getNamePtr(), 0, sizeof(drt_material.getName()));
-		strncpy(drt_material.getNamePtr(), gltf_material.name.c_str(), gltf_material.name.size());
+		strncpy(drt_material.getNamePtr(), gltf_material.name.c_str(), sizeof(drt_material.getName()));
 		drt_material.getNamePtr()[gltf_material.name.size()] = '\0';
 		drt_material.setAlbedo(make_float3(PBR_data.baseColorFactor[0], PBR_data.baseColorFactor[1], PBR_data.baseColorFactor[2]));//We just use RGB material albedo for now
 		drt_material.setEmissiveColor(make_float3(gltf_material.emissiveFactor[0], gltf_material.emissiveFactor[1], gltf_material.emissiveFactor[2]));
@@ -106,7 +106,7 @@ bool Importer::loadTextures(const tinygltf::Model& model, bool is_binary)
 			printToConsole("Image data null\n"); return false;
 		}
 		memset(drt_texture.Name, 0, sizeof(drt_texture.Name));
-		strncpy(drt_texture.Name, gltf_image.name.c_str(), gltf_image.name.size());
+		strncpy(drt_texture.Name, gltf_image.name.c_str(), sizeof(drt_texture.Name));
 		drt_texture.Name[gltf_image.name.size()] = '\0';
 		drt_texture.ChannelBitDepth = gltf_image.bits;
 		m_WorkingScene->addTexture(drt_texture);//whitespace will be incorrectly parsed
@@ -215,7 +215,7 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 			float3 cpos = { gltf_node.translation[0] ,gltf_node.translation[1] ,gltf_node.translation[2] };
 			DustRayTracer::HostCamera drt_camera;
 			memset(drt_camera.getNamePtr(), 0, sizeof(drt_camera.getName()));
-			strncpy(drt_camera.getNamePtr(), gltf_camera.name.c_str(), gltf_camera.name.size());
+			strncpy(drt_camera.getNamePtr(), gltf_camera.name.c_str(), sizeof(drt_camera.getHostCamera().name));
 			drt_camera.getNamePtr()[gltf_camera.name.size()] = '\0';
 
 			drt_camera.setPosition(glm::vec3(cpos.x, cpos.y, cpos.z));
@@ -240,7 +240,7 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 
 		Mesh drt_mesh;
 		memset(drt_mesh.Name, 0, sizeof(drt_mesh.Name));
-		strncpy(drt_mesh.Name, gltf_mesh.name.c_str(), gltf_mesh.name.size());
+		strncpy(drt_mesh.Name, gltf_mesh.name.c_str(), sizeof(drt_mesh.Name));
 		drt_mesh.Name[gltf_mesh.name.size()] = '\0';
 		printToConsole("\nprocessing mesh:%s\n", gltf_mesh.name.c_str());
 

@@ -46,7 +46,7 @@ void EditorLayer::OnAttach()
 	m_CurrentScene = std::make_shared<DustRayTracer::HostScene>();
 	m_CurrentScene->initialize();
 	Importer importer;
-	importer.loadGLTF("../models/test/cornell_box_v2.glb", *m_CurrentScene);
+	importer.loadGLTF("../models/minecraft/mc_fort.glb", *m_CurrentScene);
 
 	m_Renderer.initialize();
 	//m_Renderer.updateScene(*m_CurrentScene);
