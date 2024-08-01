@@ -2,6 +2,7 @@
 #include "Core/Kernel/TraceRay.cuh"
 
 #include "Core/BRDF.cuh"
+#include "Core/PrincipledBSDF.cuh"
 #include "Core/ImportanceSampler.cuh"
 
 #include "Core/CudaMath/physical_units.hpp"
@@ -50,9 +51,8 @@ __device__ float3 clamp_output(float3 c)
 		return clamp(c, 0, 1000);
 }
 
-__device__ float3 normalMap(const DustRayTracer::MaterialData& current_material,
-	const Triangle* triangle, float3 normal, const SceneData& scene_data,
-	float2 texture_sample_uv) {
+__device__ Matrix3x3_d getTangentSpaceTBN(float3 N, const Triangle* triangle)
+{
 	float3 edge0 = triangle->vertex1.position - triangle->vertex0.position;
 	float3 edge1 = triangle->vertex2.position - triangle->vertex0.position;
 	float2 deltaUV0 = triangle->vertex1.UV - triangle->vertex0.UV;
@@ -61,25 +61,36 @@ __device__ float3 normalMap(const DustRayTracer::MaterialData& current_material,
 	float3 tangent = invDet * (deltaUV1.y * edge0 - deltaUV0.y * edge1);
 	//float3 bitangent = invDet * (-deltaUV1.x * edge0 + deltaUV0.x * edge1);
 	float3 T = normalize(tangent);
-	float3 N = normal;
 	//T - normalize(T - dot(T, N) * N);
 	float3 B = normalize(cross(N, T));
 
 	Matrix3x3_d TBN(T, B, N);
-	TBN = TBN.transpose();
+	return TBN;
+}
+
+__device__ Matrix3x3_d getInverseTangentSpaceTBN(float3 N, const Triangle* triangle) {
+	Matrix3x3_d tbn = getTangentSpaceTBN(N, triangle);
+	return tbn.transpose();
+}
+
+__device__ float3 normalMap(const DustRayTracer::MaterialData& current_material,
+	const Triangle* triangle, float3 normal, const SceneData& scene_data,
+	float2 texture_sample_uv) {
+	Matrix3x3_d TBN = getInverseTangentSpaceTBN(normal, triangle);
 
 	float3 alteredNormal = (scene_data.DeviceTextureBufferPtr[current_material.NormalTextureIndex].getPixel(texture_sample_uv, true) * 2 - 1);
 	alteredNormal.x *= current_material.NormalMapScale;
 	alteredNormal.y *= current_material.NormalMapScale * (scene_data.RenderSettings.invert_normal_map) ? -1 : 1;
 	alteredNormal = normalize(alteredNormal);
 	alteredNormal = normalize(TBN * alteredNormal);
+
 	return alteredNormal;
 }
 
 //multiply radiance with throughput
 __device__ void getSunlight(float3 position, float3 view_direction, float3 normal,
 	float3 ubo_sun_direction, float3 ubo_sun_color, float3 albedo,
-	float roughness, float3  f0, float metallicity,
+	float roughness, float3  f0, float metallicity, float trans, float ior,
 	const DustRayTracer::MaterialData& material, const SceneData& scene_data, uint32_t& seed, float3& out_radiance) {
 	//shadow ray for sunlight
 
@@ -88,14 +99,15 @@ __device__ void getSunlight(float3 position, float3 view_direction, float3 norma
 	if (!rayTest(sunray, &scene_data))
 		out_radiance = ubo_sun_color *
 		BRDF(normalize(sunray.getDirection()),
-			view_direction, normal, scene_data, albedo, roughness, f0, metallicity)
+			view_direction, normal, scene_data, albedo,
+			roughness, f0, metallicity, trans, ior)
 		/** fmaxf(0, dot(normalize(sunpos), normal)*/;
 }
 
 //multiply radiance by throughput
 __device__ void getDirectIllumination(float3 view_direction, float3 position, float3 normal,
 	const DustRayTracer::MaterialData& material, float3 ubo_sun_color, float3 ubo_sun_direction, float3 albedo,
-	float roughness, float3  f0, float metallicity, const Triangle* hit_triangle,
+	float roughness, float3  f0, float metallicity, float trans, float ior, const Triangle* hit_triangle,
 	float3& out_radiance, const SceneData& scene_data, uint32_t& seed, bool specular)
 {
 	//Direct light sampling----------------------------------------------------
@@ -139,7 +151,7 @@ __device__ void getDirectIllumination(float3 view_direction, float3 position, fl
 				float3 Le = (mat.EmissionTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[mat.EmissionTextureIndex].getPixel(texcoord) * mat.EmissiveScale : (mat.EmissiveColor * mat.EmissiveScale);
 
 				float3 brdf_nee = BRDF(shadow_ray.getDirection(), view_direction,
-					normal, scene_data, albedo, roughness, f0, metallicity);
+					normal, scene_data, albedo, roughness, f0, metallicity, trans, ior);
 
 				float reciever_cos_theta_nee = fmaxf(0, dot(shadow_ray.getDirection(), normal));
 
@@ -169,7 +181,7 @@ __device__ void getDirectIllumination(float3 view_direction, float3 position, fl
 	{
 		float3 direct_sun_radiance = make_float3(0);
 		getSunlight(position, view_direction, normal, ubo_sun_direction,
-			ubo_sun_color, albedo, roughness, f0, metallicity,
+			ubo_sun_color, albedo, roughness, f0, metallicity, trans, ior,
 			material, scene_data, seed, direct_sun_radiance);
 		out_radiance += direct_sun_radiance;
 	}
@@ -228,10 +240,12 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 		float3 albedo = (current_material->AlbedoTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->AlbedoTextureIndex].getPixel(texture_sample_uv) : current_material->Albedo;
 		float roughness = (current_material->RoughnessTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->RoughnessTextureIndex].getPixel(texture_sample_uv).y * current_material->Roughness : current_material->Roughness;
 		float metallicity = (current_material->RoughnessTextureIndex >= 0) ? scene_data.DeviceTextureBufferPtr[current_material->RoughnessTextureIndex].getPixel(texture_sample_uv).z * current_material->Metallicity : current_material->Metallicity;
+		float transmission = current_material->transmission;
+		float IOR = current_material->IOR;
+
 		float3 F0 = make_float3(0.16 * (current_material->Reflectance * current_material->Reflectance));//f0=0.04 for most mats
 		F0 = lerp(F0, albedo, metallicity);
 		//--------------------
-
 		//TODO: fix smooth normals and triangle face normal situation
 		//smooth shading
 		payload.world_normal = normalize(payload.UVW.x * hit_triangle->vertex0.normal + payload.UVW.y * hit_triangle->vertex1.normal + payload.UVW.z * hit_triangle->vertex2.normal);
@@ -272,7 +286,7 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		getDirectIllumination(viewdir, next_ray_origin, payload.world_normal,
 			*current_material, suncol, sunpos,
-			albedo, roughness, F0, metallicity,
+			albedo, roughness, F0, metallicity, transmission, IOR,
 			hit_triangle, direct_radiance, scene_data,
 			seed, importancedata.specular);
 
@@ -280,7 +294,8 @@ __device__ float3 rayGen(uint32_t x, uint32_t y, uint32_t max_x, uint32_t max_y,
 
 		//prepare throughput for next bounce
 		cumulative_incoming_light_throughput *=
-			(BRDF(lightdir, viewdir, payload.world_normal, scene_data, albedo, roughness, F0, metallicity)
+			(BRDF(lightdir, viewdir, payload.world_normal, scene_data, albedo,
+				roughness, F0, metallicity, transmission, IOR)
 				/** fmaxf(0, dot(lightdir, payload.world_normal)))*/ / pdf_brdf_brdf);
 		cumulative_incoming_light_throughput = clamp_output(cumulative_incoming_light_throughput);
 

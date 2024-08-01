@@ -23,12 +23,12 @@ inline vec3 refract(const vec3& uv, const vec3& n, double etai_over_etat) {
 	return r_out_perp + r_out_parallel;
 }
 */
-__device__ float3 refract(const float3& uv, const float3& n, float etai_over_etat)
+__device__ float3 refract(float3 i, float3 n, float eta)
 {
-	float cos_theta = fmin(dot((-1.f * uv), n), 1.0f);
-	float3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
-	float3 r_out_parallel = -sqrt(fabs(1.0f - dot(r_out_perp, r_out_perp))) * n;
-	return r_out_perp + r_out_parallel;
+	float cosi = dot(-i, n);
+	float cost2 = 1.0f - eta * eta * (1.0f - cosi * cosi);
+	float3 t = eta * i + ((eta * cosi - sqrt(abs(cost2))) * n);
+	return t * (cost2 > 0);
 }
 
 //Schlick fresnel

@@ -120,6 +120,7 @@
     <ClInclude Include="src\Editor\Importer.hpp" />
     <ClInclude Include="src\Core\Scene\SceneData.cuh" />
     <ClInclude Include="src\Core\Scene\Scene.cuh" />
+    <ClInclude Include="src\Core\PrincipledBSDF.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Editor\Application\private\Application.cpp">
@@ -162,6 +163,7 @@
     <CudaCompile Include="src\Core\CudaMath\Random.cu" />
     <CudaCompile Include="src\Core\BRDF.cu" />
     <CudaCompile Include="src\Core\ImportanceSampler.cu" />
+    <CudaCompile Include="src\Core\PrincipledBSDF.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DustRayTracer.rc" />

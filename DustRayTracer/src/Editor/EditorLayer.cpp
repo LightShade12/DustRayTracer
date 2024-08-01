@@ -39,17 +39,12 @@ void EditorLayer::OnAttach()
 	ConsoleLogs.push_back("OPENGL 4.6");
 
 	//------------------------------------------------------------------------
-	//m_CurrentScene->loadGLTFmodel("../models/minecraft/mc_fort.glb", &m_device_Camera);
-	//m_CurrentScene->loadGLTFmodel("../models/test/emissive_test.glb", &m_device_Camera);
-	//m_CurrentScene->loadGLTFmodel("../models/test/feature_map.glb", &m_device_Camera);
-
 	m_CurrentScene = std::make_shared<DustRayTracer::HostScene>();
 	m_CurrentScene->initialize();
 	Importer importer;
-	importer.loadGLTF("../models/minecraft/mc_fort.glb", *m_CurrentScene);
+	importer.loadGLTF("../models/test/refract_test.glb", *m_CurrentScene);
 
 	m_Renderer.initialize();
-	//m_Renderer.updateScene(*m_CurrentScene);
 
 	BVHBuilder bvhbuilder;
 	bvhbuilder.m_TargetLeafPrimitivesCount = 8;

@@ -21,12 +21,14 @@ namespace DustRayTracer {
 		float Reflectance = 0.5;// default: F0=0.16
 		float Metallicity = 0;
 		float Roughness = 0.8f;
+		float IOR = 1.5;
+		float transmission = 0;
 		float NormalMapScale = 1.0f;
 	};
 	class HostMaterial {
 	public:
 		HostMaterial() = default;
-		HostMaterial(MaterialData* device_material_data);
+		explicit HostMaterial(MaterialData* device_material_data);
 
 		void updateDevice();
 		MaterialData* getDeviceMaterialData() { return m_DeviceMaterialData; };
@@ -57,6 +59,14 @@ namespace DustRayTracer {
 		void setRoughness(float roughness) { m_HostMaterialData.Roughness = roughness; };
 		float getRoughness() const { return m_HostMaterialData.Roughness; };
 		float* getRoughnessPtr() { return &(m_HostMaterialData.Roughness); };
+
+		void   setIOR(float IOR) { m_HostMaterialData.IOR = IOR; };
+		float  getIOR() const { return m_HostMaterialData.IOR; };
+		float* getIORPtr() { return &(m_HostMaterialData.IOR); };
+
+		void   setTransmission(float trans) { m_HostMaterialData.transmission = trans; };
+		float  getTransmission() const { return m_HostMaterialData.transmission; };
+		float* getTransmissionPtr() { return &(m_HostMaterialData.transmission); };
 
 		void setNormalMapScale(float normalMapScale) { m_HostMaterialData.NormalMapScale = normalMapScale; };
 		float getNormalMapScale() const { return m_HostMaterialData.NormalMapScale; };

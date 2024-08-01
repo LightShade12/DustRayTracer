@@ -68,6 +68,8 @@ bool MaterialManagerPanel::OnUIRender()
 	refreshRender |= ImGui::SliderFloat("Emission scale", selected_material.getEmissiveScalePtr(), 0, 50);
 	refreshRender |= ImGui::SliderFloat("Metallicity", selected_material.getMetallicityPtr(), 0, 1);
 	refreshRender |= ImGui::SliderFloat("Reflectance", selected_material.getReflectancePtr(), 0, 1);
+	refreshRender |= ImGui::SliderFloat("Transmission", selected_material.getTransmissionPtr(), 0, 1);
+	refreshRender |= ImGui::SliderFloat("IOR", selected_material.getIORPtr(), 1, 2);
 	refreshRender |= ImGui::SliderFloat("Roughness", selected_material.getRoughnessPtr(), 0, 1);
 	refreshRender |= ImGui::SliderFloat("Normal scale", selected_material.getNormalMapScalePtr(), 0, 2);
 

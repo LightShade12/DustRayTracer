@@ -7,6 +7,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include <algorithm>
 #include <iostream>
 
 static std::string GetFilePathExtension(const std::string& FileName) {
@@ -73,6 +74,13 @@ bool Importer::loadMaterials(const tinygltf::Model& model)
 		if (gltf_material.emissiveTexture.index >= 0)drt_material.setEmissionTextureIndex(model.textures[gltf_material.emissiveTexture.index].source);
 		drt_material.setMetallicity((PBR_data.metallicRoughnessTexture.index >= 0) ? 1 : PBR_data.metallicFactor);
 		drt_material.setRoughness((PBR_data.metallicRoughnessTexture.index >= 0) ? 0.6f : PBR_data.roughnessFactor);
+
+		if (gltf_material.extensions.find("KHR_materials_transmission") != gltf_material.extensions.end()) {
+			drt_material.setTransmission(gltf_material.extensions["KHR_materials_transmission"].Get("transmissionFactor").GetNumberAsDouble());
+		};
+		if (gltf_material.extensions.find("KHR_materials_ior") != gltf_material.extensions.end()) {
+			drt_material.setIOR(gltf_material.extensions["KHR_materials_ior"].Get("ior").GetNumberAsDouble());
+		};
 		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);
 		m_WorkingScene->addMaterial(drt_material);
 	}

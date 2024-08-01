@@ -43,7 +43,7 @@ namespace DustRayTracer {
 	{
 	public:
 		HostCamera() = default;
-		HostCamera(CameraData* device_camera_data);
+		explicit HostCamera(CameraData* device_camera_data);
 
 		void OnUpdate(float3 velocity, float delta);
 		void Rotate(float4 delta_degrees);
