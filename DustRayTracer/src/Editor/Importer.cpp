@@ -81,11 +81,9 @@ bool Importer::loadMaterials(const tinygltf::Model& model)
 		if (gltf_material.extensions.find("KHR_materials_ior") != gltf_material.extensions.end()) {
 			drt_material.setIOR(gltf_material.extensions["KHR_materials_ior"].Get("ior").GetNumberAsDouble());
 		};
-		//printToConsole("albedo texture idx: %d\n", drt_material.AlbedoTextureIndex);
+		
 		m_WorkingScene->addMaterial(drt_material);
 	}
-	//printf("loaded materials count: %d \n\n", m_MaterialsBuffer.size());
-
 	return true;
 }
 

@@ -1,86 +1,22 @@
+#pragma once
 #include <vector_types.h>
 #include "helper_math.cuh"
 
 // This implementation follows the code from
 // https://github.com/erwincoumans/experiments/blob/master/opencl/primitives/AdlPrimitives/Math/MathCL.h
 
-#pragma once
-
 /*****************************************
 				Vector
 /*****************************************/
 
 __device__
-inline float getSqrtf(float f2)
-{
-	return sqrtf(f2);
-	//        return sqrt(f2);
-}
-
-__device__
-inline float getReverseSqrt(float f2)
-{
-	return rsqrtf(f2);
-}
-
-__device__
-inline float3 getCrossProduct(float3 a, float3 b)
-{
-	return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-}
-
-__device__
-inline float4 getCrossProduct(float4 a, float4 b)
+inline float4 cross(float4 a, float4 b)
 {
 	float3 v1 = make_float3(a.x, a.y, a.z);
 	float3 v2 = make_float3(b.x, b.y, b.z);
 	float3 v3 = make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 
 	return make_float4(v3.x, v3.y, v3.z, 0.0f);
-}
-
-__device__
-inline float getDotProduct(float3 a, float3 b)
-{
-	return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-__device__
-inline float getDotProduct(float4 a, float4 b)
-{
-	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
-}
-
-__device__ float3 getNormalizedVec(const float3 v)
-{
-	float invLen = 1.0f / sqrtf(getDotProduct(v, v));
-	return make_float3(v.x * invLen, v.y * invLen, v.z * invLen);
-}
-
-__device__ float4 getNormalizedVec(const float4 v)
-{
-	float invLen = 1.0f / sqrtf(getDotProduct(v, v));
-	return make_float4(v.x * invLen, v.y * invLen, v.z * invLen, v.w * invLen);
-}
-
-__device__
-inline float dot3F4(float4 a, float4 b)
-{
-	float4 a1 = make_float4(a.x, a.y, a.z, 0.f);
-	float4 b1 = make_float4(b.x, b.y, b.z, 0.f);
-	return getDotProduct(a1, b1);
-}
-
-__device__
-inline float getLength(float3 a)
-{
-	return sqrtf(getDotProduct(a, a));
-}
-
-__device__
-inline float getLength(float4 a)
-{
-	return sqrtf(getDotProduct(a, a));
 }
 
 /*****************************************
@@ -171,9 +107,9 @@ inline Matrix3x3_d MatrixMul(Matrix3x3_d& a, Matrix3x3_d& b)
 	for (int i = 0; i < 3; i++)
 	{
 		//        a.m_row[i].w = 0.f;
-		ans.m_row[i].x = dot3F4(a.m_row[i], transB.m_row[0]);
-		ans.m_row[i].y = dot3F4(a.m_row[i], transB.m_row[1]);
-		ans.m_row[i].z = dot3F4(a.m_row[i], transB.m_row[2]);
+		ans.m_row[i].x = dot(a.m_row[i], transB.m_row[0]);
+		ans.m_row[i].y = dot(a.m_row[i], transB.m_row[1]);
+		ans.m_row[i].z = dot(a.m_row[i], transB.m_row[2]);
 		ans.m_row[i].w = 0.f;
 	}
 	return ans;
@@ -204,17 +140,17 @@ __device__
 inline Quaternion quaternionMul(Quaternion a, Quaternion b)
 {
 	Quaternion ans;
-	ans = getCrossProduct(a, b);
+	ans = cross(a, b);
 	ans = make_float4(ans.x + a.w * b.x + b.w * a.x + b.w * a.y, ans.y + a.w * b.y + b.w * a.z, ans.z + a.w * b.z, ans.w + a.w * b.w + b.w * a.w);
 	//        ans.w = a.w*b.w - (a.x*b.x+a.y*b.y+a.z*b.z);
-	ans.w = a.w * b.w - dot3F4(a, b);
+	ans.w = a.w * b.w - dot(a, b);
 	return ans;
 }
 
 __device__
 inline Quaternion qtNormalize(Quaternion in)
 {
-	return getNormalizedVec(in);
+	return normalize(in);
 	//        in /= length( in );
 	//        return in;
 }

@@ -66,9 +66,6 @@
     <ClInclude Include="src\Core\Scene\Camera.hpp">
       <Filter>src\core\Renderer\private\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="src\Core\CudaMath\helper_math.cuh">
-      <Filter>src\core\Renderer\private\CudaMath</Filter>
-    </ClInclude>
     <ClInclude Include="src\Core\Kernel\RenderKernel.cuh">
       <Filter>src\core\Renderer\private\Kernel</Filter>
     </ClInclude>
@@ -110,8 +107,6 @@
     <ClInclude Include="src\Core\Public\DustRayTracer.hpp" />
     <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
     <ClInclude Include="src\Editor\Panels\RendererMetricsPanel.hpp" />
-    <ClInclude Include="src\Core\CudaMath\cuda_mat.cuh" />
-    <ClInclude Include="src\Core\CudaMath\Color3.cuh" />
     <ClInclude Include="src\Core\PostProcess.cuh" />
     <ClInclude Include="src\Core\BRDF.cuh" />
     <ClInclude Include="src\Core\ImportanceSampler.cuh" />
@@ -125,9 +120,6 @@
   <ItemGroup>
     <ClCompile Include="src\Editor\Application\private\Application.cpp">
       <Filter>src\core\Application\private</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Editor\main.cpp">
-      <Filter>src\core\Main</Filter>
     </ClCompile>
     <ClCompile Include="thirdparty\stb_image\stb_image.cpp">
       <Filter>thirdparty\stb_image</Filter>
@@ -144,12 +136,12 @@
     <ClCompile Include="src\Editor\Importer.cpp" />
     <ClCompile Include="src\Editor\EditorLayer.cpp" />
     <ClCompile Include="src\Editor\Panels\MaterialManagerPanel.cpp" />
+    <ClCompile Include="src\Editor\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Core\Renderer.cu" />
     <CudaCompile Include="src\Core\Scene\Camera.cu" />
     <CudaCompile Include="src\Core\Kernel\RenderKernel.cu" />
-    <CudaCompile Include="reference\Cuda\kernel.cu" />
     <CudaCompile Include="src\Core\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\Core\Scene\Mesh.cu" />
     <CudaCompile Include="src\Core\Scene\Scene.cu" />

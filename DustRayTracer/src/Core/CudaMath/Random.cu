@@ -31,15 +31,6 @@ __device__ float3 refract(float3 i, float3 n, float eta)
 	return t * (cost2 > 0);
 }
 
-//Schlick fresnel
-__device__ float reflectance(float cosine, float refraction_index)
-{
-	// Use Schlick's approximation for reflectance.
-	float r0 = (1 - refraction_index) / (1 + refraction_index);
-	r0 = r0 * r0;
-	return r0 + (1 - r0) * powf((1 - cosine), 5.f);
-}
-
 __device__ float3 randomUnitFloat3(uint32_t& seed)
 {
 	return normalize(make_float3(

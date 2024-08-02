@@ -8,7 +8,7 @@
 #include "Core/CudaMath/physical_units.hpp"
 #include "Core/CudaMath/helper_math.cuh"
 #include "Core/CudaMath/Random.cuh"
-#include "Core/CudaMath/cuda_mat.cuh"
+#include "Core/CudaMath/Matrix.cuh"
 
 #include "Core/Ray.cuh"
 #include "Core/HitPayload.cuh"

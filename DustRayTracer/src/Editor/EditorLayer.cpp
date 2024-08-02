@@ -42,7 +42,8 @@ void EditorLayer::OnAttach()
 	m_CurrentScene = std::make_shared<DustRayTracer::HostScene>();
 	m_CurrentScene->initialize();
 	Importer importer;
-	importer.loadGLTF("../models/test/refract_test.glb", *m_CurrentScene);
+	//importer.loadGLTF("../models/test/refract_test.glb", *m_CurrentScene);
+	importer.loadGLTF("../models/test/cornell_box_v2.glb", *m_CurrentScene);
 
 	m_Renderer.initialize();
 
