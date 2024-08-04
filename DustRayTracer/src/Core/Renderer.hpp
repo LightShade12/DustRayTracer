@@ -28,8 +28,7 @@
 * -light bvh
 */
 
-struct ThrustRGB32FBufferWrapper;//indirection to thrust device vector kernel code inclusion
-struct CudaGLAPI;
+struct CudaAPIResource;
 
 namespace DustRayTracer {
 	//should just be renderer?
@@ -43,7 +42,7 @@ namespace DustRayTracer {
 		bool shutdown();
 
 		void updateScene(DustRayTracer::HostScene& scene_object);
-		void updateRendererConfig(const RendererSettings& config) { m_RendererSettings = config; m_DeviceSceneData.RenderSettings = m_RendererSettings; };
+		void updateRendererConfig(const RendererSettings& config);
 		//DustRayTracer::HostCamera getCamera() const;//client should get a copy of current camera to control
 		DustRayTracer::HostCamera* getCameraPtr();//client should get a copy of current camera to control
 		void changeCamera(uint32_t camera_idx);
@@ -70,24 +69,14 @@ namespace DustRayTracer {
 	public:
 		RendererSettings m_RendererSettings;
 	private:
-		SceneData m_DeviceSceneData;
+
+		CudaAPIResource* m_CudaAPIResource = nullptr;
 		uint32_t m_BufferWidth = 0, m_BufferHeight = 0;//specify as RenderBufferWidth/Height?
 		GLuint m_RenderTargetTexture_name = NULL;//null init val important for triggering init
 		GLuint m_ColorBufferTargetTexture_name = NULL;
 		GLuint m_NormalBufferTargetTexture_name = NULL;
 		GLuint m_DepthBufferTargetTexture_name = NULL;
-
 		DustRayTracer::HostCamera m_CurrentCamera;
-
-		CudaGLAPI* m_CudaGLAPI=nullptr;
-
-		ThrustRGB32FBufferWrapper* m_AccumulationFrameBuffer;
-
 		uint32_t m_FrameIndex = 1;
-
-		int m_ThreadBlock_x = 8;
-		int m_ThreadBlock_y = 8;
-		dim3 m_BlockGridDimensions;
-		dim3 m_ThreadBlockDimensions;
 	};
 }
