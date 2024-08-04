@@ -63,7 +63,7 @@
     <ClInclude Include="src\Core\Renderer.hpp">
       <Filter>src\core\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="src\Core\Scene\Camera.hpp">
+    <ClInclude Include="src\Core\Scene\HostCamera.hpp">
       <Filter>src\core\Renderer\private\Camera</Filter>
     </ClInclude>
     <ClInclude Include="src\Core\Kernel\RenderKernel.cuh">
@@ -96,7 +96,7 @@
     <ClInclude Include="src\Editor\Application\private\KeyCodes.hpp" />
     <ClInclude Include="src\Core\Scene\RendererSettings.hpp" />
     <ClInclude Include="thirdparty\tinygltf\tiny_gltf.h" />
-    <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
+    <ClInclude Include="src\Core\BVH\BVHBuilder.hpp" />
     <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
     <ClInclude Include="src\Core\Scene\Texture.hpp" />
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
@@ -116,6 +116,10 @@
     <ClInclude Include="src\Core\Scene\SceneData.cuh" />
     <ClInclude Include="src\Core\Scene\Scene.cuh" />
     <ClInclude Include="src\Core\PrincipledBSDF.cuh" />
+    <ClInclude Include="src\Core\CudaMath\helper_math.cuh" />
+    <ClInclude Include="src\Core\CudaMath\Matrix.cuh" />
+    <ClInclude Include="src\Core\Scene\MaterialData.cuh" />
+    <ClInclude Include="src\Core\Scene\CameraData.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Editor\Application\private\Application.cpp">
@@ -140,7 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Core\Renderer.cu" />
-    <CudaCompile Include="src\Core\Scene\Camera.cu" />
+    <CudaCompile Include="src\Core\Scene\HostCamera.cu" />
     <CudaCompile Include="src\Core\Kernel\RenderKernel.cu" />
     <CudaCompile Include="src\Core\Kernel\TraceRay.cu" />
     <CudaCompile Include="src\Core\Scene\Mesh.cu" />
@@ -156,6 +160,7 @@
     <CudaCompile Include="src\Core\BRDF.cu" />
     <CudaCompile Include="src\Core\ImportanceSampler.cu" />
     <CudaCompile Include="src\Core\PrincipledBSDF.cu" />
+    <CudaCompile Include="src\Core\Scene\CameraData.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DustRayTracer.rc" />

@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/glm.hpp>
 #include "Core/CudaMath/helper_math.cuh"
 #include "Vertex.cuh"
 
@@ -6,8 +7,8 @@
 
 struct Triangle {
 	Triangle() = default;
-	Triangle(Vertex v0, Vertex v1, Vertex v2, float3 nrm, int mtlidx) :
-		vertex0(v0), vertex1(v1), vertex2(v2), face_normal(nrm), material_idx(mtlidx) {
+	Triangle(Vertex v0, Vertex v1, Vertex v2, glm::vec3 nrm, int mtlidx) :
+		vertex0(v0), vertex1(v1), vertex2(v2), face_normal({ nrm.x,nrm.y,nrm.z }), material_idx(mtlidx) {
 		centroid = (vertex0.position + vertex1.position + vertex2.position) / 3;
 	};
 

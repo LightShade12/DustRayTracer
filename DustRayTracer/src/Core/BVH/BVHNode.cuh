@@ -1,6 +1,5 @@
 #pragma once
 #include "Core/Bounds.cuh"
-#include "Core/Scene/Triangle.cuh"
 #include "Core/CudaMath/helper_math.cuh"
 
 #include <stdio.h>

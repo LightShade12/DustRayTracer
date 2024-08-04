@@ -1,7 +1,10 @@
-#include "BVHBuilder.cuh"
+#include "BVHBuilder.hpp"
 
 #include "Core/Scene/Scene.cuh"
 #include "Editor/Common/dbg_macros.hpp"
+
+#include "BVHNode.cuh"
+#include "Core/Scene/Triangle.cuh"
 
 #include <stack>
 #include <thrust/partition.h>

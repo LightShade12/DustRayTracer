@@ -30,6 +30,6 @@ private:
 	float m_LastRenderTime_ms = 0;
 	std::string test_window_text = "Hello World";
 	DustRayTracer::PathTracerRenderer m_Renderer;
-	DustRayTracer::HostCamera* m_ActiveCamera=nullptr; //non-owning
+	DustRayTracer::HostCamera* m_ActiveCamera=nullptr; //non-owning; bad ownership semantics
 	std::shared_ptr<DustRayTracer::HostScene> m_CurrentScene = nullptr;
 };

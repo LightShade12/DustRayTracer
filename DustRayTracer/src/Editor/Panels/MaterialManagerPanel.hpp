@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 #include <stdint.h>
 namespace DustRayTracer {
-	struct HostScene;
+	class HostScene;
 }
 
 class Texture;

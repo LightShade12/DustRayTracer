@@ -6,11 +6,12 @@ Provides safe methods to modify contents from host side and sync with device
 #include "Core/Scene/Mesh.cuh"
 #include "Core/Scene/Material.cuh"
 #include "Core/Scene/Texture.hpp"
-#include "Core/Scene/Camera.hpp"
-#include "Core/BVH/BVHNode.cuh"
+#include "Core/Scene/HostCamera.hpp"
+#include "Core/Scene/Triangle.cuh"
+//#include "Core/BVH/BVHNode.cuh"
 
 namespace DustRayTracer {
-	class Scene;
+	struct Scene;
 
 	class HostScene {
 	public:

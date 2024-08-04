@@ -65,8 +65,8 @@ bool Importer::loadMaterials(const tinygltf::Model& model)
 		memset(drt_material.getNamePtr(), 0, sizeof(drt_material.getName()));
 		strncpy(drt_material.getNamePtr(), gltf_material.name.c_str(), sizeof(drt_material.getName()));
 		drt_material.getNamePtr()[gltf_material.name.size()] = '\0';
-		drt_material.setAlbedo(make_float3(PBR_data.baseColorFactor[0], PBR_data.baseColorFactor[1], PBR_data.baseColorFactor[2]));//We just use RGB material albedo for now
-		drt_material.setEmissiveColor(make_float3(gltf_material.emissiveFactor[0], gltf_material.emissiveFactor[1], gltf_material.emissiveFactor[2]));
+		drt_material.setAlbedo(glm::vec3(PBR_data.baseColorFactor[0], PBR_data.baseColorFactor[1], PBR_data.baseColorFactor[2]));//We just use RGB material albedo for now
+		drt_material.setEmissiveColor(glm::vec3(gltf_material.emissiveFactor[0], gltf_material.emissiveFactor[1], gltf_material.emissiveFactor[2]));
 		if (PBR_data.baseColorTexture.index >= 0)drt_material.setAlbedoTextureIndex(model.textures[PBR_data.baseColorTexture.index].source);
 		if (PBR_data.metallicRoughnessTexture.index >= 0)drt_material.setRoughnessTextureIndex(model.textures[PBR_data.metallicRoughnessTexture.index].source);
 		if (gltf_material.normalTexture.index >= 0)drt_material.setNormalTextureIndex(model.textures[gltf_material.normalTexture.index].source);
@@ -81,7 +81,7 @@ bool Importer::loadMaterials(const tinygltf::Model& model)
 		if (gltf_material.extensions.find("KHR_materials_ior") != gltf_material.extensions.end()) {
 			drt_material.setIOR(gltf_material.extensions["KHR_materials_ior"].Get("ior").GetNumberAsDouble());
 		};
-		
+
 		m_WorkingScene->addMaterial(drt_material);
 	}
 	return true;
@@ -121,8 +121,8 @@ bool Importer::loadTextures(const tinygltf::Model& model, bool is_binary)
 }
 
 //does not support reused mesh
-static bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<float3>& positions, std::vector<float3>& normals,
-	std::vector<float2>& UVs, std::vector<int>& prim_mat_idx)
+static bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<glm::vec3>& positions, std::vector<glm::vec3>& normals,
+	std::vector<glm::vec2>& UVs, std::vector<int>& prim_mat_idx)
 {
 	//printf("total primitives: %zu\n", mesh.primitives.size());
 	for (size_t primIdx = 0; primIdx < mesh.primitives.size(); primIdx++)
@@ -163,9 +163,9 @@ static bool parseMesh(tinygltf::Mesh mesh, tinygltf::Model model, std::vector<fl
 		//printf("indices accesor count: %d\n", indices_accesor.count);
 
 		unsigned short* indicesbuffer = (unsigned short*)(indices_buffer.data.data());
-		float3* positions_buffer = (float3*)(indices_buffer.data.data() + pos_buffer_byte_offset);
-		float3* normals_buffer = (float3*)(indices_buffer.data.data() + nrm_buffer_byte_offset);
-		float2* UVs_buffer = (float2*)(indices_buffer.data.data() + uv_buffer_byte_offset);
+		glm::vec3* positions_buffer = (glm::vec3*)(indices_buffer.data.data() + pos_buffer_byte_offset);
+		glm::vec3* normals_buffer = (glm::vec3*)(indices_buffer.data.data() + nrm_buffer_byte_offset);
+		glm::vec2* UVs_buffer = (glm::vec2*)(indices_buffer.data.data() + uv_buffer_byte_offset);
 
 		for (int i = (indices_bufferview.byteOffset / 2); i < (indices_bufferview.byteLength + indices_bufferview.byteOffset) / 2; i++)
 		{
@@ -207,9 +207,9 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 	//node looping
 	for (size_t nodeIdx = 0; nodeIdx < loadedmodel.nodes.size(); nodeIdx++)
 	{
-		std::vector<float3> loadedMeshPositions;
-		std::vector<float3>loadedMeshNormals;
-		std::vector<float2>loadedMeshUVs;
+		std::vector<glm::vec3> loadedMeshPositions;
+		std::vector<glm::vec3>loadedMeshNormals;
+		std::vector<glm::vec2>loadedMeshUVs;
 		std::vector<int>loadedMeshPrimitiveMatIdx;
 
 		tinygltf::Node gltf_node = loadedmodel.nodes[nodeIdx];
@@ -217,12 +217,12 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 
 		if (gltf_node.camera >= 0) {
 			tinygltf::Camera gltf_camera = loadedmodel.cameras[gltf_node.camera];
-			printToConsole("\nfound a camera: %s\n", gltf_camera.name.c_str());
-			float3 cpos = { gltf_node.translation[0] ,gltf_node.translation[1] ,gltf_node.translation[2] };
+			printToConsole("\nFound a camera: %s\n", gltf_camera.name.c_str());
+			glm::vec3 cpos = { gltf_node.translation[0] ,gltf_node.translation[1] ,gltf_node.translation[2] };
 			DustRayTracer::HostCamera drt_camera;
-			memset(drt_camera.getNamePtr(), 0, sizeof(drt_camera.getName()));
-			strncpy(drt_camera.getNamePtr(), gltf_camera.name.c_str(), sizeof(drt_camera.getHostCamera().name));
-			drt_camera.getNamePtr()[gltf_camera.name.size()] = '\0';
+			memset(drt_camera.getNamePtr(), 0, 32);
+			strncpy(drt_camera.getNamePtr(), gltf_camera.name.c_str(), 32);
+			drt_camera.getNamePtr()[32] = '\0';
 
 			drt_camera.setPosition(glm::vec3(cpos.x, cpos.y, cpos.z));
 			drt_camera.setVerticalFOV(gltf_camera.perspective.yfov);
@@ -235,11 +235,13 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 				glm::quat quaternion(qw, qx, qy, qz);
 				glm::mat4 rotationMatrix = glm::toMat4(quaternion);
 				glm::vec3 forwardDir = -glm::vec3(rotationMatrix[2]);
-				float3 lookDir = make_float3(forwardDir.x, forwardDir.y, forwardDir.z);
+				glm::vec3 lookDir = glm::vec3(forwardDir.x, forwardDir.y, forwardDir.z);
 				drt_camera.setLookDir(glm::vec3(lookDir.x, lookDir.y, lookDir.z));
 			}
 
 			m_WorkingScene->addCamera(drt_camera);
+			printf("importer camera cleanup");
+			drt_camera.cleanup();
 		}
 		if (gltf_node.mesh < 0)continue;//TODO: crude fix
 		tinygltf::Mesh gltf_mesh = loadedmodel.meshes[gltf_node.mesh];
@@ -271,7 +273,7 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 					}
 					continue;
 				}
-				float3 pos = loadedMeshPositions[i];
+				glm::vec3 pos = loadedMeshPositions[i];
 				//printf("x:%.3f y:%.3f z:%.3f\n", pos.x, pos.y, pos.z);
 			}
 			stop = false;
@@ -287,7 +289,7 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 					}
 					continue;
 				}
-				float3 nrm = loadedMeshNormals[i];
+				glm::vec3 nrm = loadedMeshNormals[i];
 				//printf("x:%.3f y:%.3f z:%.3f\n", nrm.x, nrm.y, nrm.z);
 			}
 			stop = false;
@@ -303,7 +305,7 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 					}
 					continue;
 				}
-				float2 uv = loadedMeshUVs[i];
+				glm::vec2 uv = loadedMeshUVs[i];
 				//printf("U:%.3f V:%.3f \n", uv.x, uv.y);
 			}
 		}
@@ -317,14 +319,14 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 		for (size_t i = 0; i < loadedMeshPositions.size(); i += 3)
 		{
 			//surface normal construction
-			float3 p0 = loadedMeshPositions[i + 1] - loadedMeshPositions[i];
-			float3 p1 = loadedMeshPositions[i + 2] - loadedMeshPositions[i];
-			float3 faceNormal = cross(p0, p1);
+			glm::vec3 p0 = loadedMeshPositions[i + 1] - loadedMeshPositions[i];
+			glm::vec3 p1 = loadedMeshPositions[i + 2] - loadedMeshPositions[i];
+			glm::vec3 faceNormal = cross(p0, p1);
 
-			float3 avgVertexNormal = (loadedMeshNormals[i] + loadedMeshNormals[i + 1] + loadedMeshNormals[i + 2]) / 3;
+			glm::vec3 avgVertexNormal = (loadedMeshNormals[i] + loadedMeshNormals[i + 1] + loadedMeshNormals[i + 2]) / 3.f;
 			float ndot = dot(faceNormal, avgVertexNormal);
 
-			float3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
+			glm::vec3 surface_normal = (ndot < 0.0f) ? -faceNormal : faceNormal;
 
 			uint32_t mtidx = loadedMeshPrimitiveMatIdx[i / 3];
 
@@ -334,8 +336,9 @@ bool Importer::loadGLTF(const char* filepath, DustRayTracer::HostScene& scene_ob
 				Vertex(loadedMeshPositions[i + 2], loadedMeshNormals[i + 2], loadedMeshUVs[i + 2]),
 				normalize(surface_normal),
 				mtidx));
+
 			DustRayTracer::HostMaterial mat = m_WorkingScene->getMaterial(mtidx);
-			float3 emcol = mat.getEmissiveColor();
+			glm::vec3 emcol = mat.getEmissiveColor();
 			if (mat.getEmissionTextureIndex() >= 0 ||
 				!(emcol.x == 0 && emcol.y == 0 && emcol.z == 0)) {
 				m_WorkingScene->addTriangleLightidx(m_WorkingScene->getTrianglesBufferSize() - 1);

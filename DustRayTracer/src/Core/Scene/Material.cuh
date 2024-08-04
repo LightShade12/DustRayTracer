@@ -1,5 +1,6 @@
 #pragma once
-#include <vector_types.h>
+#include <Core/CudaMath/helper_math.cuh>
+#include <glm/glm.hpp>
 #include <string>
 
 //Add POM, porosity, sss, alpha
@@ -36,12 +37,12 @@ namespace DustRayTracer {
 		const char* getName() { return m_HostMaterialData.Name; };
 		char* getNamePtr() { return (m_HostMaterialData.Name); };
 
-		void setAlbedo(float3 albedo) { m_HostMaterialData.Albedo = albedo; };
-		float3 getAlbedo() const { return m_HostMaterialData.Albedo; };
+		void setAlbedo(glm::vec3 albedo) { m_HostMaterialData.Albedo = make_float3(albedo.x, albedo.y, albedo.z); };
+		glm::vec3 getAlbedo() const { return glm::vec3(m_HostMaterialData.Albedo.x, m_HostMaterialData.Albedo.y, m_HostMaterialData.Albedo.z); };
 		float* getAlbedoPtr() { return &(m_HostMaterialData.Albedo.x); };
 
-		void setEmissiveColor(float3 emissiveColor) { m_HostMaterialData.EmissiveColor = emissiveColor; };
-		float3 getEmissiveColor() const { return m_HostMaterialData.EmissiveColor; };
+		void setEmissiveColor(glm::vec3 emissiveColor) { m_HostMaterialData.EmissiveColor = make_float3(emissiveColor.x, emissiveColor.y, emissiveColor.z); };
+		glm::vec3 getEmissiveColor() const { return glm::vec3(m_HostMaterialData.EmissiveColor.x, m_HostMaterialData.EmissiveColor.y, m_HostMaterialData.EmissiveColor.z); };
 		float* getEmissiveColorPtr() { return &(m_HostMaterialData.EmissiveColor.x); };
 
 		void setEmissiveScale(float emissiveScale) { m_HostMaterialData.EmissiveScale = emissiveScale; };

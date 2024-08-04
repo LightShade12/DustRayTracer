@@ -267,7 +267,7 @@ bool processInput(GLFWwindow* window, DustRayTracer::HostCamera* cam, float delt
 {
 	bool has_moved = false;
 	float sensitivity = 1;
-	float3 velocity = { 0,0,0 };
+	glm::vec3 velocity = { 0,0,0 };
 	int width = 0, height = 0;
 	glfwGetWindowSize(window, &width, &height);
 
@@ -335,7 +335,7 @@ bool processInput(GLFWwindow* window, DustRayTracer::HostCamera* cam, float delt
 			float sin_y = sin(-rotX);
 			float cos_y = cos(-rotX);
 
-			float4 mousedeltadegrees = { sin_x, cos_x, sin_y, cos_y };
+			glm::vec4 mousedeltadegrees = { sin_x, cos_x, sin_y, cos_y };
 
 			//printf("delta: %.5f\n", delta);
 
@@ -370,5 +370,6 @@ void EditorLayer::OnUpdate(float ts)
 void EditorLayer::OnDetach()
 {
 	printf("detaching app\n");
+	m_Renderer.shutdown();
 	m_CurrentScene->Cleanup();
 }

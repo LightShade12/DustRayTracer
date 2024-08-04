@@ -139,7 +139,11 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Core\CudaMath\Matrix.cuh" />
+    <ClInclude Include="src\Core\CudaMath\helper_math.cuh" />
     <ClInclude Include="src\Core\PrincipledBSDF.cuh" />
+    <ClInclude Include="src\Core\Scene\CameraData.cuh" />
+    <ClInclude Include="src\Core\Scene\MaterialData.cuh" />
     <ClInclude Include="src\Core\Scene\Scene.cuh" />
     <ClInclude Include="src\Core\Scene\SceneData.cuh" />
     <ClInclude Include="src\Editor\Importer.hpp" />
@@ -150,7 +154,7 @@
     <ClInclude Include="src\Core\PostProcess.cuh" />
     <ClInclude Include="src\Editor\Common\dbg_macros.hpp" />
     <ClInclude Include="src\Editor\Panels\MaterialManagerPanel.hpp" />
-    <ClInclude Include="src\Core\BVH\BVHBuilder.cuh" />
+    <ClInclude Include="src\Core\BVH\BVHBuilder.hpp" />
     <ClInclude Include="src\Core\BVH\BVHNode.cuh" />
     <ClInclude Include="src\Core\BVH\BVHTraversal.cuh" />
     <ClInclude Include="src\Core\Interval.cuh" />
@@ -185,7 +189,7 @@
     <ClInclude Include="src\Core\Scene\HostScene.hpp" />
     <ClInclude Include="src\Core\Scene\Vertex.cuh" />
     <ClInclude Include="src\Core\Renderer.hpp" />
-    <ClInclude Include="src\Core\Scene\Camera.hpp" />
+    <ClInclude Include="src\Core\Scene\HostCamera.hpp" />
     <ClInclude Include="src\Core\Kernel\RenderKernel.cuh" />
     <ClInclude Include="thirdparty\stb_image\stb_image.h" />
     <ClInclude Include="thirdparty\stb_image\stb_image_write.h" />
@@ -213,7 +217,8 @@
     <ClCompile Include="src\Editor\EditorLayer.cpp" />
     <CudaCompile Include="src\Core\PrincipledBSDF.cu" />
     <CudaCompile Include="src\Core\Renderer.cu" />
-    <CudaCompile Include="src\Core\Scene\Camera.cu" />
+    <CudaCompile Include="src\Core\Scene\CameraData.cu" />
+    <CudaCompile Include="src\Core\Scene\HostCamera.cu" />
     <CudaCompile Include="src\Core\Kernel\RenderKernel.cu" />
     <CudaCompile Include="src\Core\Common\CudaCommon.cu" />
     <CudaCompile Include="src\Core\BVH\BVHBuilder.cu" />

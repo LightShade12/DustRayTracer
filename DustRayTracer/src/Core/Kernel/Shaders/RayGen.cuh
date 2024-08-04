@@ -14,8 +14,9 @@
 #include "Core/HitPayload.cuh"
 #include "Core/Scene/Scene.cuh"
 //#include "Core/Scene/Material.cuh"
-#include "Core/Scene/Camera.hpp"
-
+#include "Core/Scene/HostCamera.hpp"
+#include "Core/Scene/Triangle.cuh"
+#include <cuda_runtime.h>
 /*
 TODO: List of things:
 -DLSS 3.5 like features

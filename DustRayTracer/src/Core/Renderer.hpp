@@ -5,7 +5,7 @@
 //#include "Scene/RendererSettings.hpp"
 #include "Scene/SceneData.cuh"
 #include "Scene/HostScene.hpp"
-#include "Scene/Camera.hpp"
+#include "Scene/HostCamera.hpp"
 #include <glad/glad.h>
 #include <cuda_gl_interop.h>//for member cuda objects
 #include <cstdint>
@@ -45,7 +45,7 @@ namespace DustRayTracer {
 
 		void updateScene(DustRayTracer::HostScene& scene_object);
 		void updateRendererConfig(const RendererSettings& config) { m_RendererSettings = config; m_DeviceSceneData.RenderSettings = m_RendererSettings; };
-		DustRayTracer::HostCamera getCamera() const;//client should get a copy of current camera to control
+		//DustRayTracer::HostCamera getCamera() const;//client should get a copy of current camera to control
 		DustRayTracer::HostCamera* getCameraPtr();//client should get a copy of current camera to control
 		void changeCamera(uint32_t camera_idx);
 		void resizeResolution(uint32_t frame_width, uint32_t frame_height);

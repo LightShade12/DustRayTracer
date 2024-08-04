@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Scene/HostScene.hpp"
-#include "BVHNode.cuh"
+#include "Core/BVH/BVHNode.cuh"
 #include <memory>
 #include <vector>
 

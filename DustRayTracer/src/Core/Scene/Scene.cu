@@ -70,7 +70,8 @@ namespace DustRayTracer {
 
 	uint32_t HostScene::addCamera(const HostCamera& camera)
 	{
-		m_Scene->m_CamerasBuffer.push_back(camera.getHostCamera());
+		DustRayTracer::CameraData c = *(camera.getHostCamera());
+		m_Scene->m_CamerasBuffer.push_back(c);
 		return m_Scene->m_CamerasBuffer.size() - 1;
 	}
 	void HostScene::addTriangle(const Triangle& triangle)

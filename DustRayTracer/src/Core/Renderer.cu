@@ -1,7 +1,8 @@
 #include "Core/Renderer.hpp"
 
 #include "Core/Ray.cuh"
-#include "Core/Scene/Camera.hpp"
+#include "Core/Scene/HostCamera.hpp"
+#include "Core/Scene/CameraData.cuh"
 #include "Core/Scene/Scene.cuh"
 
 #include "Core/Common/CudaCommon.cuh"
@@ -107,11 +108,11 @@ namespace DustRayTracer {
 		cudaEventRecord(stop);
 		checkCudaErrors(cudaEventSynchronize(stop));
 
-	cudaEventElapsedTime(delta, start, stop);
-	checkCudaErrors(cudaDeviceSynchronize());
-	//----
+		cudaEventElapsedTime(delta, start, stop);
+		checkCudaErrors(cudaDeviceSynchronize());
+		//----
 
-		//post render cuda---------------------------------------------------------------------------------
+			//post render cuda---------------------------------------------------------------------------------
 		cudaDestroySurfaceObject(render_target_texture_surface_object);
 		cudaGraphicsUnmapResources(1, &m_RenderTargetTextureCudaResource);
 		cudaStreamSynchronize(0);
@@ -140,6 +141,7 @@ namespace DustRayTracer {
 #ifdef DEBUG
 		printf("Renderer shutdown sucessfully\n");
 #endif // DEBUG
+		m_CurrentCamera.cleanup();
 		return true;
 	}
 
@@ -166,10 +168,10 @@ namespace DustRayTracer {
 		m_DeviceSceneData.RenderSettings = m_RendererSettings;
 	}
 
-	HostCamera PathTracerRenderer::getCamera() const
+	/*HostCamera PathTracerRenderer::getCamera() const
 	{
 		return m_CurrentCamera;
-	}
+	}*/
 
 	DustRayTracer::HostCamera* PathTracerRenderer::getCameraPtr()
 	{

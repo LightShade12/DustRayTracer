@@ -2,7 +2,7 @@
 #include <vector_types.h>
 
 namespace DustRayTracer {
-	class MaterialData;
+	struct MaterialData;
 }
 class SceneData;
 

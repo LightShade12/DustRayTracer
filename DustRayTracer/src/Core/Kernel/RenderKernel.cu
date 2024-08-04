@@ -2,6 +2,7 @@
 
 #include "Core/Scene/Scene.cuh"
 #include "Core/Scene/SceneData.cuh"
+#include "Core/Scene/CameraData.cuh"
 #include "Core/PostProcess.cuh"
 #include "Shaders/RayGen.cuh"
 
@@ -23,7 +24,7 @@ void invokeRenderKernel(
 }
 
 //Monte Carlo Render Kernel
-__global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, int max_y, const DustRayTracer::CameraData* device_camera, 
+__global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, int max_y, const DustRayTracer::CameraData* device_camera,
 	uint32_t frameidx, float3* accumulation_buffer, const SceneData scenedata)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -51,5 +52,3 @@ __global__ void integratorKernel(cudaSurfaceObject_t surface_object, int max_x, 
 
 	surf2Dwrite(color, surface_object, i * (int)sizeof(float4), j);//has to be uchar4/2/1 or float4/2/1; no 3 comp color
 };
-
-

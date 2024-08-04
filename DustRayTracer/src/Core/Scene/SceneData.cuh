@@ -5,10 +5,10 @@
 
 namespace DustRayTracer {
 	struct CameraData;
-	class MaterialData;
+	struct MaterialData;
 }
 class Texture;
-class Triangle;
+struct Triangle;
 class Mesh;
 class BVHNode;
 

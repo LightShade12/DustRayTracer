@@ -1,5 +1,8 @@
 #pragma once
 #include "HostScene.hpp"
+#include "Core/BVH/BVHNode.cuh"
+#include "Core/Scene/Triangle.cuh"
+#include "Core/Scene/CameraData.cuh"
 #include <thrust/device_vector.h>
 #include <thrust/universal_vector.h>
 #include <thrust/host_vector.h>
