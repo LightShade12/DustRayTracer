@@ -2,14 +2,12 @@
 /*
 * PathTracerRenderer is the high level render API that client interfaces for orchestrating the pathtracing
 */
-//#include "Scene/RendererSettings.hpp"
 #include "Scene/SceneData.cuh"
 #include "Scene/HostScene.hpp"
 #include "Scene/HostCamera.hpp"
 #include <glad/glad.h>
-#include <cuda_gl_interop.h>//for member cuda objects
 #include <cstdint>
-//Why does renderer know of scene without its header?
+
 /*
 * TODO:
 * -BSDF
@@ -31,6 +29,7 @@
 */
 
 struct ThrustRGB32FBufferWrapper;//indirection to thrust device vector kernel code inclusion
+struct CudaGLAPI;
 
 namespace DustRayTracer {
 	//should just be renderer?
@@ -80,8 +79,7 @@ namespace DustRayTracer {
 
 		DustRayTracer::HostCamera m_CurrentCamera;
 
-		cudaGraphicsResource_t m_RenderTargetTextureCudaResource;
-		cudaEvent_t start, stop;
+		CudaGLAPI* m_CudaGLAPI=nullptr;
 
 		ThrustRGB32FBufferWrapper* m_AccumulationFrameBuffer;
 

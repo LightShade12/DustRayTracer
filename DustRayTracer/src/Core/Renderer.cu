@@ -7,6 +7,8 @@
 
 #include "Core/Common/CudaCommon.cuh"
 #include "Kernel/RenderKernel.cuh"
+
+#include <cuda_gl_interop.h>//for member cuda objects
 #include <thrust/device_vector.h>
 #include <iostream>
 
@@ -20,14 +22,21 @@ struct ThrustRGB32FBufferWrapper
 	}
 };
 
+struct CudaGLAPI {
+	CudaGLAPI() = default;
+	cudaGraphicsResource_t m_RenderTargetTextureCudaResource;
+	cudaEvent_t start, stop;
+};
+
 namespace DustRayTracer {
 	PathTracerRenderer::PathTracerRenderer()
 	{
 		m_AccumulationFrameBuffer = new ThrustRGB32FBufferWrapper();
+		m_CudaGLAPI = new CudaGLAPI();
 		m_BlockGridDimensions = dim3(m_BufferWidth / m_ThreadBlock_x + 1, m_BufferHeight / m_ThreadBlock_y + 1);
 		m_ThreadBlockDimensions = dim3(m_ThreadBlock_x, m_ThreadBlock_y);
-		cudaEventCreate(&start);
-		cudaEventCreate(&stop);
+		cudaEventCreate(&(m_CudaGLAPI->start));
+		cudaEventCreate(&(m_CudaGLAPI->stop));
 	}
 
 	void PathTracerRenderer::resizeResolution(uint32_t width, uint32_t height) {
@@ -43,7 +52,7 @@ namespace DustRayTracer {
 			m_AccumulationFrameBuffer->ColorDataBuffer.resize(m_BufferHeight * m_BufferWidth);
 
 			// unregister
-			cudaGraphicsUnregisterResource(m_RenderTargetTextureCudaResource);
+			cudaGraphicsUnregisterResource(m_CudaGLAPI->m_RenderTargetTextureCudaResource);
 			// resize
 			glBindTexture(GL_TEXTURE_2D, m_RenderTargetTexture_name);
 			{
@@ -51,7 +60,7 @@ namespace DustRayTracer {
 			}
 			glBindTexture(GL_TEXTURE_2D, 0);
 			// register back
-			cudaGraphicsGLRegisterImage(&m_RenderTargetTextureCudaResource, m_RenderTargetTexture_name, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+			cudaGraphicsGLRegisterImage(&(m_CudaGLAPI->m_RenderTargetTextureCudaResource), m_RenderTargetTexture_name, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
 		}
 
 		//Image recreation
@@ -68,14 +77,14 @@ namespace DustRayTracer {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			//TODO: make a switchable frame filtering mode
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_BufferWidth, m_BufferHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
 
-			cudaGraphicsGLRegisterImage(&m_RenderTargetTextureCudaResource, m_RenderTargetTexture_name, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+			cudaGraphicsGLRegisterImage(&(m_CudaGLAPI->m_RenderTargetTextureCudaResource), m_RenderTargetTexture_name, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
 		}
 
 		clearAccumulation();
@@ -85,10 +94,10 @@ namespace DustRayTracer {
 	{
 		if (m_FrameIndex == m_RendererSettings.max_samples)return;
 
-		cudaGraphicsMapResources(1, &m_RenderTargetTextureCudaResource);
+		cudaGraphicsMapResources(1, &(m_CudaGLAPI->m_RenderTargetTextureCudaResource));
 
 		cudaArray_t render_target_texture_sub_resource_array;
-		cudaGraphicsSubResourceGetMappedArray(&render_target_texture_sub_resource_array, m_RenderTargetTextureCudaResource, 0, 0);
+		cudaGraphicsSubResourceGetMappedArray(&render_target_texture_sub_resource_array, (m_CudaGLAPI->m_RenderTargetTextureCudaResource), 0, 0);
 		cudaResourceDesc render_target_texture_resource_descriptor;
 		{
 			render_target_texture_resource_descriptor.resType = cudaResourceTypeArray;
@@ -98,32 +107,37 @@ namespace DustRayTracer {
 		cudaCreateSurfaceObject(&render_target_texture_surface_object, &render_target_texture_resource_descriptor);
 
 		//----
-		cudaEventRecord(start);
+		cudaEventRecord(m_CudaGLAPI->start);
 		invokeRenderKernel(render_target_texture_surface_object, m_BufferWidth, m_BufferHeight,
 			m_BlockGridDimensions, m_ThreadBlockDimensions, m_CurrentCamera.getDeviceCamera(), m_DeviceSceneData, m_FrameIndex,
 			thrust::raw_pointer_cast(m_AccumulationFrameBuffer->ColorDataBuffer.data()));
 
 		checkCudaErrors(cudaGetLastError());
 
-		cudaEventRecord(stop);
-		checkCudaErrors(cudaEventSynchronize(stop));
+		cudaEventRecord(m_CudaGLAPI->stop);
+		checkCudaErrors(cudaEventSynchronize(m_CudaGLAPI->stop));
 
-		cudaEventElapsedTime(delta, start, stop);
+		cudaEventElapsedTime(delta, m_CudaGLAPI->start, m_CudaGLAPI->stop);
 		checkCudaErrors(cudaDeviceSynchronize());
 		//----
 
 			//post render cuda---------------------------------------------------------------------------------
 		cudaDestroySurfaceObject(render_target_texture_surface_object);
-		cudaGraphicsUnmapResources(1, &m_RenderTargetTextureCudaResource);
+		cudaGraphicsUnmapResources(1, &(m_CudaGLAPI->m_RenderTargetTextureCudaResource));
 		cudaStreamSynchronize(0);
 		m_FrameIndex++;
 	}
 
 	PathTracerRenderer::~PathTracerRenderer()
 	{
+		//DRT
+		m_CurrentCamera.cleanup();
+		//CUDA
 		delete m_AccumulationFrameBuffer;
-		cudaEventDestroy(start);
-		cudaEventDestroy(stop);
+		cudaEventDestroy(m_CudaGLAPI->start);
+		cudaEventDestroy(m_CudaGLAPI->stop);
+		delete m_CudaGLAPI;
+		//GL
 		glDeleteTextures(1, &m_RenderTargetTexture_name);
 	}
 
@@ -141,7 +155,6 @@ namespace DustRayTracer {
 #ifdef DEBUG
 		printf("Renderer shutdown sucessfully\n");
 #endif // DEBUG
-		m_CurrentCamera.cleanup();
 		return true;
 	}
 
